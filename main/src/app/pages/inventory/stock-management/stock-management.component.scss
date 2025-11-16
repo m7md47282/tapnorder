@@ -1,0 +1,70 @@
+@use "../../../../assets/scss/helpers/table-pages" as *;
+
+.inventory-container {
+  @extend .page-container;
+}
+
+.inventory-header {
+  @extend .page-header;
+}
+
+.stock-table {
+  @extend .data-table;
+
+  .product-image {
+    @extend .table-image;
+  }
+
+  .product-name-cell {
+    @extend .name-cell;
+  }
+
+  .sku-badge {
+    @extend .info-badge;
+  }
+
+  .stock-display {
+    @extend .status-cell;
+  }
+
+  .stock-quantity {
+    font-size: 14px;
+    font-weight: 600;
+
+    &.in-stock {
+      color: #4caf50;
+    }
+
+    &.low-stock {
+      color: #ff9800;
+    }
+
+    &.out-of-stock {
+      color: #f44336;
+    }
+  }
+
+  .alert-level {
+    @extend .secondary-text;
+  }
+
+  .stock-value {
+    @extend .price-amount;
+  }
+
+  .cost-per-unit {
+    @extend .secondary-amount;
+  }
+
+  .delete-action {
+    @extend .delete-action;
+  }
+}
+
+.no-data {
+  @extend .no-data;
+}
+
+.loading-overlay {
+  @extend .loading-overlay;
+}

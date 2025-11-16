@@ -1,0 +1,165 @@
+<div class="accounting-container">
+  <div class="accounting-header">
+    <div>
+      <h1>Accounting & Finance</h1>
+      <p class="subtitle">Financial overview and transaction management</p>
+    </div>
+    <div class="header-actions">
+      <button mat-stroked-button (click)="exportReport()">
+        <mat-icon>download</mat-icon>
+        Export Report
+      </button>
+      <button mat-flat-button color="primary" (click)="addTransaction()">
+        <mat-icon>add</mat-icon>
+        Add Transaction
+      </button>
+    </div>
+  </div>
+
+  <!-- Financial Summary Cards -->
+  <div class="summary-cards">
+    <mat-card class="summary-card income">
+      <div class="card-content">
+        <div class="card-icon">
+          <mat-icon>trending_up</mat-icon>
+        </div>
+        <div class="card-info">
+          <span class="card-label">Total Income</span>
+          <span class="card-value">${{ summary.totalIncome | number:'1.2-2' }}</span>
+        </div>
+      </div>
+    </mat-card>
+
+    <mat-card class="summary-card expense">
+      <div class="card-content">
+        <div class="card-icon">
+          <mat-icon>trending_down</mat-icon>
+        </div>
+        <div class="card-info">
+          <span class="card-label">Total Expenses</span>
+          <span class="card-value">${{ summary.totalExpenses | number:'1.2-2' }}</span>
+        </div>
+      </div>
+    </mat-card>
+
+    <mat-card class="summary-card profit">
+      <div class="card-content">
+        <div class="card-icon">
+          <mat-icon>account_balance</mat-icon>
+        </div>
+        <div class="card-info">
+          <span class="card-label">Net Profit</span>
+          <span class="card-value" [class.negative]="summary.netProfit < 0">
+            ${{ summary.netProfit | number:'1.2-2' }}
+          </span>
+        </div>
+      </div>
+    </mat-card>
+
+    <mat-card class="summary-card cash">
+      <div class="card-content">
+        <div class="card-icon">
+          <mat-icon>attach_money</mat-icon>
+        </div>
+        <div class="card-info">
+          <span class="card-label">Cash on Hand</span>
+          <span class="card-value">${{ summary.cashOnHand | number:'1.2-2' }}</span>
+        </div>
+      </div>
+    </mat-card>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-row">
+    <mat-card class="chart-card">
+      <mat-card-header>
+        <mat-card-title>Income vs Expenses</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <apx-chart
+          [series]="incomeExpenseChart.series!"
+          [chart]="incomeExpenseChart.chart!"
+          [xaxis]="incomeExpenseChart.xaxis!"
+          [colors]="incomeExpenseChart.colors!">
+        </apx-chart>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="chart-card">
+      <mat-card-header>
+        <mat-card-title>Expenses by Category</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <apx-chart
+          [series]="categoryChart.series!"
+          [chart]="categoryChart.chart!"
+          [labels]="categoryChart.labels!"
+          [colors]="categoryChart.colors!">
+        </apx-chart>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Additional Financial Info -->
+  <div class="financial-info-row">
+    <mat-card class="info-card">
+      <mat-card-header>
+        <mat-card-title>Accounts Receivable</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="amount-display">
+          <span class="amount">${{ summary.accountsReceivable | number:'1.2-2' }}</span>
+          <span class="description">Money owed to you</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="info-card">
+      <mat-card-header>
+        <mat-card-title>Accounts Payable</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="amount-display">
+          <span class="amount">${{ summary.accountsPayable | number:'1.2-2' }}</span>
+          <span class="description">Money you owe</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Recent Transactions -->
+  <mat-card class="transactions-card">
+    <mat-card-header>
+      <mat-card-title>Recent Transactions</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="transactions-list">
+        <div *ngFor="let transaction of filteredTransactions" class="transaction-item">
+          <div class="transaction-icon" [class.income]="transaction.type === 'INCOME'" [class.expense]="transaction.type === 'EXPENSE'">
+            <mat-icon>{{ transaction.type === 'INCOME' ? 'arrow_downward' : 'arrow_upward' }}</mat-icon>
+          </div>
+          <div class="transaction-details">
+            <div class="transaction-main">
+              <strong>{{ transaction.description }}</strong>
+              <span class="transaction-category">{{ transaction.category }}</span>
+            </div>
+            <div class="transaction-meta">
+              <span>{{ transaction.date | date:'short' }}</span>
+              <span>{{ transaction.paymentMethod }}</span>
+            </div>
+          </div>
+          <div class="transaction-amount" [class.income]="transaction.type === 'INCOME'" [class.expense]="transaction.type === 'EXPENSE'">
+            <span *ngIf="transaction.type === 'INCOME'">+</span>
+            <span *ngIf="transaction.type === 'EXPENSE'">-</span>
+            ${{ transaction.amount | number:'1.2-2' }}
+          </div>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <div class="loading-overlay" *ngIf="isLoading">
+    <mat-spinner diameter="50"></mat-spinner>
+  </div>
+</div>
+

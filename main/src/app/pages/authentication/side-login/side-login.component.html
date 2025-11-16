@@ -1,0 +1,69 @@
+<div class="mac-login-container">
+  <!-- Animated background with subtle gradient -->
+  <div class="mac-background">
+    <div class="gradient-orb orb-1"></div>
+    <div class="gradient-orb orb-2"></div>
+    <div class="gradient-orb orb-3"></div>
+  </div>
+
+  <!-- Main login card with glassmorphism -->
+  <div class="mac-login-card">
+    <!-- Logo section -->
+    <div class="mac-logo-section">
+      <a [routerLink]="['/dashboard']" class="mac-logo-link">
+        <img src="./assets/images/logos/dark-logo.svg" class="mac-logo" alt="logo" />
+      </a>
+      <h1 class="mac-welcome-text">Welcome back</h1>
+      <p class="mac-subtitle">Sign in to continue to your account</p>
+    </div>
+
+    <!-- Login form -->
+    <form [formGroup]="form" (ngSubmit)="submit()" class="mac-login-form">
+      <div class="mac-form-group">
+        <mat-form-field appearance="outline" class="mac-form-field" color="primary">
+          <mat-label>Username</mat-label>
+          <input matInput formControlName="username" class="mac-input" />
+          <mat-icon matPrefix>person_outline</mat-icon>
+          <mat-error *ngIf="f['username'].hasError('required')">
+            Username is required
+          </mat-error>
+          <mat-error *ngIf="f['username'].hasError('minlength')">
+            Username must be at least 3 characters
+          </mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="mac-form-group">
+        <mat-form-field appearance="outline" class="mac-form-field" color="primary">
+          <mat-label>Password</mat-label>
+          <input matInput type="password" formControlName="password" class="mac-input" />
+          <mat-icon matPrefix>lock_outline</mat-icon>
+          <mat-error *ngIf="f['password'].hasError('required')">
+            Password is required
+          </mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="mac-form-options">
+        <mat-checkbox formControlName="rememberMe" color="primary" class="mac-checkbox">
+          Remember me
+        </mat-checkbox>
+        <a [routerLink]="['/']" class="mac-forgot-link">Forgot password?</a>
+      </div>
+
+      <button mat-flat-button color="primary" type="submit" class="mac-submit-btn" [disabled]="isLoading">
+        <span *ngIf="!isLoading" class="mac-btn-text">Sign In</span>
+        <span *ngIf="isLoading" class="mac-btn-text">
+          <mat-spinner diameter="20" class="mac-spinner"></mat-spinner>
+          Signing in...
+        </span>
+      </button>
+    </form>
+
+    <!-- Sign up link -->
+    <div class="mac-signup-section">
+      <span class="mac-signup-text">Don't have an account?</span>
+      <a [routerLink]="['/authentication/register']" class="mac-signup-link">Create an account</a>
+    </div>
+  </div>
+</div>

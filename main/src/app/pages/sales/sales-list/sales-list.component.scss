@@ -1,0 +1,33 @@
+@use "../../../../assets/scss/helpers/table-pages" as *;
+
+.sales-container {
+  @extend .page-container;
+}
+
+.sales-header {
+  @extend .page-header;
+}
+
+.sales-table {
+  @extend .data-table;
+
+  .items-count {
+    @extend .secondary-text;
+  }
+
+  .total-amount {
+    @extend .price-amount;
+  }
+
+  .refund-action {
+    @extend .refund-action;
+  }
+}
+
+.no-data {
+  @extend .no-data;
+}
+
+.loading-overlay {
+  @extend .loading-overlay;
+}

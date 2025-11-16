@@ -1,0 +1,24 @@
+.mainWrapper{
+    margin: 0;
+}
+
+// Hide sidebar and header when kitchen is in fullscreen mode
+body.kitchen-fullscreen-mode {
+  .mainWrapper {
+    .sidebarNav {
+      display: none !important;
+    }
+    
+    mat-sidenav-container {
+      mat-sidenav {
+        display: none !important;
+      }
+      
+      mat-sidenav-content {
+        app-header {
+          display: none !important;
+        }
+      }
+    }
+  }
+}

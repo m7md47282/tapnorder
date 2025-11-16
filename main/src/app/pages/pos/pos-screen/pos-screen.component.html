@@ -1,0 +1,479 @@
+<div class="pos-container" [class.fullscreen]="isFullscreen">
+  <!-- Fullscreen Mode: Compact Header -->
+  <div class="fullscreen-header" *ngIf="isFullscreen">
+    <div class="fullscreen-controls">
+      <h2>POS System</h2>
+      <div class="fullscreen-actions">
+        <button mat-icon-button (click)="toggleFullscreen()" matTooltip="Exit Fullscreen">
+          <mat-icon>fullscreen_exit</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="pos-layout">
+    <!-- Left Panel: Products -->
+    <div class="products-panel">
+      <!-- Search and Category Filter -->
+      <div class="pos-header">
+        <!-- Fullscreen Toggle Button (Normal Mode) -->
+        <div class="header-actions" *ngIf="!isFullscreen">
+          <button mat-icon-button (click)="toggleFullscreen()" matTooltip="Enter Fullscreen" class="fullscreen-btn">
+            <mat-icon>fullscreen</mat-icon>
+          </button>
+        </div>
+
+        <!-- Quick Filters -->
+        <div class="quick-filters">
+          <button 
+            mat-stroked-button 
+            [class.active]="activeQuickFilter === 'popular'"
+            (click)="applyQuickFilter('popular')"
+            class="quick-filter-btn">
+            <mat-icon>star</mat-icon>
+            Popular
+          </button>
+          <button 
+            mat-stroked-button 
+            [class.active]="activeQuickFilter === 'hot'"
+            (click)="applyQuickFilter('hot')"
+            class="quick-filter-btn">
+            <mat-icon>local_cafe</mat-icon>
+            Hot Coffee
+          </button>
+          <button 
+            mat-stroked-button 
+            [class.active]="activeQuickFilter === 'iced'"
+            (click)="applyQuickFilter('iced')"
+            class="quick-filter-btn">
+            <mat-icon>ac_unit</mat-icon>
+            Iced
+          </button>
+          <button 
+            mat-stroked-button 
+            [class.active]="activeQuickFilter === 'tea'"
+            (click)="applyQuickFilter('tea')"
+            class="quick-filter-btn">
+            <mat-icon>emoji_food_beverage</mat-icon>
+            Tea
+          </button>
+          <button 
+            mat-stroked-button 
+            [class.active]="activeQuickFilter === 'pastries'"
+            (click)="applyQuickFilter('pastries')"
+            class="quick-filter-btn">
+            <mat-icon>bakery_dining</mat-icon>
+            Pastries
+          </button>
+          <button 
+            mat-stroked-button 
+            [class.active]="activeQuickFilter === 'addons'"
+            (click)="applyQuickFilter('addons')"
+            class="quick-filter-btn">
+            <mat-icon>add_circle</mat-icon>
+            Add-ons
+          </button>
+          <button 
+            mat-stroked-button 
+            *ngIf="activeQuickFilter"
+            (click)="clearQuickFilter()"
+            class="quick-filter-btn clear-btn">
+            <mat-icon>clear</mat-icon>
+            Clear
+          </button>
+        </div>
+
+        <mat-form-field appearance="outline" class="search-field">
+          <mat-label>Search products...</mat-label>
+          <input matInput [formControl]="searchControl" placeholder="Search by name, SKU, or barcode">
+          <mat-icon matPrefix>search</mat-icon>
+        </mat-form-field>
+
+        <div class="category-chips">
+          <mat-chip-listbox [(ngModel)]="selectedCategory" (ngModelChange)="onCategoryChange($event)">
+            <mat-chip-option *ngFor="let category of categories" [value]="category">
+              {{ category === 'all' ? 'All' : category }}
+            </mat-chip-option>
+          </mat-chip-listbox>
+        </div>
+      </div>
+
+      <!-- Products Grid -->
+      <div class="products-grid" *ngIf="!isLoading">
+        <mat-card 
+          *ngFor="let product of filteredProducts" 
+          class="product-card"
+          [class.out-of-stock]="product.stock <= 0"
+          (click)="addToCart(product)"
+          (mousedown)="onProductPressStart(product, $event)"
+          (mouseup)="onProductPressEnd($event)"
+          (mouseleave)="onProductPressCancel()"
+          (touchstart)="onProductPressStart(product, $event)"
+          (touchend)="onProductPressEnd($event)"
+          (touchcancel)="onProductPressCancel()">
+          <div class="product-image">
+            <img [src]="product.image || '/assets/images/products/product-1.png'" [alt]="product.name" 
+                 onerror="this.src='/assets/images/products/product-1.png'">
+            <div class="price-badge">${{ product.price | number:'1.2-2' }}</div>
+            <div class="stock-badge" *ngIf="product.stock <= 0">Out of Stock</div>
+          </div>
+          <mat-card-content>
+            <h3 class="product-name">{{ product.name }}</h3>
+            <p class="product-sku">{{ product.sku }}</p>
+            <div class="product-footer" *ngIf="product.stock > 0">
+              <span class="product-stock">Stock: {{ product.stock }}</span>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <div class="loading-container" *ngIf="isLoading">
+        <mat-spinner diameter="50"></mat-spinner>
+        <p>Loading products...</p>
+      </div>
+
+      <div class="no-products" *ngIf="!isLoading && filteredProducts.length === 0">
+        <mat-icon>inventory_2</mat-icon>
+        <p>No products found</p>
+      </div>
+    </div>
+
+    <!-- Right Panel: Cart -->
+    <div class="cart-panel">
+      <div class="cart-header">
+        <div>
+          <h2>Cart</h2>
+          <span class="cart-count" *ngIf="cart.length > 0">{{ cart.length }} {{ cart.length === 1 ? 'item' : 'items' }}</span>
+        </div>
+        <button mat-icon-button (click)="clearCart()" [disabled]="cart.length === 0" matTooltip="Clear Cart">
+          <mat-icon>delete_sweep</mat-icon>
+        </button>
+      </div>
+
+      <!-- Table Selection -->
+      <div class="table-section">
+        <mat-form-field appearance="outline" class="w-100">
+          <mat-label>Table Number</mat-label>
+          <mat-select [(ngModel)]="selectedTableNumber">
+            <mat-option value="">No Table</mat-option>
+            <mat-option *ngFor="let table of availableTables" [value]="table.tableNumber">
+              Table {{ table.tableNumber }} ({{ table.capacity }} seats)
+            </mat-option>
+          </mat-select>
+          <mat-icon matPrefix>table_restaurant</mat-icon>
+        </mat-form-field>
+      </div>
+
+      <!-- Customer Selection -->
+      <div class="customer-section">
+        <div class="customer-info" *ngIf="selectedCustomer">
+          <div class="customer-details">
+            <mat-icon>person</mat-icon>
+            <div>
+              <strong>{{ selectedCustomer.name }}</strong>
+              <span *ngIf="selectedCustomer.phone">{{ selectedCustomer.phone }}</span>
+            </div>
+          </div>
+          <button mat-icon-button (click)="removeCustomer()" matTooltip="Remove Customer">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+        <button mat-stroked-button (click)="showCustomerDialog = true" *ngIf="!selectedCustomer" class="w-100">
+          <mat-icon>person_add</mat-icon>
+          Select Customer
+        </button>
+      </div>
+
+      <!-- Cart Items -->
+      <div class="cart-items">
+        <div *ngIf="cart.length === 0" class="empty-cart">
+          <mat-icon>shopping_cart</mat-icon>
+          <p>Cart is empty</p>
+          <span>Add products to start a sale</span>
+        </div>
+
+        <div *ngFor="let item of cart" class="cart-item">
+          <div class="item-info">
+            <h4>{{ item.product.name }}</h4>
+            <p class="item-sku">{{ item.product.sku }}</p>
+            <div class="item-comments" *ngIf="item.comments">
+              <mat-icon class="comment-icon">note</mat-icon>
+              <span class="comment-text">{{ item.comments }}</span>
+              <button mat-icon-button (click)="removeItemComment(item)" class="remove-comment-btn" matTooltip="Remove comment">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+            <div class="item-price-row">
+              <span>${{ item.price | number:'1.2-2' }} × {{ item.quantity }}</span>
+              <span class="item-total">${{ item.total | number:'1.2-2' }}</span>
+            </div>
+          </div>
+          <div class="item-actions">
+            <button mat-icon-button (click)="openCommentDialog(item)" matTooltip="Add comment" [color]="item.comments ? 'primary' : ''">
+              <mat-icon>{{ item.comments ? 'comment' : 'add_comment' }}</mat-icon>
+            </button>
+            <button mat-icon-button (click)="updateQuantity(item, -1)" matTooltip="Decrease">
+              <mat-icon>remove</mat-icon>
+            </button>
+            <span class="quantity-badge">{{ item.quantity }}</span>
+            <button mat-icon-button (click)="updateQuantity(item, 1)" matTooltip="Increase">
+              <mat-icon>add</mat-icon>
+            </button>
+            <button mat-icon-button (click)="removeFromCart(item)" color="warn" matTooltip="Remove">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Totals -->
+      <div class="cart-totals" *ngIf="cart.length > 0">
+        <div class="total-row">
+          <span>Subtotal:</span>
+          <span>${{ subtotal | number:'1.2-2' }}</span>
+        </div>
+        <div class="total-row">
+          <span>Tax:</span>
+          <span>${{ tax | number:'1.2-2' }}</span>
+        </div>
+        <div class="total-row discount" *ngIf="discount > 0">
+          <span>Discount:</span>
+          <span>-${{ discount | number:'1.2-2' }}</span>
+        </div>
+        <mat-divider></mat-divider>
+        <div class="total-row grand-total">
+          <span>Total:</span>
+          <span>${{ total | number:'1.2-2' }}</span>
+        </div>
+      </div>
+
+      <!-- Checkout Section -->
+      <div class="checkout-section">
+        <button 
+          mat-stroked-button 
+          color="warn" 
+          class="clear-order-btn"
+          (click)="clearCart()"
+          [disabled]="cart.length === 0 || isProcessing">
+          <mat-icon>delete_sweep</mat-icon>
+          Clear Order
+        </button>
+        <button 
+          mat-flat-button 
+          color="primary" 
+          class="checkout-btn"
+          (click)="openPaymentDialog()"
+          [disabled]="cart.length === 0 || isProcessing">
+          <mat-icon>payment</mat-icon>
+          Checkout (${{ total | number:'1.2-2' }})
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Payment Dialog -->
+<div class="payment-dialog-overlay" *ngIf="showPaymentDialog" (click)="showPaymentDialog = false">
+  <div class="payment-dialog" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <h2>Payment</h2>
+      <button mat-icon-button (click)="showPaymentDialog = false">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <div class="dialog-content">
+      <div class="total-display">
+        <h3>Total Amount</h3>
+        <h1>${{ total | number:'1.2-2' }}</h1>
+      </div>
+
+      <mat-form-field appearance="outline" class="w-100">
+        <mat-label>Payment Method</mat-label>
+        <mat-select [(ngModel)]="paymentMethod">
+          <mat-option [value]="PaymentMethod.CASH">Cash</mat-option>
+          <mat-option [value]="PaymentMethod.CARD">Card</mat-option>
+          <mat-option [value]="PaymentMethod.MOBILE_PAYMENT">Mobile Payment</mat-option>
+          <mat-option [value]="PaymentMethod.CREDIT">Credit</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="w-100" *ngIf="paymentMethod === PaymentMethod.CASH">
+        <mat-label>Cash Received</mat-label>
+        <input matInput type="number" [(ngModel)]="cashReceived" (ngModelChange)="calculateTotals()" min="0" step="0.01">
+        <mat-icon matPrefix>attach_money</mat-icon>
+      </mat-form-field>
+
+      <div class="change-display" *ngIf="paymentMethod === PaymentMethod.CASH && change >= 0">
+        <span>Change:</span>
+        <span class="change-amount">${{ change | number:'1.2-2' }}</span>
+      </div>
+
+      <mat-form-field appearance="outline" class="w-100">
+        <mat-label>Order Notes (Optional)</mat-label>
+        <textarea 
+          matInput 
+          [(ngModel)]="orderNotes" 
+          placeholder="Add any special instructions or notes for this order..."
+          rows="3"
+          maxlength="500"></textarea>
+        <mat-icon matPrefix>note</mat-icon>
+        <mat-hint>{{ orderNotes.length }}/500</mat-hint>
+      </mat-form-field>
+
+      <div class="dialog-actions">
+        <button mat-stroked-button (click)="showPaymentDialog = false">Cancel</button>
+        <button 
+          mat-flat-button 
+          color="primary" 
+          (click)="processPayment()"
+          [disabled]="isProcessing || (paymentMethod === PaymentMethod.CASH && cashReceived < total)">
+          <mat-spinner diameter="20" *ngIf="isProcessing"></mat-spinner>
+          <span *ngIf="!isProcessing">Process Payment</span>
+          <span *ngIf="isProcessing">Processing...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Customer Selection Dialog -->
+<div class="customer-dialog-overlay" *ngIf="showCustomerDialog" (click)="showCustomerDialog = false">
+  <div class="customer-dialog" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <h2>Select Customer</h2>
+      <button mat-icon-button (click)="showCustomerDialog = false">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <div class="dialog-content">
+      <mat-form-field appearance="outline" class="w-100">
+        <mat-label>Search Customer</mat-label>
+        <input matInput [(ngModel)]="customerSearchTerm" placeholder="Name, phone, or email">
+        <mat-icon matPrefix>search</mat-icon>
+      </mat-form-field>
+
+      <div class="customer-list">
+        <div class="customer-item" (click)="selectCustomer({id: '1', name: 'Walk-in Customer', isActive: true})">
+          <mat-icon>person</mat-icon>
+          <div>
+            <strong>Walk-in Customer</strong>
+            <span>No account</span>
+          </div>
+        </div>
+        <!-- Add more customers here or load from API -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Item Comment Dialog -->
+<div class="comment-dialog-overlay" *ngIf="editingCommentForItem" (click)="closeCommentDialog()">
+  <div class="comment-dialog" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <h3>Add Comment to {{ editingCommentForItem ? editingCommentForItem.product.name : '' }}</h3>
+      <button mat-icon-button (click)="closeCommentDialog()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    <div class="dialog-content">
+      <mat-form-field appearance="outline" class="w-100">
+        <mat-label>Comment / Special Instructions</mat-label>
+        <textarea 
+          matInput 
+          [(ngModel)]="itemCommentText" 
+          placeholder="e.g., Extra shot, No sugar, Decaf, Extra hot..."
+          rows="4"
+          maxlength="200"></textarea>
+        <mat-icon matPrefix>note</mat-icon>
+        <mat-hint>{{ itemCommentText.length }}/200</mat-hint>
+      </mat-form-field>
+      
+      <div class="quick-comments" *ngIf="editingCommentForItem">
+        <p class="quick-comments-label">Quick options:</p>
+        <div class="quick-comment-chips">
+          <button mat-stroked-button (click)="itemCommentText = 'Extra shot'" class="quick-chip">Extra Shot</button>
+          <button mat-stroked-button (click)="itemCommentText = 'No sugar'" class="quick-chip">No Sugar</button>
+          <button mat-stroked-button (click)="itemCommentText = 'Decaf'" class="quick-chip">Decaf</button>
+          <button mat-stroked-button (click)="itemCommentText = 'Extra hot'" class="quick-chip">Extra Hot</button>
+          <button mat-stroked-button (click)="itemCommentText = 'Oat milk'" class="quick-chip">Oat Milk</button>
+          <button mat-stroked-button (click)="itemCommentText = 'Almond milk'" class="quick-chip">Almond Milk</button>
+        </div>
+      </div>
+    </div>
+    <div class="dialog-actions">
+      <button mat-stroked-button (click)="closeCommentDialog()">Cancel</button>
+      <button mat-flat-button color="primary" (click)="saveItemComment()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Product Details Dialog -->
+<div class="product-details-overlay" *ngIf="showProductDetailsDialog" (click)="closeProductDetailsDialog()">
+  <div class="product-details-dialog" (click)="$event.stopPropagation()" *ngIf="selectedProductForDetails">
+    <div class="dialog-header">
+      <h2>Product Details</h2>
+      <button mat-icon-button (click)="closeProductDetailsDialog()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <div class="dialog-content">
+      <div class="product-details-image">
+        <img [src]="selectedProductForDetails.image || '/assets/images/products/product-1.png'" 
+             [alt]="selectedProductForDetails.name"
+             onerror="this.src='/assets/images/products/product-1.png'">
+        <div class="price-badge-large">${{ selectedProductForDetails.price | number:'1.2-2' }}</div>
+        <div class="stock-badge-large" *ngIf="selectedProductForDetails.stock <= 0">Out of Stock</div>
+      </div>
+
+      <div class="product-details-info">
+        <h3 class="product-details-name">{{ selectedProductForDetails.name }}</h3>
+        <div class="product-details-meta">
+          <div class="detail-item">
+            <mat-icon>inventory_2</mat-icon>
+            <span><strong>SKU:</strong> {{ selectedProductForDetails.sku }}</span>
+          </div>
+          <div class="detail-item" *ngIf="selectedProductForDetails.barcode">
+            <mat-icon>qr_code</mat-icon>
+            <span><strong>Barcode:</strong> {{ selectedProductForDetails.barcode }}</span>
+          </div>
+          <div class="detail-item" *ngIf="selectedProductForDetails.category">
+            <mat-icon>category</mat-icon>
+            <span><strong>Category:</strong> {{ selectedProductForDetails.category }}</span>
+          </div>
+          <div class="detail-item" *ngIf="selectedProductForDetails.stock > 0">
+            <mat-icon>check_circle</mat-icon>
+            <span><strong>Stock:</strong> {{ selectedProductForDetails.stock }} {{ selectedProductForDetails.unit || 'units' }}</span>
+          </div>
+          <div class="detail-item" *ngIf="selectedProductForDetails.taxRate">
+            <mat-icon>receipt</mat-icon>
+            <span><strong>Tax Rate:</strong> {{ (selectedProductForDetails.taxRate * 100) | number:'1.0-1' }}%</span>
+          </div>
+          <div class="detail-item" *ngIf="selectedProductForDetails.cost">
+            <mat-icon>attach_money</mat-icon>
+            <span><strong>Cost:</strong> ${{ selectedProductForDetails.cost | number:'1.2-2' }}</span>
+          </div>
+        </div>
+
+        <div class="product-description" *ngIf="selectedProductForDetails.description">
+          <h4>Description</h4>
+          <p>{{ selectedProductForDetails.description }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="dialog-actions">
+      <button mat-stroked-button (click)="closeProductDetailsDialog()">Close</button>
+      <button 
+        mat-flat-button 
+        color="primary" 
+        (click)="addToCartFromDetails()"
+        [disabled]="selectedProductForDetails.stock <= 0">
+        <mat-icon>add_shopping_cart</mat-icon>
+        Add to Cart
+      </button>
+    </div>
+  </div>
+</div>

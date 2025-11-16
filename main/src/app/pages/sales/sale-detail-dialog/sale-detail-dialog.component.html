@@ -1,0 +1,94 @@
+<div class="sale-detail-dialog">
+  <div class="dialog-header">
+    <h2 mat-dialog-title>Sale Details - {{ data.sale.saleNumber }}</h2>
+    <button mat-icon-button (click)="onClose()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <mat-dialog-content>
+    <div class="sale-info">
+      <div class="info-row">
+        <span class="label">Date:</span>
+        <span class="value">{{ formatDate(data.sale.createdAt) }}</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Customer:</span>
+        <span class="value">{{ data.sale.customerName || 'Walk-in Customer' }}</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Cashier:</span>
+        <span class="value">{{ data.sale.cashierName }}</span>
+      </div>
+      <div class="info-row">
+        <span class="label">Payment Method:</span>
+        <span class="value">{{ getPaymentMethodLabel(data.sale.paymentMethod) }}</span>
+      </div>
+      <div class="info-row" *ngIf="data.sale.paymentMethod === PaymentMethod.CASH">
+        <span class="label">Cash Received:</span>
+        <span class="value">${{ data.sale.cashReceived | number:'1.2-2' }}</span>
+      </div>
+      <div class="info-row" *ngIf="data.sale.paymentMethod === PaymentMethod.CASH && data.sale.change">
+        <span class="label">Change:</span>
+        <span class="value">${{ data.sale.change | number:'1.2-2' }}</span>
+      </div>
+    </div>
+
+    <mat-divider></mat-divider>
+
+    <div class="items-section">
+      <h3>Items</h3>
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th>Product</th>
+            <th>Quantity</th>
+            <th>Price</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of data.sale.items">
+            <td>{{ item.product.name }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>${{ item.price | number:'1.2-2' }}</td>
+            <td>${{ item.total | number:'1.2-2' }}</td>
+          </tr>
+          <tr *ngIf="data.sale.items.length === 0">
+            <td colspan="4" class="no-items">No items in this sale</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <mat-divider></mat-divider>
+
+    <div class="totals-section">
+      <div class="total-row">
+        <span>Subtotal:</span>
+        <span>${{ data.sale.subtotal | number:'1.2-2' }}</span>
+      </div>
+      <div class="total-row">
+        <span>Tax:</span>
+        <span>${{ data.sale.tax | number:'1.2-2' }}</span>
+      </div>
+      <div class="total-row" *ngIf="data.sale.discount > 0">
+        <span>Discount:</span>
+        <span>-${{ data.sale.discount | number:'1.2-2' }}</span>
+      </div>
+      <div class="total-row grand-total">
+        <span>Total:</span>
+        <span>${{ data.sale.total | number:'1.2-2' }}</span>
+      </div>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-stroked-button (click)="onPrint()">
+      <mat-icon>print</mat-icon>
+      Print Receipt
+    </button>
+    <button mat-flat-button color="primary" (click)="onClose()">Close</button>
+  </mat-dialog-actions>
+</div>
+

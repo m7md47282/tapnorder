@@ -1,0 +1,188 @@
+<div class="cookbook-container">
+  <div class="cookbook-header">
+    <div>
+      <h1>Cookbook</h1>
+      <p class="subtitle">Recipes and cooking instructions</p>
+    </div>
+    <div class="header-actions">
+      <button mat-icon-button (click)="toggleViewMode()" matTooltip="Toggle View">
+        <mat-icon>{{ viewMode === 'grid' ? 'view_list' : 'view_module' }}</mat-icon>
+      </button>
+      <button mat-flat-button color="primary" (click)="loadRecipes()">
+        <mat-icon>refresh</mat-icon>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Search and Filters -->
+  <div class="filters-section">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>Search recipes</mat-label>
+      <input matInput [formControl]="searchControl" placeholder="Search by name, ingredients, or instructions">
+      <mat-icon matPrefix>search</mat-icon>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>Category</mat-label>
+      <mat-select [formControl]="categoryFilter">
+        <mat-option *ngFor="let category of categories" [value]="category">
+          {{ category === 'all' ? 'All Categories' : category }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>Station</mat-label>
+      <mat-select [formControl]="stationFilter">
+        <mat-option *ngFor="let station of stations" [value]="station">
+          {{ station === 'all' ? 'All Stations' : station }}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <!-- Recipes Grid/List -->
+  <div *ngIf="!isLoading && filteredRecipes.length > 0" 
+       [class.recipes-grid]="viewMode === 'grid'"
+       [class.recipes-list]="viewMode === 'list'">
+    <mat-card *ngFor="let recipe of filteredRecipes" 
+              class="recipe-card"
+              (click)="selectRecipe(recipe)">
+      <mat-card-header>
+        <mat-card-title>{{ recipe.name }}</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="recipe-summary">
+          <div class="recipe-time-info">
+            <span *ngIf="recipe.prepTime > 0">
+              <mat-icon>schedule</mat-icon>
+              Prep: {{ recipe.prepTime }} min
+            </span>
+            <span *ngIf="recipe.cookingTime > 0">
+              <mat-icon>timer</mat-icon>
+              Cook: {{ recipe.cookingTime }} min
+            </span>
+            <span *ngIf="recipe.temperature">
+              <mat-icon>whatshot</mat-icon>
+              {{ recipe.temperature }}
+            </span>
+          </div>
+          <div class="recipe-ingredients-preview">
+            <strong>Ingredients:</strong>
+            <span *ngFor="let ingredient of recipe.ingredients.slice(0, 3); let last = last">
+              {{ ingredient.name }}<span *ngIf="!last">, </span>
+            </span>
+            <span *ngIf="recipe.ingredients.length > 3">...</span>
+          </div>
+        </div>
+      </mat-card-content>
+      <mat-card-actions>
+        <button mat-button color="primary" (click)="selectRecipe(recipe); $event.stopPropagation()">
+          <mat-icon>menu_book</mat-icon>
+          View Recipe
+        </button>
+        <button mat-button (click)="printRecipe(recipe); $event.stopPropagation()">
+          <mat-icon>print</mat-icon>
+          Print
+        </button>
+      </mat-card-actions>
+    </mat-card>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!isLoading && filteredRecipes.length === 0" class="empty-state">
+    <mat-icon class="empty-icon">menu_book</mat-icon>
+    <h2>No recipes found</h2>
+    <p>There are no recipes matching your search criteria.</p>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-state">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Loading recipes...</p>
+  </div>
+</div>
+
+<!-- Recipe Detail Dialog -->
+<div *ngIf="selectedRecipe" class="recipe-dialog-overlay" (click)="closeRecipeDetail()">
+  <div class="recipe-dialog" (click)="$event.stopPropagation()">
+    <div class="recipe-dialog-header">
+      <h2>{{ selectedRecipe.name }}</h2>
+      <button mat-icon-button (click)="closeRecipeDetail()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+    
+    <div class="recipe-dialog-content">
+      <!-- Time and Temperature Info -->
+      <div class="recipe-meta">
+        <div class="meta-item" *ngIf="selectedRecipe.prepTime > 0">
+          <mat-icon>schedule</mat-icon>
+          <div>
+            <span class="meta-label">Prep Time</span>
+            <span class="meta-value">{{ selectedRecipe.prepTime }} minutes</span>
+          </div>
+        </div>
+        <div class="meta-item" *ngIf="selectedRecipe.cookingTime > 0">
+          <mat-icon>timer</mat-icon>
+          <div>
+            <span class="meta-label">Cooking Time</span>
+            <span class="meta-value">{{ selectedRecipe.cookingTime }} minutes</span>
+          </div>
+        </div>
+        <div class="meta-item" *ngIf="selectedRecipe.temperature">
+          <mat-icon>whatshot</mat-icon>
+          <div>
+            <span class="meta-label">Temperature</span>
+            <span class="meta-value">{{ selectedRecipe.temperature }}</span>
+          </div>
+        </div>
+        <div class="meta-item" *ngIf="selectedRecipe.prepTime > 0 || selectedRecipe.cookingTime > 0">
+          <mat-icon>access_time</mat-icon>
+          <div>
+            <span class="meta-label">Total Time</span>
+            <span class="meta-value">{{ (selectedRecipe.prepTime || 0) + (selectedRecipe.cookingTime || 0) }} minutes</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ingredients -->
+      <div class="recipe-section">
+        <h3>Ingredients</h3>
+        <mat-list>
+          <mat-list-item *ngFor="let ingredient of selectedRecipe.ingredients">
+            <mat-icon matListItemIcon>circle</mat-icon>
+            <span matListItemTitle>{{ ingredient.name }}</span>
+            <span matListItemLine>{{ ingredient.quantity }} {{ ingredient.unit }}</span>
+          </mat-list-item>
+        </mat-list>
+      </div>
+
+      <!-- Instructions -->
+      <div class="recipe-section">
+        <h3>Instructions</h3>
+        <ol class="instructions-list">
+          <li *ngFor="let instruction of selectedRecipe.instructions">
+            {{ instruction }}
+          </li>
+        </ol>
+      </div>
+
+      <!-- Notes -->
+      <div class="recipe-section" *ngIf="selectedRecipe.notes">
+        <h3>Notes</h3>
+        <p class="recipe-notes">{{ selectedRecipe.notes }}</p>
+      </div>
+    </div>
+
+    <div class="recipe-dialog-actions">
+      <button mat-stroked-button (click)="closeRecipeDetail()">Close</button>
+      <button mat-flat-button color="primary" (click)="printRecipe(selectedRecipe)">
+        <mat-icon>print</mat-icon>
+        Print Recipe
+      </button>
+    </div>
+  </div>
+</div>
+

@@ -1,0 +1,60 @@
+<div class="stock-adjustment-dialog">
+  <div class="dialog-header">
+    <h2 mat-dialog-title>Adjust Stock - {{ data.product.name }}</h2>
+    <button mat-icon-button (click)="onCancel()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <mat-dialog-content>
+    <div class="current-stock-info">
+      <div class="stock-display">
+        <span class="label">Current Stock:</span>
+        <span class="value">{{ currentStock }} {{ data.product.unit || 'units' }}</span>
+      </div>
+    </div>
+
+    <form [formGroup]="adjustmentForm" class="adjustment-form">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Adjustment Type</mat-label>
+        <mat-select formControlName="type">
+          <mat-option value="IN">Stock In (Add)</mat-option>
+          <mat-option value="OUT">Stock Out (Remove)</mat-option>
+          <mat-option value="ADJUSTMENT">Set Stock (Adjust)</mat-option>
+        </mat-select>
+        <mat-error *ngIf="f['type'].hasError('required')">Type is required</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>{{ adjustmentType === 'ADJUSTMENT' ? 'New Stock Quantity' : 'Quantity' }}</mat-label>
+        <input matInput type="number" formControlName="quantity" placeholder="0" min="0" step="1">
+        <mat-hint *ngIf="adjustmentType === 'IN'">Adding to current stock</mat-hint>
+        <mat-hint *ngIf="adjustmentType === 'OUT'">Removing from current stock</mat-hint>
+        <mat-hint *ngIf="adjustmentType === 'ADJUSTMENT'">Setting new stock level</mat-hint>
+        <mat-error *ngIf="f['quantity'].hasError('required')">Quantity is required</mat-error>
+        <mat-error *ngIf="f['quantity'].hasError('min')">Quantity must be positive</mat-error>
+      </mat-form-field>
+
+      <div class="new-stock-preview" *ngIf="adjustmentForm.get('quantity')?.value">
+        <span class="label">New Stock:</span>
+        <span class="value" [class.warn]="newStock < 10" [class.error]="newStock === 0">
+          {{ newStock }} {{ data.product.unit || 'units' }}
+        </span>
+      </div>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Reason *</mat-label>
+        <textarea matInput formControlName="reason" rows="3" placeholder="Enter reason for stock adjustment"></textarea>
+        <mat-error *ngIf="f['reason'].hasError('required')">Reason is required</mat-error>
+      </mat-form-field>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-stroked-button (click)="onCancel()">Cancel</button>
+    <button mat-flat-button color="primary" (click)="onSubmit()" [disabled]="adjustmentForm.invalid">
+      Apply Adjustment
+    </button>
+  </mat-dialog-actions>
+</div>
+

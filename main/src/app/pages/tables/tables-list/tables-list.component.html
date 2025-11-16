@@ -1,0 +1,295 @@
+<div class="tables-container">
+  <!-- Header -->
+  <div class="tables-header">
+    <div>
+      <h1>Tables Management</h1>
+      <p class="subtitle">Monitor table status and orders</p>
+    </div>
+    <div class="header-actions">
+      <button 
+        mat-icon-button 
+        (click)="autoRefresh = !autoRefresh" 
+        [matTooltip]="autoRefresh ? 'Auto-refresh ON' : 'Auto-refresh OFF'"
+        [class.active]="autoRefresh">
+        <mat-icon [class.active]="autoRefresh">refresh</mat-icon>
+      </button>
+      <button 
+        mat-flat-button 
+        color="primary" 
+        (click)="loadTables()" 
+        [disabled]="isLoading">
+        <mat-icon>refresh</mat-icon>
+        Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-section">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>Search tables...</mat-label>
+      <input matInput (input)="onSearchChange($any($event.target).value)" placeholder="Search by table number, location, or server">
+      <mat-icon matPrefix>search</mat-icon>
+    </mat-form-field>
+
+    <div class="status-filters">
+      <button 
+        mat-stroked-button 
+        [class.active]="statusFilter === 'all'"
+        (click)="onStatusFilterChange('all')">
+        All
+      </button>
+      <button 
+        mat-stroked-button 
+        [class.active]="statusFilter === TableStatus.AVAILABLE"
+        [color]="statusFilter === TableStatus.AVAILABLE ? 'primary' : ''"
+        (click)="onStatusFilterChange(TableStatus.AVAILABLE)">
+        <mat-icon>check_circle</mat-icon>
+        Available
+      </button>
+      <button 
+        mat-stroked-button 
+        [class.active]="statusFilter === TableStatus.OCCUPIED"
+        [color]="statusFilter === TableStatus.OCCUPIED ? 'warn' : ''"
+        (click)="onStatusFilterChange(TableStatus.OCCUPIED)">
+        <mat-icon>restaurant</mat-icon>
+        Occupied
+      </button>
+      <button 
+        mat-stroked-button 
+        [class.active]="statusFilter === TableStatus.RESERVED"
+        [color]="statusFilter === TableStatus.RESERVED ? 'accent' : ''"
+        (click)="onStatusFilterChange(TableStatus.RESERVED)">
+        <mat-icon>event</mat-icon>
+        Reserved
+      </button>
+      <button 
+        mat-stroked-button 
+        [class.active]="statusFilter === TableStatus.CLEANING"
+        (click)="onStatusFilterChange(TableStatus.CLEANING)">
+        <mat-icon>cleaning_services</mat-icon>
+        Cleaning
+      </button>
+    </div>
+  </div>
+
+  <!-- Cinema Style Seating Layout -->
+  @if (!isLoading) {
+  <div class="cinema-layout">
+    <!-- Screen/Entrance Indicator -->
+    <div class="screen-indicator">
+      <div class="screen-line"></div>
+      <span class="screen-label">Entrance</span>
+      <div class="screen-line"></div>
+    </div>
+
+    <!-- Tables arranged in rows like cinema seats -->
+    <div class="seating-area">
+      <!-- Group tables by location -->
+      @for (location of getLocations(); track location) {
+        @if (getTablesByLocation(location).length > 0) {
+        <div class="location-section">
+          <h3 class="location-title">{{ location || 'Main Area' }}</h3>
+          @for (row of getTableRows(location); track row.label) {
+          <div class="seats-row">
+            <div class="row-label">{{ row.label }}</div>
+            <div class="seats-container">
+              @for (table of row.tables; track table.id) {
+                <div 
+                  class="seat"
+                  [class.available]="table.status === TableStatus.AVAILABLE"
+                  [class.occupied]="table.status === TableStatus.OCCUPIED"
+                  [class.reserved]="table.status === TableStatus.RESERVED"
+                  [class.cleaning]="table.status === TableStatus.CLEANING"
+                  [class.out-of-service]="table.status === TableStatus.OUT_OF_SERVICE"
+                  [matTooltip]="getTableTooltip(table)"
+                  (click)="openTableDetails(table)">
+                  <div class="seat-number">{{ table.tableNumber }}</div>
+                  <div class="seat-capacity">{{ table.capacity }}</div>
+                  <div class="seat-status-icon">
+                    <mat-icon>{{ getStatusIcon(table.status) }}</mat-icon>
+                  </div>
+                  @if (table.currentOrder) {
+                    <div class="seat-order-indicator">
+                      <mat-icon>receipt</mat-icon>
+                    </div>
+                  }
+                  @if (table.seatedAt) {
+                    <div class="seat-time">
+                      {{ getSeatedTime(table) }}
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+          }
+        </div>
+        }
+      }
+    </div>
+
+    <!-- Legend -->
+    <div class="legend">
+      <h4>Status Legend</h4>
+      <div class="legend-items">
+        <div class="legend-item">
+          <div class="legend-seat available"></div>
+          <span>Available</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-seat occupied"></div>
+          <span>Occupied</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-seat reserved"></div>
+          <span>Reserved</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-seat cleaning"></div>
+          <span>Cleaning</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-seat out-of-service"></div>
+          <span>Out of Service</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  }
+
+  <!-- Loading State -->
+  @if (isLoading) {
+  <div class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Loading tables...</p>
+  </div>
+  }
+
+  <!-- Empty State -->
+  @if (!isLoading && filteredTables.length === 0) {
+  <div class="empty-state">
+    <mat-icon>table_restaurant</mat-icon>
+    <p>No tables found</p>
+    @if (statusFilter !== 'all') {
+    <span>Try changing the filter</span>
+    }
+  </div>
+  }
+</div>
+
+<!-- Table Details Dialog -->
+@if (showTableDetails && selectedTable) {
+<div class="table-details-overlay" (click)="closeTableDetails()">
+  <div class="table-details-dialog" (click)="$event.stopPropagation()">
+    <div class="dialog-header">
+      <h2>Table {{ selectedTable.tableNumber }} - Details</h2>
+      <button mat-icon-button (click)="closeTableDetails()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <div class="dialog-content">
+      <div class="detail-section">
+        <h3>Table Information</h3>
+        <div class="detail-row">
+          <span class="label">Table Number:</span>
+          <span class="value">{{ selectedTable.tableNumber }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Capacity:</span>
+          <span class="value">{{ selectedTable.capacity }} seats</span>
+        </div>
+        <div class="detail-row">
+          <span class="label">Status:</span>
+          <mat-chip [color]="getStatusColor(selectedTable.status)">
+            {{ selectedTable.status }}
+          </mat-chip>
+        </div>
+        @if (selectedTable.location) {
+        <div class="detail-row">
+          <span class="label">Location:</span>
+          <span class="value">{{ selectedTable.location }}</span>
+        </div>
+        }
+        @if (selectedTable.serverName) {
+        <div class="detail-row">
+          <span class="label">Server:</span>
+          <span class="value">{{ selectedTable.serverName }}</span>
+        </div>
+        }
+        @if (selectedTable.seatedAt) {
+        <div class="detail-row">
+          <span class="label">Seated At:</span>
+          <span class="value">{{ getSeatedTime(selectedTable) }} ago</span>
+        </div>
+        }
+        @if (selectedTable.reservationTime) {
+        <div class="detail-row">
+          <span class="label">Reservation Time:</span>
+          <span class="value">{{ getReservationTime(selectedTable) }}</span>
+        </div>
+        }
+        @if (selectedTable.notes) {
+        <div class="detail-row">
+          <span class="label">Notes:</span>
+          <span class="value">{{ selectedTable.notes }}</span>
+        </div>
+        }
+      </div>
+
+      @if (selectedTable.currentOrder) {
+      <div class="detail-section">
+        <h3>Current Order</h3>
+        <div class="order-details-full">
+          <div class="detail-row">
+            <span class="label">Order Number:</span>
+            <span class="value">{{ selectedTable.currentOrder.saleNumber }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Subtotal:</span>
+            <span class="value">${{ selectedTable.currentOrder.subtotal | number:'1.2-2' }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Tax:</span>
+            <span class="value">${{ selectedTable.currentOrder.tax | number:'1.2-2' }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Total:</span>
+            <span class="value total-amount">${{ selectedTable.currentOrder.total | number:'1.2-2' }}</span>
+          </div>
+          <div class="detail-row">
+            <span class="label">Status:</span>
+            <mat-chip [color]="selectedTable.currentOrder.status === 'COMPLETED' ? 'primary' : 'accent'">
+              {{ selectedTable.currentOrder.status }}
+            </mat-chip>
+          </div>
+        </div>
+      </div>
+      }
+    </div>
+
+    <div class="dialog-actions">
+      <button mat-stroked-button (click)="closeTableDetails()">Close</button>
+      @if (selectedTable.status === TableStatus.AVAILABLE || selectedTable.status === TableStatus.RESERVED) {
+      <button 
+        mat-flat-button 
+        color="primary" 
+        (click)="openPOSForTable(selectedTable); closeTableDetails()">
+        <mat-icon>add</mat-icon>
+        Add Order
+      </button>
+      }
+      @if (selectedTable.status === TableStatus.OCCUPIED) {
+      <button 
+        mat-flat-button 
+        color="primary" 
+        (click)="openPOSForTable(selectedTable); closeTableDetails()">
+        <mat-icon>receipt</mat-icon>
+        View Order
+      </button>
+      }
+    </div>
+  </div>
+</div>
+}

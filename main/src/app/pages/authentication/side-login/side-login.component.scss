@@ -1,0 +1,426 @@
+@use "../../../../assets/scss/colors" as *;
+@use "../../../../assets/scss/variables" as *;
+
+.mac-login-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: linear-gradient(135deg, $color-neutral-bg-light 0%, lighten($color-neutral-bg-light, 5%) 100%);
+  
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      radial-gradient(circle at 20% 50%, color-with-opacity($color-primary, $opacity-light) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, color-with-opacity($color-secondary, $opacity-light) 0%, transparent 50%),
+      radial-gradient(circle at 40% 20%, color-with-opacity($color-secondary, $opacity-light) 0%, transparent 50%);
+    animation: macBackgroundPulse 20s ease-in-out infinite;
+  }
+}
+
+@keyframes macBackgroundPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+.mac-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.gradient-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.4;
+  animation: macOrbFloat 25s ease-in-out infinite;
+}
+
+.orb-1 {
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, color-with-opacity($color-primary, $opacity-medium) 0%, color-with-opacity($color-primary, 0.05) 100%);
+  top: -100px;
+  left: -100px;
+  animation-delay: 0s;
+}
+
+.orb-2 {
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, color-with-opacity($color-secondary, $opacity-medium) 0%, color-with-opacity($color-secondary, 0.05) 100%);
+  bottom: -150px;
+  right: -150px;
+  animation-delay: 5s;
+}
+
+.orb-3 {
+  width: 350px;
+  height: 350px;
+  background: radial-gradient(circle, color-with-opacity($color-secondary, $opacity-medium) 0%, color-with-opacity($color-secondary, 0.05) 100%);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation-delay: 10s;
+}
+
+@keyframes macOrbFloat {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(50px, -50px) scale(1.1);
+  }
+  66% {
+    transform: translate(-50px, 50px) scale(0.9);
+  }
+}
+
+.mac-login-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 440px;
+  padding: 48px 40px;
+  background: color-with-opacity($color-white, $opacity-overlay);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-radius: 24px;
+  border: 1px solid color-with-opacity($color-white, $opacity-heavy);
+  box-shadow: 
+    0 8px 32px color-with-opacity($color-black, $opacity-light),
+    0 2px 8px color-with-opacity($color-black, 0.05),
+    inset 0 1px 0 color-with-opacity($color-white, 0.6);
+  animation: macCardFadeIn 0.6s ease-out;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+  &:hover {
+    box-shadow: 
+      0 12px 40px color-with-opacity($color-black, 0.12),
+      0 4px 12px color-with-opacity($color-black, 0.08),
+      inset 0 1px 0 color-with-opacity($color-white, 0.6);
+  }
+}
+
+@keyframes macCardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.mac-logo-section {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.mac-logo-link {
+  display: inline-block;
+  transition: transform 0.3s ease;
+  
+  &:hover {
+    transform: scale(1.05);
+  }
+}
+
+.mac-logo {
+  height: 48px;
+  width: auto;
+  margin-bottom: 24px;
+  filter: drop-shadow(0 2px 4px color-with-opacity($color-black, $opacity-light));
+}
+
+.mac-welcome-text {
+  font-size: 32px;
+  font-weight: 600;
+  color: $color-neutral-text;
+  margin: 0 0 8px 0;
+  letter-spacing: -0.5px;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+}
+
+.mac-subtitle {
+  font-size: 15px;
+  color: $color-neutral-text-secondary;
+  margin: 0;
+  font-weight: 400;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+}
+
+.mac-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.mac-form-group {
+  width: 100%;
+}
+
+.mac-form-field {
+  width: 100%;
+  
+  ::ng-deep {
+    .mat-mdc-text-field-wrapper {
+      background: color-with-opacity($color-white, 0.9);
+      border-radius: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .mat-mdc-form-field-focus-overlay {
+      background: transparent;
+    }
+
+    .mdc-notched-outline {
+      border-radius: 12px;
+      border-color: color-with-opacity($color-black, 0.12) !important;
+      transition: all 0.2s ease;
+    }
+
+    .mdc-notched-outline__leading,
+    .mdc-notched-outline__notch,
+    .mdc-notched-outline__trailing {
+      border-color: color-with-opacity($color-black, 0.12) !important;
+    }
+
+    &.mat-focused {
+      .mdc-notched-outline__leading,
+      .mdc-notched-outline__notch,
+      .mdc-notched-outline__trailing {
+        border-color: var(--mat-sys-primary) !important;
+        border-width: 2px !important;
+      }
+
+      .mat-mdc-text-field-wrapper {
+        background: $color-white;
+        box-shadow: 0 2px 8px color-with-opacity($color-black, 0.08);
+      }
+    }
+
+    .mat-mdc-form-field-icon-prefix {
+      color: $color-neutral-text-secondary;
+      margin-right: 8px;
+    }
+
+    .mat-mdc-input-element {
+      font-size: 15px;
+      color: $color-neutral-text;
+      padding: 12px 0;
+    }
+
+    .mat-mdc-form-field-label {
+      color: $color-neutral-text-secondary;
+      font-size: 15px;
+    }
+
+    .mat-mdc-form-field-error {
+      font-size: 12px;
+      margin-top: 4px;
+    }
+  }
+}
+
+.mac-form-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: -8px;
+  margin-bottom: 8px;
+}
+
+.mac-checkbox {
+  ::ng-deep {
+    .mdc-checkbox {
+      .mdc-checkbox__native-control:enabled:checked ~ .mdc-checkbox__background {
+        background-color: var(--mat-sys-primary);
+        border-color: var(--mat-sys-primary);
+      }
+    }
+  }
+}
+
+.mac-forgot-link {
+  color: var(--mat-sys-primary);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: var(--mat-sys-primary);
+    text-decoration: underline;
+  }
+}
+
+.mac-submit-btn {
+  width: 100%;
+  height: 52px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  margin-top: 8px;
+  background: linear-gradient(135deg, var(--mat-sys-primary) 0%, var(--mat-sys-secondary) 100%);
+  box-shadow: 0 4px 12px color-with-opacity($color-primary, $opacity-heavy);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, color-with-opacity($color-white, 0.2), transparent);
+    transition: left 0.5s ease;
+  }
+
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px color-with-opacity($color-primary, 0.4);
+
+    &::before {
+      left: 100%;
+    }
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .mac-btn-text {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+}
+
+.mac-spinner {
+  display: inline-block;
+  
+  ::ng-deep {
+    circle {
+      stroke: white;
+    }
+  }
+}
+
+.mac-signup-section {
+  text-align: center;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid color-with-opacity($color-black, 0.08);
+}
+
+.mac-signup-text {
+  font-size: 14px;
+  color: $color-neutral-text-secondary;
+  margin-right: 6px;
+}
+
+.mac-signup-link {
+  color: var(--mat-sys-primary);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: var(--mat-sys-primary);
+    text-decoration: underline;
+  }
+}
+
+// Responsive design
+@media (max-width: 600px) {
+  .mac-login-card {
+    max-width: calc(100% - 32px);
+    padding: 36px 28px;
+    border-radius: 20px;
+  }
+
+  .mac-welcome-text {
+    font-size: 28px;
+  }
+
+  .mac-logo {
+    height: 40px;
+  }
+}
+
+// Dark mode support (optional)
+@media (prefers-color-scheme: dark) {
+  .mac-login-card {
+    // background: color-with-opacity(lighten($color-neutral-bg-light, 10%), $opacity-overlay);
+    // border-color: color-with-opacity($color-white, $opacity-light);
+    background: rgb(255 255 255 / 78%);
+    border-color: rgb(255 255 255 / 30%);
+  }
+
+  .mac-welcome-text {
+    color: darken($color-neutral-text, 20%);
+  }
+
+  .mac-subtitle {
+    color: lighten($color-neutral-text-secondary, 10%);
+  }
+
+  .mac-form-field {
+    ::ng-deep {
+      .mat-mdc-text-field-wrapper {
+        background: color-with-opacity($color-white, 0.758);
+      }
+
+      .mdc-notched-outline__leading,
+      .mdc-notched-outline__notch,
+      .mdc-notched-outline__trailing {
+        border-color: color-with-opacity($color-white, $opacity-medium) !important;
+      }
+
+      .mat-mdc-input-element {
+        color: lighten($color-neutral-bg-light, 40%);
+      }
+
+      .mat-mdc-form-field-label {
+        color: lighten($color-neutral-text-secondary, 10%);
+      }
+    }
+  }
+
+  .mac-signup-section {
+    border-top-color: color-with-opacity($color-white, $opacity-light);
+  }
+}
+
+

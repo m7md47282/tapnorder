@@ -1,0 +1,3657 @@
+@use "../../../assets/scss/variables" as *;
+@use "../../../assets/scss/colors" as *;
+
+// ============================================
+// GUEST MENU - Mobile Food Delivery App Design
+// ============================================
+// Pixel-perfect recreation of modern food delivery app
+// Mobile-first design with clean cards and smooth scrolling
+// iOS-inspired glassmorphism design
+// ============================================
+
+.guest-menu-container {
+  width: 100%;
+  min-height: 100vh;
+  background: linear-gradient(
+    135deg, 
+    color-with-opacity($color-primary, 0.01) 0%, 
+    color-with-opacity($color-secondary, 0.01) 25%, 
+    color-with-opacity($color-primary-light, 0.02) 50%, 
+    color-with-opacity($color-secondary-light, 0.02) 75%, 
+    $color-neutral-bg-subtle 100%
+  );
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+  position: relative;
+  overflow-x: hidden;
+  
+  // Safe area insets for mobile devices (notches, etc.)
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+// Status Bar (Mobile) - iOS Glass Effect
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  padding-top: calc(8px + env(safe-area-inset-top));
+  background: color-with-opacity($color-white, 0.05);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 0.5px solid color-with-opacity($color-white, 0.08);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  color: $color-white;
+  font-size: 14px;
+  font-weight: 600;
+  text-shadow: 0 1px 2px $color-neutral-shadow;
+
+  .time {
+    font-weight: 600;
+  }
+
+  .status-icons {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+      color: white;
+    }
+
+    .battery {
+      font-size: 12px;
+      margin-left: 2px;
+    }
+  }
+}
+
+// Hero Section with Blurred Background
+.hero-section {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 50vh;
+  min-height: 300px;
+  overflow: hidden;
+  position: relative;
+  
+  // Background image with blur - using absolute only for background layer
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url('/assets/images/products/product-1.png');
+    background-size: cover;
+    background-position: center;
+    filter: blur(5px);
+    transform: scale(1.1);
+    z-index: 0;
+  }
+  
+  // Overlay
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: color-with-opacity($color-black, 0.1);
+    z-index: 1;
+  }
+  
+  // All children above overlay
+  > * {
+    position: relative;
+    z-index: 2;
+  }
+}
+
+.hero-background {
+  display: none; // Using CSS background instead
+}
+
+.hero-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 48px 16px 60px;
+  grid-row: 1;
+
+  .nav-btn {
+    width: 40px;
+    height: 40px;
+    background: color-with-opacity($color-white, 0.3);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 0.5px solid color-with-opacity($color-white, 0.15);
+    border-radius: 50%;
+    color: $color-white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 
+      0 8px 32px color-with-opacity($color-black, 0.2),
+      inset 0 1px 0 color-with-opacity($color-white, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      filter: drop-shadow(0 1px 2px $color-neutral-shadow);
+    }
+
+    &:hover {
+      background: color-with-opacity($color-white, 0.18);
+      transform: scale(1.05);
+      box-shadow: 
+        0 12px 40px color-with-opacity($color-black, 0.08),
+        inset 0 1px 0 color-with-opacity($color-white, 0.25);
+    }
+
+    &:active {
+      transform: scale(0.95);
+      background: color-with-opacity($color-white, 0.1);
+    }
+  }
+
+  .hero-nav-right {
+    display: flex;
+    gap: 8px;
+  }
+}
+
+// Restaurant Info Card - iOS Glass Effect
+.restaurant-info-card {
+  grid-row: 3;
+  background: color-with-opacity($color-white, 0.93);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-radius: 24px 24px 0 0;
+  border-top: 0.5px solid color-with-opacity($color-white, 0.25);
+  border-left: 0.5px solid color-with-opacity($color-white, 0.15);
+  border-right: 0.5px solid color-with-opacity($color-white, 0.15);
+  padding: 24px 20px;
+  margin-top: auto;
+  // transform: translateY(80px); // Overlap effect without absolute positioning
+  box-shadow: 
+    0 -8px 32px color-with-opacity($color-black, 0.06),
+    inset 0 1px 0 color-with-opacity($color-white, 0.3);
+}
+
+.restaurant-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+
+  .logo-placeholder {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, color-with-opacity($color-success, 0.7) 0%, color-with-opacity($color-success, 0.7) 100%);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 0.5px solid color-with-opacity($color-white, 0.15);
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 
+      0 8px 32px color-with-opacity($color-success, 0.12),
+      inset 0 1px 0 color-with-opacity($color-white, 0.2);
+
+    .logo-text {
+      font-size: 10px;
+      font-weight: 700;
+      color: $color-white;
+      text-align: center;
+      line-height: 1.2;
+      padding: 4px;
+    }
+  }
+}
+
+.restaurant-name {
+  font-size: 24px;
+  font-weight: 700;
+  color: $color-neutral-text;
+  text-align: center;
+  margin: 8px 0 4px;
+  letter-spacing: -0.5px;
+  text-shadow: 0 1px 2px color-with-opacity($color-white, 0.8);
+}
+
+.restaurant-cuisine {
+  font-size: 14px;
+  color: $color-neutral-text-secondary;
+  text-align: center;
+  margin: 0 0 12px;
+  font-weight: 500;
+}
+
+.restaurant-rating {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 12px;
+
+  .star-icon {
+    color: $color-warning;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  .rating-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: $color-neutral-text;
+    text-shadow: 0 1px 2px color-with-opacity($color-white, 0.8);
+  }
+
+  .rating-count {
+    font-size: 14px;
+    color: $color-neutral-text-secondary;
+    font-weight: 500;
+  }
+}
+
+.restaurant-badges {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 16px;
+
+  .badge-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    background: color-with-opacity($color-white, 0.2);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 0.5px solid color-with-opacity($color-white, 0.15);
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    color: $color-neutral-text;
+    box-shadow: 
+      0 4px 16px color-with-opacity($color-black, 0.04),
+      inset 0 1px 0 color-with-opacity($color-white, 0.25);
+
+    .trophy-icon {
+      color: $color-warning;
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    .check-icon {
+      color: $color-success;
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    &.price-match {
+      background: color-with-opacity($color-success-light, 0.15);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border-color: color-with-opacity($color-success, 0.15);
+      color: darken($color-success, 20%);
+    }
+  }
+}
+
+.delivery-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 12px;
+  padding-bottom: 16px;
+  border-bottom: 0.5px solid color-with-opacity($color-neutral-border, 0.25);
+
+  .delivery-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    color: $color-neutral-text;
+    font-weight: 600;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: $color-neutral-text-secondary;
+      filter: drop-shadow(0 1px 1px color-with-opacity($color-white, 0.5));
+    }
+  }
+}
+
+.delivery-by {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 16px;
+  font-size: 12px;
+  color: $color-neutral-text-secondary;
+  font-weight: 500;
+
+  .talabat-logo {
+    font-weight: 700;
+    color: #ff6b35;
+    font-size: 14px;
+  }
+
+  .info-btn {
+    width: 20px;
+    height: 20px;
+    color: #999;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+}
+
+// Promotional Banners - iOS Glass Effect
+.promo-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: 16px;
+  margin-bottom: 12px;
+  border: 0.5px solid color-with-opacity($color-white, 0.1);
+
+  &.purple {
+    background: color-with-opacity($color-secondary, 0.77);
+    backdrop-filter: blur(30px) saturate(180%);
+    -webkit-backdrop-filter: blur(30px) saturate(180%);
+    color: white;
+    box-shadow: 
+      0 8px 32px color-with-opacity($color-secondary, 0.12),
+      inset 0 1px 0 color-with-opacity($color-white, 0.15);
+  }
+
+  .promo-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .promo-btn {
+    background: color-with-opacity($color-white, 0.45);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 0.5px solid color-with-opacity($color-white, 0.25);
+    color: #9c27b0;
+    font-weight: 700;
+    font-size: 12px;
+    padding: 4px 16px;
+    border-radius: 20px;
+    min-width: auto;
+    height: 32px;
+    box-shadow: 
+      0 4px 12px color-with-opacity($color-black, 0.05),
+      inset 0 1px 0 color-with-opacity($color-white, 0.3);
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: color-with-opacity($color-white, 0.5);
+      transform: scale(1.05);
+    }
+  }
+}
+
+.offer-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: color-with-opacity($color-warning-light, 0.3);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border-radius: 16px;
+  border: 0.5px solid color-with-opacity($color-warning, 0.2);
+  box-shadow: 
+    0 8px 32px color-with-opacity($color-warning, 0.08),
+    inset 0 1px 0 color-with-opacity($color-white, 0.25);
+
+  .offer-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+
+    .offer-icon {
+      color: #ff9800;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .offer-btn {
+    background: color-with-opacity($color-white, 0.3);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 0.5px solid color-with-opacity($color-warning, 0.25);
+    color: #ff9800;
+    font-weight: 700;
+    font-size: 12px;
+    padding: 4px 16px;
+    border-radius: 20px;
+    min-width: auto;
+    height: 32px;
+    box-shadow: 
+      0 4px 12px color-with-opacity($color-warning, 0.08),
+      inset 0 1px 0 color-with-opacity($color-white, 0.3);
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: color-with-opacity($color-white, 0.4);
+      transform: scale(1.05);
+    }
+  }
+}
+
+// Order Status Wrapper
+.order-status-wrapper {
+  padding: 16px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+// Last Orders Section
+.last-orders-section {
+  padding: 0 16px;
+  max-width: 600px;
+  margin: 0 auto 24px;
+
+  .last-orders-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background: $color-white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px color-with-opacity($color-black, 0.08);
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      box-shadow: 0 4px 12px color-with-opacity($color-black, 0.12);
+    }
+
+    .header-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .orders-icon {
+        color: $color-primary;
+        font-size: 24px;
+        width: 24px;
+        height: 24px;
+      }
+
+      .orders-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: $color-neutral-text;
+      }
+
+      .orders-count {
+        font-size: 14px;
+        color: $color-neutral-text-secondary;
+        font-weight: 500;
+      }
+    }
+
+    .expand-icon {
+      color: $color-neutral-text-secondary;
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+      transition: transform 0.3s ease;
+
+      &.rotated {
+        transform: rotate(180deg);
+      }
+    }
+  }
+
+  .last-orders-list {
+    margin-top: 8px;
+    background: $color-white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px color-with-opacity($color-black, 0.08);
+    overflow: hidden;
+    animation: slideDown 0.3s ease;
+    max-height: 400px;
+    overflow-y: auto;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: color-with-opacity($color-neutral-border, 0.1);
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: color-with-opacity($color-primary, 0.3);
+      border-radius: 3px;
+
+      &:hover {
+        background: color-with-opacity($color-primary, 0.5);
+      }
+    }
+
+    .last-order-item {
+      padding: 16px;
+      border-bottom: 1px solid color-with-opacity($color-neutral-border, 0.2);
+      transition: background 0.2s ease;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &:hover {
+        background: $color-neutral-bg-subtle;
+      }
+
+      .order-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+
+        .order-info {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+
+          .order-number {
+            font-size: 15px;
+            font-weight: 600;
+            color: $color-neutral-text;
+          }
+
+          .order-date {
+            font-size: 12px;
+            color: $color-neutral-text-secondary;
+          }
+        }
+
+        .order-status-badge {
+          font-size: 11px;
+          font-weight: 600;
+          padding: 4px 10px;
+          border-radius: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+
+          &.status-pending {
+            background: color-with-opacity($color-warning, 0.15);
+            color: $color-warning;
+          }
+
+          &.status-confirmed {
+            background: color-with-opacity($color-primary, 0.15);
+            color: $color-primary;
+          }
+
+          &.status-preparing {
+            background: color-with-opacity($color-secondary, 0.15);
+            color: $color-secondary;
+          }
+
+          &.status-ready {
+            background: color-with-opacity($color-success, 0.15);
+            color: $color-success;
+          }
+
+          &.status-served {
+            background: color-with-opacity($color-primary, 0.15);
+            color: $color-primary;
+          }
+
+          &.status-cancelled {
+            background: color-with-opacity($color-error, 0.15);
+            color: $color-error;
+          }
+        }
+      }
+
+      .order-item-details {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        .items-count {
+          font-size: 13px;
+          color: $color-neutral-text-secondary;
+        }
+
+        .order-total {
+          font-size: 15px;
+          font-weight: 700;
+          color: $color-primary;
+        }
+      }
+    }
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 400px;
+  }
+}
+
+// Category Navigation - iOS Glass Effect
+.category-nav {
+  // margin-top: 100px;
+  padding: 16px 0;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
+  border-top: 0.5px solid rgba(255, 255, 255, 0.5);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.category-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 0 16px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch; // Smooth scrolling on iOS
+  scroll-snap-type: x proximity; // Snap scrolling for categories
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.category-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  white-space: nowrap;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-tap-highlight-color: transparent; // Remove tap highlight on mobile
+  user-select: none; // Prevent text selection
+  touch-action: manipulation; // Optimize touch interactions
+
+  .category-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+    color: #999;
+    transition: color 0.2s ease;
+  }
+
+  span {
+    font-size: 12px;
+    color: #666;
+    font-weight: 500;
+    transition: color 0.2s ease;
+  }
+
+  &.active {
+    .category-icon {
+      color: #ff6b35;
+      filter: drop-shadow(0 2px 4px rgba(255, 107, 53, 0.3));
+    }
+
+    span {
+      color: #ff6b35;
+      font-weight: 700;
+      text-shadow: 0 1px 2px rgba(255, 107, 53, 0.2);
+    }
+
+    .category-indicator {
+      width: 24px;
+      height: 3px;
+      background: linear-gradient(90deg, #ff6b35 0%, #ff8c42 100%);
+      border-radius: 2px;
+      margin: 4px auto 0;
+      box-shadow: 0 2px 8px rgba(255, 107, 53, 0.4);
+    }
+  }
+
+  &:hover {
+    .category-icon {
+      color: #ff6b35;
+    }
+  }
+}
+
+// Menu Section - iOS Glass Effect
+.menu-section {
+  padding: 24px 0px;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  margin-top: 8px;
+}
+
+.section-header {
+  margin-bottom: 20px;
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding: 0 10px;
+
+    .section-icon {
+      color: #ff6b35;
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+      filter: drop-shadow(0 2px 4px rgba(255, 107, 53, 0.3));
+    }
+
+    h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin: 0;
+      letter-spacing: -0.3px;
+      text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+    }
+  }
+
+  .section-subtitle {
+    font-size: 14px;
+    color: rgba(0, 0, 0, 0.65);
+    margin: 0;
+    padding-left: 32px;
+    font-weight: 500;
+  }
+}
+
+.menu-items-scroll {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  padding: 8px 0 24px;
+  
+  // Mobile: horizontal scroll
+  @media (max-width: 767px) {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #ddd transparent;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    scroll-padding: 0 16px;
+    grid-template-columns: none;
+
+    &::-webkit-scrollbar {
+      height: 4px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #ddd;
+      border-radius: 2px;
+    }
+  }
+}
+
+.menu-item-card {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(30px) saturate(180%);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  border: 0.5px solid rgba(255, 255, 255, 0.4);
+  border-radius: 20px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  
+  // Mobile: fixed width for horizontal scroll
+  @media (max-width: 767px) {
+    min-width: 280px;
+    max-width: 280px;
+    flex-shrink: 0;
+    scroll-snap-align: start;
+  }
+
+  &:hover {
+    transform: translateY(-4px);
+    box-shadow: 
+      0 12px 48px rgba(0, 0, 0, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    background: rgba(255, 255, 255, 0.8);
+  }
+
+  &:active {
+    transform: scale(0.98) translateY(-2px);
+  }
+}
+
+.item-image-container {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+}
+
+.item-background {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  border-radius: 16px 16px 0 0;
+
+  // Orange background with diagonal pattern
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+  background-image: 
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 10px,
+      rgba(255, 255, 255, 0.1) 10px,
+      rgba(255, 255, 255, 0.1) 20px
+    );
+
+  // Green inner border with decorative pattern
+  // &::before {
+  //   content: '';
+  //   position: absolute;
+  //   inset: 8px;
+  //   border: 3px solid #4caf50;
+  //   border-radius: 12px;
+  //   background: transparent;
+  //   z-index: 2;
+  //   box-shadow: 
+  //     inset 0 0 0 1px rgba(76, 175, 80, 0.3),
+  //     0 0 0 1px rgba(76, 175, 80, 0.2);
+  // }
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+    position: relative;
+    z-index: 1;
+  }
+}
+
+.item-nav-btn {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: start;
+  justify-self: end;
+  margin: 12px 12px 0 0;
+  width: 32px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 0.5px solid rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: #333;
+  }
+
+  &:hover {
+    transform: scale(1.1);
+    background: rgba(255, 255, 255, 0.5);
+    box-shadow: 
+      0 6px 20px rgba(0, 0, 0, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+}
+
+.item-badge {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: start;
+  justify-self: start;
+  margin: 12px 0 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 0.5px solid rgba(255, 255, 255, 0.4);
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #1a1a1a;
+  z-index: 10;
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+
+  &.orange {
+    background: rgba(255, 152, 0, 0.7);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: white;
+    box-shadow: 
+      0 4px 16px rgba(255, 152, 0, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+
+    .badge-star {
+      color: white;
+    }
+  }
+
+  .badge-star {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    color: #ffc107;
+  }
+}
+
+.item-info {
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+}
+
+.item-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin: 0 0 6px;
+  line-height: 1.3;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+.item-description {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.65);
+  margin: 0 0 12px;
+  line-height: 1.4;
+  font-weight: 400;
+}
+
+.item-price {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .current-price {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1a1a;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+  }
+
+  .original-price {
+    font-size: 14px;
+    color: rgba(0, 0, 0, 0.5);
+    text-decoration: line-through;
+    font-weight: 500;
+  }
+}
+
+// Order Summary
+.order-summary {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  padding: 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  border-top: 1px solid #e0e0e0;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+
+  .order-text {
+    text-align: center;
+    font-size: 14px;
+    color: #666;
+    margin: 0;
+    font-weight: 500;
+  }
+}
+
+// Item background colors
+.orange-bg {
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+}
+
+// Offers Section
+.offers-section {
+  padding: 24px 16px;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  margin-top: 8px;
+
+  .section-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: $color-neutral-text;
+    margin: 0 0 20px;
+    padding: 0;
+    letter-spacing: -0.3px;
+    padding: 0 10px;
+  }
+}
+
+.offers-scroll {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding: 8px 15px 24px;
+  scrollbar-width: thin;
+  scrollbar-color: #ddd transparent;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  scroll-padding: 0 16px;
+
+  &::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #ddd;
+    border-radius: 2px;
+  }
+}
+
+.offer-card {
+  min-width: 280px;
+  max-width: 280px;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  display: flex;
+  flex-direction: column;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: scale(0.98);
+  }
+}
+
+.offer-image-container {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  border-radius: 16px;
+  overflow: hidden;
+  margin-bottom: 0;
+  box-shadow: 
+    0 4px 16px color-with-opacity($color-black, 0.08),
+    0 2px 8px color-with-opacity($color-black, 0.04);
+
+  &.teal-bg {
+    background: linear-gradient(135deg, $color-success 0%, darken($color-success, 8%) 100%);
+    background-image: 
+      repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        color-with-opacity($color-white, 0.15) 10px,
+        color-with-opacity($color-white, 0.15) 20px
+      );
+  }
+
+  &.orange-bg {
+    background: linear-gradient(135deg, $color-warning 0%, darken($color-warning, 8%) 100%);
+    background-image: 
+      repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        color-with-opacity($color-white, 0.15) 10px,
+        color-with-opacity($color-white, 0.15) 20px
+      );
+  }
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: relative;
+    z-index: 1;
+    border-radius: 16px;
+  }
+}
+
+.discount-banner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: $color-warning;
+  color: $color-white;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 12px;
+  text-align: center;
+  z-index: 3;
+  box-shadow: 0 2px 8px color-with-opacity($color-warning, 0.4);
+  letter-spacing: 0.2px;
+  line-height: 1.2;
+}
+
+.offer-badge {
+  position: absolute;
+  top: 32px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: $color-error;
+  backdrop-filter: blur(10px);
+  padding: 5px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: $color-white;
+  z-index: 3;
+  box-shadow: 
+    0 2px 8px color-with-opacity($color-error, 0.4),
+    0 1px 2px color-with-opacity($color-black, 0.2);
+  letter-spacing: 0.1px;
+  line-height: 1.2;
+
+  &.top-rated {
+    background: $color-error;
+    color: $color-white;
+
+    .badge-star {
+      color: $color-white;
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+      filter: drop-shadow(0 1px 1px color-with-opacity($color-black, 0.2));
+    }
+  }
+
+  .badge-star {
+    color: $color-white;
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.offer-info {
+  padding: 12px 4px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.offer-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: $color-neutral-text;
+  margin: 0;
+  line-height: 1.3;
+  letter-spacing: -0.2px;
+}
+
+.offer-price {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 2px;
+
+  .current-price {
+    font-size: 18px;
+    font-weight: 700;
+    color: $color-neutral-text;
+    line-height: 1.2;
+    letter-spacing: -0.3px;
+  }
+
+  .original-price {
+    font-size: 14px;
+    color: $color-neutral-text-secondary;
+    text-decoration: line-through;
+    font-weight: 500;
+    line-height: 1.2;
+  }
+}
+
+// Items Section (Vertical List)
+.items-section {
+  padding: 24px 16px;
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  margin-top: 8px;
+
+  .section-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: $color-neutral-text;
+    margin: 0 0 16px;
+    padding: 0 10px;
+  }
+}
+
+.items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.item-row {
+  display: flex;
+  gap: 16px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+
+  &:hover {
+    transform: translateX(4px);
+  }
+}
+
+.item-image-wrapper {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  min-width: 120px;
+  border-radius: 12px;
+  overflow: hidden;
+  flex-shrink: 0;
+
+  &.teal-bg {
+    background: linear-gradient(135deg, $color-success 0%, darken($color-success, 10%) 100%);
+    background-image: 
+      repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        color-with-opacity($color-white, 0.1) 10px,
+        color-with-opacity($color-white, 0.1) 20px
+      );
+  }
+
+  &.orange-bg {
+    background: linear-gradient(135deg, $color-warning 0%, darken($color-warning, 10%) 100%);
+    background-image: 
+      repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        color-with-opacity($color-white, 0.1) 10px,
+        color-with-opacity($color-white, 0.1) 20px
+      );
+  }
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: relative;
+    z-index: 1;
+  }
+}
+
+.item-badge-new {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  background: color-with-opacity($color-error, 0.9);
+  color: $color-white;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 8px;
+  z-index: 2;
+  box-shadow: 0 2px 8px color-with-opacity($color-error, 0.3);
+
+  &.new-badge {
+    background: $color-error;
+  }
+}
+
+.item-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4px 0;
+}
+
+.item-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: $color-neutral-text;
+  margin: 0 0 4px;
+}
+
+.item-description {
+  font-size: 13px;
+  color: $color-neutral-text-secondary;
+  margin: 0 0 8px;
+  line-height: 1.4;
+}
+
+.item-price {
+  .current-price {
+    font-size: 18px;
+    font-weight: 700;
+    color: $color-neutral-text;
+  }
+}
+
+// Add Button (Orange + button) - Right side for item rows
+.add-btn-right {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  background: $color-white;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  box-shadow: 
+    0 4px 12px color-with-opacity($color-black, 0.2),
+    0 2px 6px color-with-opacity($color-black, 0.15),
+    inset 0 1px 0 color-with-opacity($color-white, 0.8);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  mat-icon {
+    color: $color-warning;
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+    font-weight: 300;
+  }
+
+  &:hover {
+    transform: scale(1.08);
+    box-shadow: 
+      0 6px 16px color-with-opacity($color-black, 0.25),
+      0 3px 8px color-with-opacity($color-black, 0.2),
+      inset 0 1px 0 color-with-opacity($color-white, 0.9);
+  }
+
+  &:active {
+    transform: scale(0.95);
+    box-shadow: 
+      0 2px 8px color-with-opacity($color-black, 0.15),
+      inset 0 1px 0 color-with-opacity($color-white, 0.7);
+  }
+}
+
+// Add Button (Orange + button) - For offer cards (on image)
+.add-btn {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  width: 44px;
+  height: 44px;
+  background: $color-white;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 4;
+  box-shadow: 
+    0 4px 12px color-with-opacity($color-black, 0.2),
+    0 2px 6px color-with-opacity($color-black, 0.15),
+    inset 0 1px 0 color-with-opacity($color-white, 0.8);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+
+  mat-icon {
+    color: $color-warning;
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+    font-weight: 300;
+  }
+
+  &:hover {
+    transform: scale(1.08);
+    box-shadow: 
+      0 6px 16px color-with-opacity($color-black, 0.25),
+      0 3px 8px color-with-opacity($color-black, 0.2),
+      inset 0 1px 0 color-with-opacity($color-white, 0.9);
+  }
+
+  &:active {
+    transform: scale(0.95);
+    box-shadow: 
+      0 2px 8px color-with-opacity($color-black, 0.15),
+      inset 0 1px 0 color-with-opacity($color-white, 0.7);
+  }
+}
+
+// ============================================
+// ITEM DETAIL MODAL
+// ============================================
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: color-with-opacity($color-black, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  background: $color-white;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 
+    0 20px 60px color-with-opacity($color-black, 0.3),
+    0 8px 24px color-with-opacity($color-black, 0.2);
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.modal-close-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  background: color-with-opacity($color-white, 0.9);
+  backdrop-filter: blur(10px);
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 2px 8px color-with-opacity($color-black, 0.15);
+  transition: all 0.2s ease;
+
+  mat-icon {
+    color: $color-neutral-text;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  &:hover {
+    background: $color-white;
+    transform: scale(1.1);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+.modal-image-container {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  border-radius: 8px;
+  overflow: hidden;
+
+  &.teal-bg {
+    background: linear-gradient(135deg, $color-success 0%, darken($color-success, 8%) 100%);
+    background-image: 
+      repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        color-with-opacity($color-white, 0.15) 10px,
+        color-with-opacity($color-white, 0.15) 20px
+      );
+  }
+
+  &.orange-bg {
+    background: linear-gradient(135deg, $color-warning 0%, darken($color-warning, 8%) 100%);
+    background-image: 
+      repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 10px,
+        color-with-opacity($color-white, 0.15) 10px,
+        color-with-opacity($color-white, 0.15) 20px
+      );
+  }
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.modal-badge {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: $color-error;
+  color: $color-white;
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 700;
+  z-index: 2;
+  box-shadow: 0 2px 8px color-with-opacity($color-error, 0.4);
+
+  &.top-rated {
+    background: $color-error;
+
+    .badge-star {
+      color: $color-white;
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  &.new-badge {
+    background: $color-error;
+  }
+
+  .badge-star {
+    color: $color-white;
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.modal-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: $color-neutral-text;
+  margin: 0 0 12px;
+  letter-spacing: -0.5px;
+}
+
+.modal-description {
+  font-size: 16px;
+  color: $color-neutral-text-secondary;
+  margin: 0 0 20px;
+  line-height: 1.6;
+}
+
+.modal-rating {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 24px;
+
+  .star-icon {
+    color: $color-warning;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  .rating-value {
+    font-size: 18px;
+    font-weight: 600;
+    color: $color-neutral-text;
+  }
+}
+
+.modal-price-section {
+  padding: 20px;
+  background: color-with-opacity($color-neutral-bg-subtle, 0.5);
+  border-radius: 16px;
+  margin-bottom: 24px;
+}
+
+.modal-price {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+
+  .current-price {
+    font-size: 32px;
+    font-weight: 700;
+    color: $color-neutral-text;
+    letter-spacing: -0.5px;
+  }
+
+  .original-price {
+    font-size: 20px;
+    color: $color-neutral-text-secondary;
+    text-decoration: line-through;
+    font-weight: 500;
+  }
+}
+
+.modal-savings {
+  font-size: 14px;
+  font-weight: 600;
+  color: $color-success;
+  padding: 6px 12px;
+  background: color-with-opacity($color-success-light, 0.3);
+  border-radius: 8px;
+  display: inline-block;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  button {
+    color: $color-white;
+    background: $color-primary;
+    font-size: 16px;
+    font-weight: 700;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 4px 16px color-with-opacity($color-primary, 0.4), 0 2px 8px color-with-opacity($color-primary, 0.3);
+  }
+}
+
+.add-to-cart-btn {
+  flex: 1;
+  height: 56px;
+  background: $color-warning;
+  color: $color-white;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 
+    0 4px 16px color-with-opacity($color-warning, 0.4),
+    0 2px 8px color-with-opacity($color-warning, 0.3);
+  transition: all 0.2s ease;
+
+  mat-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
+
+  &:hover {
+    background: darken($color-warning, 5%);
+    transform: translateY(-2px);
+    box-shadow: 
+      0 6px 20px color-with-opacity($color-warning, 0.5),
+      0 3px 10px color-with-opacity($color-warning, 0.4);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// ============================================
+// RESPONSIVE DESIGN
+// ============================================
+
+// Extra Small Devices (phones, 320px and up)
+@media (max-width: 480px) {
+  .menu-section,
+  .offers-section,
+  .items-section {
+    padding: 20px 0px;
+  }
+
+  .offers-section .section-title,
+  .items-section .section-title {
+    font-size: 20px;
+  }
+
+  .offer-card {
+    min-width: 240px;
+    max-width: 240px;
+  }
+
+  .offer-image-container {
+    height: 180px;
+  }
+
+  .discount-banner {
+    font-size: 11px;
+    padding: 6px 10px;
+  }
+
+  .offer-badge {
+    top: 32px;
+    padding: 4px 8px;
+    font-size: 10px;
+
+    .badge-star {
+      font-size: 12px;
+      width: 12px;
+      height: 12px;
+    }
+  }
+
+  .add-btn,
+  .add-btn-right {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+
+    mat-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .add-btn {
+    bottom: 10px;
+    right: 10px;
+  }
+
+  .modal-content {
+    max-width: 100%;
+    border-radius: 8px;
+    max-height: 95vh;
+  }
+
+  .modal-image-container {
+    height: 250px;
+    border-radius: 8px;
+  }
+
+  .modal-body {
+    padding: 20px;
+  }
+
+  .modal-title {
+    font-size: 24px;
+  }
+
+  .modal-description {
+    font-size: 14px;
+  }
+
+  .modal-price .current-price {
+    font-size: 28px;
+  }
+
+  .modal-price .original-price {
+    font-size: 18px;
+  }
+
+  .add-to-cart-btn {
+    height: 52px;
+    font-size: 15px;
+  }
+
+  .offer-name {
+    font-size: 15px;
+  }
+
+  .offer-price .current-price {
+    font-size: 16px;
+  }
+
+  .offer-price .original-price {
+    font-size: 13px;
+  }
+
+  .item-image-wrapper {
+    width: 100px;
+    height: 100px;
+    min-width: 100px;
+  }
+  .guest-menu-container {
+    font-size: 14px;
+  }
+
+  .status-bar {
+    padding: 6px 12px;
+    font-size: 12px;
+
+    .status-icons {
+      gap: 2px;
+
+      mat-icon {
+        font-size: 14px;
+        width: 14px;
+        height: 14px;
+      }
+
+      .battery {
+        font-size: 11px;
+      }
+    }
+  }
+
+  .hero-section {
+    // height: 45vh;
+    min-height: 250px;
+    overflow: visible;
+  }
+
+  .hero-nav {
+    padding: 44px 12px 60px;
+
+    .nav-btn {
+      width: 36px;
+      height: 36px;
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+    }
+
+    .hero-nav-right {
+      gap: 6px;
+    }
+  }
+
+  .restaurant-info-card {
+    padding: 20px 16px;
+    // transform: translateY(60px);
+  }
+
+  .restaurant-logo .logo-placeholder {
+    width: 70px;
+    height: 70px;
+
+    .logo-text {
+      font-size: 9px;
+    }
+  }
+
+  .restaurant-name {
+    font-size: 22px;
+  }
+
+  .restaurant-cuisine {
+    font-size: 13px;
+  }
+
+  .restaurant-rating {
+    gap: 3px;
+    margin-bottom: 10px;
+
+    .star-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    .rating-value {
+      font-size: 15px;
+    }
+
+    .rating-count {
+      font-size: 13px;
+    }
+  }
+
+  .restaurant-badges {
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+
+    .badge-item {
+      padding: 5px 10px;
+      font-size: 11px;
+
+      .trophy-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+      }
+
+      .check-icon {
+        font-size: 14px;
+        width: 14px;
+        height: 14px;
+      }
+    }
+  }
+
+  .delivery-info {
+    gap: 16px;
+    margin-bottom: 10px;
+    padding-bottom: 12px;
+
+    .delivery-item {
+      font-size: 13px;
+      gap: 4px;
+
+      mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+
+  .delivery-by {
+    font-size: 11px;
+    gap: 4px;
+    margin-bottom: 12px;
+
+    .talabat-logo {
+      font-size: 12px;
+    }
+
+    .info-btn {
+      width: 18px;
+      height: 18px;
+
+      mat-icon {
+        font-size: 14px;
+        width: 14px;
+        height: 14px;
+      }
+    }
+  }
+
+  .promo-banner,
+  .offer-banner {
+    padding: 10px 12px;
+    margin-bottom: 10px;
+
+    .promo-content,
+    .offer-content {
+      font-size: 12px;
+      gap: 6px;
+
+      mat-icon {
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+      }
+    }
+
+    .promo-btn,
+    .offer-btn {
+      font-size: 11px;
+      padding: 3px 12px;
+      height: 28px;
+    }
+  }
+
+  .category-nav {
+    // margin-top: 80px;
+    padding: 12px 0;
+  }
+
+  .category-btn {
+    padding: 6px 12px;
+    gap: 3px;
+
+    .category-icon {
+      font-size: 20px;
+      width: 20px;
+      height: 20px;
+    }
+
+    span {
+      font-size: 11px;
+    }
+  }
+
+  .menu-section {
+    padding: 20px 0;
+  }
+
+  .section-header {
+    margin-bottom: 16px;
+
+    .section-title {
+      gap: 6px;
+
+      .section-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+      }
+
+      h2 {
+        font-size: 18px;
+      }
+    }
+
+    .section-subtitle {
+      font-size: 12px;
+      padding-left: 26px;
+    }
+  }
+
+  .menu-items-scroll {
+    gap: 12px;
+    padding: 6px 0 20px;
+  }
+
+  .menu-item-card {
+    min-width: 240px;
+    max-width: 240px;
+  }
+
+  .item-image-container {
+    height: 160px;
+  }
+
+  .item-nav-btn {
+    width: 28px;
+    height: 28px;
+    margin: 10px 10px 0 0;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  .item-badge {
+    margin: 10px 0 0 10px;
+    padding: 5px 8px;
+    font-size: 10px;
+
+    .badge-star {
+      font-size: 12px;
+      width: 12px;
+      height: 12px;
+    }
+  }
+
+  .item-info {
+    padding: 12px;
+  }
+
+  .item-name {
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+
+  .item-description {
+    font-size: 11px;
+    margin-bottom: 10px;
+  }
+
+  .item-price {
+    gap: 6px;
+
+    .current-price {
+      font-size: 16px;
+    }
+
+    .original-price {
+      font-size: 12px;
+    }
+  }
+
+  .order-summary {
+    padding: 12px;
+
+    .order-text {
+      font-size: 12px;
+    }
+  }
+}
+
+// Small Devices (landscape phones, 481px and up)
+@media (min-width: 481px) and (max-width: 767px) {
+  .menu-section {
+    padding: 24px 0;
+  }
+
+  .hero-section {
+    height: 48vh;
+    min-height: 280px;
+  }
+
+
+  .menu-item-card {
+    min-width: 260px;
+    max-width: 260px;
+  }
+
+  .item-image-container {
+    height: 180px;
+  }
+}
+
+// Tablets (768px and up)
+@media (min-width: 768px) {
+  .guest-menu-container {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .hero-section {
+    height: 50vh;
+    min-height: 400px;
+  }
+
+  .hero-nav {
+    padding: 52px 40px 60px;
+  }
+
+  .restaurant-info-card {
+    padding: 28px 24px;
+    // transform: translateY(90px);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+
+  .category-scroll {
+    padding: 0 40px;
+    justify-content: center;
+  }
+
+  .menu-section,
+  .offers-section,
+  .items-section {
+    padding: 28px 0px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .menu-items-scroll {
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
+  }
+
+  .offers-scroll {
+    gap: 20px;
+  }
+
+  .offer-card {
+    min-width: 300px;
+    max-width: 300px;
+  }
+
+  .item-image-wrapper {
+    width: 140px;
+    height: 140px;
+    min-width: 140px;
+  }
+}
+
+// Large Tablets and Small Desktops (1024px and up)
+@media (min-width: 1024px) {
+  .guest-menu-container {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .hero-section {
+    height: 45vh;
+    min-height: 450px;
+  }
+
+  .hero-nav {
+    padding: 60px 60px 60px;
+  }
+
+  .restaurant-info-card {
+    padding: 32px 28px;
+    max-width: 800px;
+  }
+
+  .restaurant-logo .logo-placeholder {
+    width: 100px;
+    height: 100px;
+
+    .logo-text {
+      font-size: 12px;
+    }
+  }
+
+  .restaurant-name {
+    font-size: 28px;
+  }
+
+  .restaurant-cuisine {
+    font-size: 16px;
+  }
+
+  .category-scroll {
+    padding: 0 60px;
+  }
+
+  .menu-section,
+  .offers-section,
+  .items-section {
+    padding: 40px 60px;
+    max-width: 1600px;
+  }
+
+  .menu-items-scroll {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 28px;
+  }
+
+  .offers-scroll {
+    gap: 24px;
+  }
+
+  .offer-card {
+    min-width: 320px;
+    max-width: 320px;
+  }
+
+  .item-image-wrapper {
+    width: 160px;
+    height: 160px;
+    min-width: 160px;
+  }
+
+  .item-image-container {
+    height: 240px;
+  }
+}
+
+// Large Desktops (1440px and up)
+@media (min-width: 1440px) {
+  .guest-menu-container {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .hero-section {
+    min-height: 500px;
+  }
+
+  .hero-nav {
+    padding: 80px 80px 60px;
+  }
+
+  .restaurant-info-card {
+    max-width: 1000px;
+    padding: 40px 36px;
+  }
+
+  .category-scroll {
+    padding: 0 80px;
+  }
+
+  .menu-section {
+    padding: 48px 80px;
+    max-width: 1800px;
+  }
+
+  .menu-items-scroll {
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 32px;
+  }
+
+  .item-image-container {
+    height: 260px;
+  }
+}
+
+// Landscape Orientation
+@media (orientation: landscape) and (max-height: 600px) {
+  .hero-section {
+    height: 60vh;
+    min-height: 200px;
+  }
+
+  .restaurant-info-card {
+    // transform: translateY(50px);
+    padding: 16px 20px;
+  }
+
+}
+
+// High DPI Displays
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .hero-background img {
+    filter: blur(6px);
+  }
+
+  .item-background img {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+// Touch Device Optimizations
+@media (hover: none) and (pointer: coarse) {
+  .nav-btn,
+  .item-nav-btn,
+  .category-btn,
+  .promo-btn,
+  .offer-btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .menu-item-card {
+    &:active {
+      transform: scale(0.96);
+    }
+  }
+}
+
+// ============================================
+// FLOATING CART BUTTON
+// ============================================
+.floating-cart-btn {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  width: 64px;
+  height: 64px;
+  background: $color-primary;
+  color: $color-white;
+  z-index: 1400;
+  box-shadow: 
+    0 8px 24px color-with-opacity($color-primary, 0.4),
+    0 4px 12px color-with-opacity($color-black, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  mat-icon {
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+  }
+
+  .cart-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: $color-error;
+    color: $color-white;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 8px;
+    border-radius: 12px;
+    min-width: 24px;
+    height: 24px;
+    text-align: center;
+    line-height: 1.5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid $color-white;
+    box-shadow: 0 2px 8px color-with-opacity($color-error, 0.4);
+  }
+
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 
+      0 12px 32px color-with-opacity($color-primary, 0.5),
+      0 6px 16px color-with-opacity($color-black, 0.3);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  &.has-items {
+    animation: pulse 2s infinite;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 
+      0 8px 24px color-with-opacity($color-primary, 0.4),
+      0 4px 12px color-with-opacity($color-black, 0.2);
+  }
+  50% {
+    box-shadow: 
+      0 8px 24px color-with-opacity($color-primary, 0.6),
+      0 4px 12px color-with-opacity($color-black, 0.3),
+      0 0 0 8px color-with-opacity($color-primary, 0.1);
+  }
+}
+
+// ============================================
+// CART SIDEBAR
+// ============================================
+
+.cart-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: color-with-opacity($color-black, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+.cart-modal {
+  background: $color-white;
+  border-radius: 16px;
+  max-width: 520px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 
+    0 24px 48px color-with-opacity($color-black, 0.25),
+    0 8px 16px color-with-opacity($color-black, 0.15);
+  animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.cart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 28px;
+  background: linear-gradient(135deg, $color-primary 0%, darken($color-primary, 8%) 100%);
+  color: $color-white;
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: color-with-opacity($color-white, 0.2);
+  }
+
+  .header-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    h2 {
+      font-size: 26px;
+      font-weight: 700;
+      color: $color-white;
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+
+    .item-count {
+      font-size: 13px;
+      color: color-with-opacity($color-white, 0.9);
+      font-weight: 500;
+    }
+  }
+
+  .close-btn {
+    color: $color-white;
+    background: color-with-opacity($color-white, 0.15);
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: color-with-opacity($color-white, 0.25);
+      transform: rotate(90deg);
+    }
+  }
+}
+
+.cart-modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  background: $color-white;
+
+  // Custom scrollbar
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: $color-neutral-bg-subtle;
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: $color-neutral-border;
+    border-radius: 4px;
+    
+    &:hover {
+      background: darken($color-neutral-border, 10%);
+    }
+  }
+}
+
+.empty-cart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  text-align: center;
+
+  .empty-cart-icon {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, color-with-opacity($color-primary, 0.1) 0%, color-with-opacity($color-primary, 0.05) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+
+    mat-icon {
+      font-size: 64px;
+      width: 64px;
+      height: 64px;
+      color: $color-primary;
+    }
+  }
+
+  h3 {
+    font-size: 22px;
+    font-weight: 700;
+    color: $color-neutral-text;
+    margin: 0 0 8px;
+    letter-spacing: -0.3px;
+  }
+
+  p {
+    font-size: 15px;
+    color: $color-neutral-text-secondary;
+    margin: 0 0 32px;
+    line-height: 1.5;
+  }
+
+  .browse-btn {
+    background: $color-primary;
+    color: $color-white;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 12px 32px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px color-with-opacity($color-primary, 0.3);
+    transition: all 0.2s ease;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px color-with-opacity($color-primary, 0.4);
+    }
+  }
+}
+
+.cart-item {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: color-with-opacity($color-neutral-bg-subtle, 0.5);
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
+
+.cart-item-image {
+  width: 80px;
+  height: 80px;
+  min-width: 80px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: $color-neutral-bg-subtle;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.cart-item-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cart-item-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: $color-neutral-text;
+  margin: 0;
+}
+
+.cart-item-price {
+  font-size: 14px;
+  color: $color-neutral-text-secondary;
+}
+
+.cart-item-notes {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: color-with-opacity($color-primary, 0.1);
+  border-radius: 6px;
+  font-size: 12px;
+  color: $color-primary;
+
+  .note-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.cart-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: $color-neutral-bg-subtle;
+  border-radius: 8px;
+  padding: 4px;
+
+  button {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  .quantity {
+    font-size: 14px;
+    font-weight: 600;
+    color: $color-neutral-text;
+    min-width: 24px;
+    text-align: center;
+  }
+}
+
+.note-btn {
+  color: $color-primary;
+}
+
+.delete-btn {
+  color: $color-error;
+}
+
+
+// ============================================
+// NOTES DIALOG
+// ============================================
+.notes-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: color-with-opacity($color-black, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+.notes-dialog {
+  background: $color-white;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 8px 32px color-with-opacity($color-black, 0.2);
+  animation: slideUp 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.notes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid $color-neutral-border;
+
+  h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: $color-neutral-text;
+    margin: 0;
+  }
+}
+
+.notes-body {
+  padding: 24px;
+
+  .w-100 {
+    width: 100%;
+  }
+}
+
+.notes-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid $color-neutral-border;
+}
+
+
+// Shared Section Title
+.section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: $color-neutral-text;
+  margin: 0 0 16px;
+  letter-spacing: -0.3px;
+}
+
+// Order Items Section
+.order-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.order-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: color-with-opacity($color-neutral-bg-subtle, 0.5);
+  border-radius: 10px;
+  border: 1px solid color-with-opacity($color-neutral-border, 0.5);
+  transition: all 0.2s ease;
+}
+
+.order-item-image {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: $color-neutral-bg-subtle;
+  box-shadow: 0 1px 4px color-with-opacity($color-black, 0.08);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.order-item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.order-item-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: $color-neutral-text;
+  margin: 0;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.order-item-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.order-item-quantity {
+  font-size: 12px;
+  color: $color-neutral-text-secondary;
+  font-weight: 500;
+}
+
+.order-item-price {
+  font-size: 14px;
+  font-weight: 700;
+  color: $color-primary;
+}
+
+.remove-item-btn {
+  color: $color-error;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  &:hover {
+    background: color-with-opacity($color-error, 0.1);
+  }
+}
+
+// Payment Section
+.payment-section {
+  .section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: $color-neutral-text;
+    margin: 0 0 16px;
+    letter-spacing: -0.3px;
+  }
+}
+
+.payment-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.payment-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: left;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px color-with-opacity($color-black, 0.1);
+  border: none;
+  position: relative;
+  overflow: hidden;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px color-with-opacity($color-black, 0.15);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+
+  .payment-icon {
+    font-size: 28px;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+  }
+
+  span {
+    flex: 1;
+    text-align: left;
+  }
+
+  &.apple-pay {
+    background: #000;
+    color: $color-white;
+
+    &:hover {
+      background: #1a1a1a;
+      box-shadow: 0 4px 12px color-with-opacity(#000, 0.3);
+    }
+  }
+
+  &.google-pay {
+    background: #4285F4;
+    color: $color-white;
+
+    &:hover {
+      background: #357AE8;
+      box-shadow: 0 4px 12px color-with-opacity(#4285F4, 0.3);
+    }
+  }
+
+  &.visa {
+    background: #4285F4;
+    color: $color-white;
+
+    &:hover {
+      background: #357AE8;
+      box-shadow: 0 4px 12px color-with-opacity(#4285F4, 0.3);
+    }
+  }
+}
+
+// Summary Section
+.summary-section {
+  background: color-with-opacity($color-neutral-bg-subtle, 0.3);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid color-with-opacity($color-neutral-border, 0.5);
+
+  .section-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: $color-neutral-text;
+    margin: 0 0 16px;
+    letter-spacing: -0.3px;
+  }
+}
+
+.summary-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+
+  .summary-label {
+    font-size: 14px;
+    color: $color-neutral-text;
+    font-weight: 500;
+  }
+
+  .summary-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: $color-neutral-text;
+  }
+
+  &.total-row {
+    padding-top: 16px;
+    margin-top: 4px;
+
+    .summary-label {
+      font-size: 18px;
+      font-weight: 700;
+      color: $color-neutral-text;
+    }
+
+    .total-value {
+      font-size: 24px;
+      font-weight: 700;
+      color: $color-primary;
+      letter-spacing: -0.5px;
+    }
+  }
+}
+
+.summary-divider {
+  height: 1px;
+  background: color-with-opacity($color-neutral-border, 0.5);
+  margin: 4px 0;
+}
+
+// Table Number Section
+.table-number-section {
+  margin-bottom: 8px;
+
+  .table-input {
+    width: 100%;
+
+    mat-icon {
+      color: $color-neutral-text-secondary;
+    }
+  }
+}
+
+.payment-methods {
+  h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: $color-neutral-text;
+    margin: 0 0 16px;
+  }
+}
+
+.payment-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.payment-btn {
+  width: 100%;
+  height: 56px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition: all 0.2s ease;
+
+  mat-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
+
+  &.apple-pay {
+    background: #000;
+    color: $color-white;
+
+    &:hover {
+      background: #333;
+    }
+  }
+
+  &.google-pay {
+    background: #4285F4;
+    color: $color-white;
+
+    &:hover {
+      background: #357AE8;
+    }
+  }
+
+  &.visa {
+    background: $color-primary;
+    color: $color-white;
+
+    &:hover {
+      background: darken($color-primary, 5%);
+    }
+  }
+}
+
+// Responsive Cart
+@media (max-width: 480px) {
+  .floating-cart-btn {
+    bottom: 20px;
+    left: 20px;
+    width: 56px;
+    height: 56px;
+
+    mat-icon {
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+    }
+
+    .cart-badge {
+      font-size: 11px;
+      padding: 3px 6px;
+      min-width: 20px;
+      height: 20px;
+      top: -2px;
+      right: -2px;
+    }
+  }
+
+  .cart-modal {
+    max-width: 100%;
+    max-height: 100vh;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .cart-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .cart-header {
+    padding: 20px 24px;
+
+    .header-content h2 {
+      font-size: 22px;
+    }
+
+    .item-count {
+      font-size: 12px;
+    }
+  }
+
+  .cart-modal-body {
+    padding: 24px 20px;
+    gap: 24px;
+  }
+
+  .order-item {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .order-item-image {
+    width: 56px;
+    height: 56px;
+    min-width: 56px;
+  }
+
+  .order-item-name {
+    font-size: 14px;
+  }
+
+  .payment-btn {
+    padding: 14px 18px;
+    font-size: 15px;
+
+    .payment-icon {
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  .summary-section {
+    padding: 16px;
+  }
+
+  .summary-row.total-row {
+    .summary-label {
+      font-size: 16px;
+    }
+
+    .total-value {
+      font-size: 20px;
+    }
+  }
+}
+
+// ============================================
+// RECEIPT MODAL
+// ============================================
+.receipt-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: color-with-opacity($color-black, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 1800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+.receipt-modal {
+  background: $color-white;
+  border-radius: 16px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 
+    0 24px 48px color-with-opacity($color-black, 0.25),
+    0 8px 16px color-with-opacity($color-black, 0.15);
+  animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.receipt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 28px;
+  background: linear-gradient(135deg, $color-primary 0%, darken($color-primary, 8%) 100%);
+  color: $color-white;
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: color-with-opacity($color-white, 0.2);
+  }
+
+  h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: $color-white;
+    margin: 0;
+    letter-spacing: -0.5px;
+  }
+
+  .close-btn {
+    color: $color-white;
+    background: color-with-opacity($color-white, 0.15);
+    transition: all 0.2s ease;
+
+    &:hover {
+      background: color-with-opacity($color-white, 0.25);
+      transform: rotate(90deg);
+    }
+  }
+}
+
+.receipt-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 28px;
+  background: $color-white;
+
+  // Custom scrollbar
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: $color-neutral-bg-subtle;
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: $color-neutral-border;
+    border-radius: 4px;
+    
+    &:hover {
+      background: darken($color-neutral-border, 10%);
+    }
+  }
+}
+
+.receipt-restaurant-info {
+  text-align: center;
+  margin-bottom: 24px;
+
+  h3 {
+    font-size: 22px;
+    font-weight: 700;
+    color: $color-neutral-text;
+    margin: 0 0 4px;
+    letter-spacing: -0.3px;
+  }
+
+  p {
+    font-size: 14px;
+    color: $color-neutral-text-secondary;
+    margin: 0;
+  }
+}
+
+.receipt-order-info {
+  margin-bottom: 24px;
+}
+
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+
+  .receipt-label {
+    font-size: 14px;
+    color: $color-neutral-text-secondary;
+    font-weight: 500;
+  }
+
+  .receipt-value {
+    font-size: 14px;
+    color: $color-neutral-text;
+    font-weight: 600;
+  }
+}
+
+.receipt-divider {
+  height: 1px;
+  background: color-with-opacity($color-neutral-border, 0.5);
+  margin: 12px 0;
+}
+
+.receipt-section-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: $color-neutral-text;
+  margin: 8px 0;
+  text-align: center;
+  letter-spacing: -0.2px;
+}
+
+.receipt-items {
+  margin-bottom: 24px;
+}
+
+.receipt-item {
+  padding: 12px 0;
+  border-bottom: 1px solid color-with-opacity($color-neutral-border, 0.3);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.receipt-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.receipt-item-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: $color-neutral-text;
+  flex: 1;
+}
+
+.receipt-item-quantity {
+  font-size: 14px;
+  color: $color-neutral-text-secondary;
+  font-weight: 500;
+}
+
+.receipt-item-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 6px 0;
+  padding: 6px 10px;
+  background: color-with-opacity($color-primary, 0.1);
+  border-radius: 6px;
+  font-size: 12px;
+  color: $color-primary;
+
+  .note-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.receipt-item-price {
+  font-size: 13px;
+  color: $color-neutral-text-secondary;
+  text-align: right;
+  margin-top: 4px;
+}
+
+.receipt-total-section {
+  margin: 24px 0;
+}
+
+.receipt-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0;
+
+  .receipt-total-label {
+    font-size: 20px;
+    font-weight: 700;
+    color: $color-neutral-text;
+  }
+
+  .receipt-total-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: $color-primary;
+    letter-spacing: -0.5px;
+  }
+}
+
+.receipt-thank-you {
+  text-align: center;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 2px solid color-with-opacity($color-neutral-border, 0.3);
+
+  p {
+    font-size: 16px;
+    font-weight: 600;
+    color: $color-neutral-text;
+    margin: 0 0 8px;
+  }
+
+  .receipt-footer {
+    font-size: 14px;
+    color: $color-neutral-text-secondary;
+    font-weight: 400;
+    margin: 0;
+  }
+}
+
+.receipt-actions {
+  display: flex;
+  gap: 12px;
+  padding: 20px 28px;
+  border-top: 1px solid $color-neutral-border;
+  background: $color-white;
+
+  button {
+    flex: 1;
+    height: 48px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    white-space: nowrap;
+    min-width: 0;
+
+    span {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    mat-icon {
+      flex-shrink: 0;
+    }
+  }
+
+  .screenshot-btn {
+    border-color: $color-neutral-border;
+    color: $color-neutral-text;
+  }
+
+  .save-btn {
+    background: $color-primary;
+    color: $color-white;
+    box-shadow: 0 4px 12px color-with-opacity($color-primary, 0.3);
+
+    &:hover {
+      background: darken($color-primary, 5%);
+      box-shadow: 0 6px 16px color-with-opacity($color-primary, 0.4);
+    }
+  }
+}
+
+// Print Styles for Receipt
+@media print {
+  .receipt-overlay {
+    background: white;
+    backdrop-filter: none;
+  }
+
+  .receipt-header .close-btn,
+  .receipt-actions {
+    display: none;
+  }
+
+  .receipt-modal {
+    box-shadow: none;
+    max-height: none;
+  }
+}
+
+// Print Styles
+@media print {
+  .status-bar,
+  .hero-nav,
+  .order-summary {
+    display: none;
+  }
+
+  .guest-menu-container {
+    background: white;
+    box-shadow: none;
+  }
+
+  .hero-section {
+    height: auto;
+    min-height: auto;
+  }
+
+  .restaurant-info-card {
+    position: relative;
+    bottom: 0;
+    box-shadow: none;
+  }
+
+  .menu-items-scroll {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    overflow: visible;
+  }
+}
+
+// Decorative border pattern overlay - Removed for cleaner iOS glass design
+
+

@@ -1,0 +1,44 @@
+@use "../../../../assets/scss/helpers/table-pages" as *;
+
+.hr-container {
+  @extend .page-container;
+}
+
+.hr-header {
+  @extend .page-header;
+}
+
+.employees-table {
+  @extend .data-table;
+
+  .employee-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .employee-avatar {
+    @extend .table-avatar;
+  }
+
+  .employee-info {
+    @extend .name-cell;
+  }
+
+  .id-badge {
+    @extend .info-badge;
+  }
+
+  .delete-action {
+    @extend .delete-action;
+  }
+}
+
+.no-data {
+  @extend .no-data;
+}
+
+.loading-overlay {
+  @extend .loading-overlay;
+}
+

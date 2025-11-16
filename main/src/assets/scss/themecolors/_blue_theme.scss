@@ -1,0 +1,8 @@
+@use "../colors" as *;
+
+html .blue_theme {
+  --mat-sys-primary: #{$color-primary};
+  --mat-sys-primary-fixed-dim: #{$color-primary-light};
+  --mat-sys-secondary: #{$color-secondary};
+  --mat-sys-secondary-fixed-dim: #{$color-secondary-light};
+}

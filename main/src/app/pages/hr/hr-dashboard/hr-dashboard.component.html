@@ -1,0 +1,161 @@
+<div class="hr-container">
+  <div class="hr-header">
+    <div>
+      <h1>Human Resources</h1>
+      <p class="subtitle">Manage employees and staff</p>
+    </div>
+    <div class="header-stats">
+      <div class="stat-card">
+        <span class="stat-label">Total Employees</span>
+        <span class="stat-value">{{ totalEmployees }}</span>
+      </div>
+      <div class="stat-card active">
+        <span class="stat-label">Active Employees</span>
+        <span class="stat-value">{{ activeEmployees }}</span>
+      </div>
+    </div>
+    <button mat-flat-button color="primary" (click)="addEmployee()">
+      <mat-icon>person_add</mat-icon>
+      Add Employee
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <mat-card class="filters-card">
+    <div class="filters-row">
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-label>Search employees</mat-label>
+        <input matInput [formControl]="searchControl" placeholder="Search by name, ID, email, or position">
+        <mat-icon matPrefix>search</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Department</mat-label>
+        <mat-select [formControl]="departmentFilter">
+          <mat-option *ngFor="let dept of departments" [value]="dept">
+            {{ dept === 'all' ? 'All Departments' : dept }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Status</mat-label>
+        <mat-select [formControl]="statusFilter">
+          <mat-option value="all">All Status</mat-option>
+          <mat-option value="ACTIVE">Active</mat-option>
+          <mat-option value="INACTIVE">Inactive</mat-option>
+          <mat-option value="ON_LEAVE">On Leave</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </mat-card>
+
+  <!-- Employees Table -->
+  <mat-card class="table-card">
+    <div class="table-container">
+      <table mat-table [dataSource]="dataSource" matSort class="employees-table">
+        <!-- Employee Column -->
+        <ng-container matColumnDef="employee">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="firstName">Employee</th>
+          <td mat-cell *matCellDef="let employee">
+            <div class="employee-cell">
+              <img [src]="employee.avatar || '/assets/images/profile/user-1.jpg'" 
+                   [alt]="getFullName(employee)"
+                   class="employee-avatar"
+                   onerror="this.src='/assets/images/profile/user-1.jpg'">
+              <div class="employee-info">
+                <strong>{{ getFullName(employee) }}</strong>
+                <span class="employee-email">{{ employee.email }}</span>
+              </div>
+            </div>
+          </td>
+        </ng-container>
+
+        <!-- Employee ID Column -->
+        <ng-container matColumnDef="employeeId">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="employeeId">Employee ID</th>
+          <td mat-cell *matCellDef="let employee">
+            <span class="id-badge">{{ employee.employeeId }}</span>
+          </td>
+        </ng-container>
+
+        <!-- Position Column -->
+        <ng-container matColumnDef="position">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="position">Position</th>
+          <td mat-cell *matCellDef="let employee">
+            {{ employee.position }}
+          </td>
+        </ng-container>
+
+        <!-- Department Column -->
+        <ng-container matColumnDef="department">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="department">Department</th>
+          <td mat-cell *matCellDef="let employee">
+            <mat-chip>{{ employee.department }}</mat-chip>
+          </td>
+        </ng-container>
+
+        <!-- Hire Date Column -->
+        <ng-container matColumnDef="hireDate">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="hireDate">Hire Date</th>
+          <td mat-cell *matCellDef="let employee">
+            {{ formatDate(employee.hireDate) }}
+          </td>
+        </ng-container>
+
+        <!-- Status Column -->
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header="status">Status</th>
+          <td mat-cell *matCellDef="let employee">
+            <mat-chip [color]="getStatusColor(employee.status)" selected>
+              {{ employee.status }}
+            </mat-chip>
+          </td>
+        </ng-container>
+
+        <!-- Actions Column -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let employee">
+            <button mat-icon-button [matMenuTriggerFor]="menu" matTooltip="More actions">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+            <mat-menu #menu="matMenu">
+              <button mat-menu-item (click)="editEmployee(employee)">
+                <mat-icon>edit</mat-icon>
+                <span>Edit</span>
+              </button>
+              <button mat-menu-item (click)="deleteEmployee(employee)" class="delete-action">
+                <mat-icon>delete</mat-icon>
+                <span>Delete</span>
+              </button>
+            </mat-menu>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+        <tr class="mat-row" *matNoDataRow>
+          <td class="mat-cell" [attr.colspan]="displayedColumns.length">
+            <div class="no-data">
+              <mat-icon>people</mat-icon>
+              <p>No employees found</p>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <mat-paginator 
+      [pageSizeOptions]="[10, 25, 50, 100]" 
+      showFirstLastButtons
+      aria-label="Select page of employees">
+    </mat-paginator>
+  </mat-card>
+
+  <div class="loading-overlay" *ngIf="isLoading">
+    <mat-spinner diameter="50"></mat-spinner>
+  </div>
+</div>
+

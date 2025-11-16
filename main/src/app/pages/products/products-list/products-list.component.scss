@@ -1,0 +1,57 @@
+@use "../../../../assets/scss/helpers/table-pages" as *;
+
+.products-container {
+  @extend .page-container;
+}
+
+.products-header {
+  @extend .page-header;
+}
+
+.products-table {
+  @extend .data-table;
+
+  .product-image {
+    @extend .table-image;
+  }
+
+  .product-name-cell {
+    @extend .name-cell;
+
+    .product-description {
+      @extend .secondary-text;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  }
+
+  .sku-badge {
+    @extend .info-badge;
+  }
+
+  .price {
+    @extend .price-amount;
+  }
+
+  .cost {
+    @extend .secondary-amount;
+  }
+
+  .stock-cell {
+    @extend .status-cell;
+  }
+
+  .delete-action {
+    @extend .delete-action;
+  }
+}
+
+.no-data {
+  @extend .no-data;
+}
+
+.loading-overlay {
+  @extend .loading-overlay;
+}

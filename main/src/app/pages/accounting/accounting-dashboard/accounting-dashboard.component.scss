@@ -1,0 +1,278 @@
+@use "../../../../assets/scss/variables" as *;
+@use "../../../../assets/scss/colors" as *;
+
+.accounting-container {
+  padding: 24px;
+  position: relative;
+}
+
+.accounting-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+
+  h1 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 600;
+    color: $color-neutral-text;
+  }
+
+  .subtitle {
+    margin: 4px 0 0;
+    color: $color-neutral-text-secondary;
+    font-size: 14px;
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 12px;
+  }
+}
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.summary-card {
+  .card-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 8px;
+  }
+
+  .card-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: $color-neutral-bg-light;
+
+    mat-icon {
+      font-size: 28px;
+      width: 28px;
+      height: 28px;
+    }
+  }
+
+  &.income .card-icon {
+    background: $color-success-light;
+    color: $color-success;
+  }
+
+  &.expense .card-icon {
+    background: $color-error-light;
+    color: $color-error;
+  }
+
+  &.profit .card-icon {
+    background: $color-primary-light;
+    color: $color-primary;
+  }
+
+  &.cash .card-icon {
+    background: $color-warning-light;
+    color: $color-warning;
+  }
+
+  .card-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .card-label {
+    font-size: 12px;
+    color: $color-neutral-text-secondary;
+    margin-bottom: 4px;
+  }
+
+  .card-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: $color-neutral-text;
+
+    &.negative {
+      color: $color-error;
+    }
+  }
+}
+
+.charts-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.chart-card {
+  mat-card-content {
+    padding: 16px;
+  }
+}
+
+.financial-info-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.info-card {
+  .amount-display {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px 0;
+
+    .amount {
+      font-size: 32px;
+      font-weight: 700;
+      color: $color-primary;
+    }
+
+    .description {
+      font-size: 14px;
+      color: $color-neutral-text-secondary;
+    }
+  }
+}
+
+.transactions-card {
+  margin-bottom: 24px;
+}
+
+.transactions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.transaction-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid $color-neutral-border;
+  border-radius: 8px;
+  transition: all 0.2s;
+
+  &:hover {
+    background: $color-neutral-bg-light;
+    border-color: $color-primary;
+  }
+}
+
+.transaction-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $color-neutral-bg-light;
+
+  &.income {
+    background: $color-success-light;
+    color: $color-success;
+  }
+
+  &.expense {
+    background: $color-error-light;
+    color: $color-error;
+  }
+
+  mat-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.transaction-details {
+  flex: 1;
+}
+
+.transaction-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 4px;
+
+  strong {
+    font-size: 14px;
+  }
+
+  .transaction-category {
+    font-size: 12px;
+    padding: 2px 8px;
+    background: $color-primary-light;
+    color: $color-primary;
+    border-radius: 4px;
+  }
+}
+
+.transaction-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: $color-neutral-text-secondary;
+}
+
+.transaction-amount {
+  font-size: 18px;
+  font-weight: 700;
+
+  &.income {
+    color: $color-success;
+  }
+
+  &.expense {
+    color: $color-error;
+  }
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: color-with-opacity($color-white, $opacity-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+@media (max-width: 768px) {
+  .accounting-header {
+    flex-direction: column;
+    align-items: flex-start;
+
+    .header-actions {
+      width: 100%;
+      flex-direction: column;
+
+      button {
+        width: 100%;
+      }
+    }
+  }
+
+  .summary-cards,
+  .charts-row,
+  .financial-info-row {
+    grid-template-columns: 1fr;
+  }
+}
+

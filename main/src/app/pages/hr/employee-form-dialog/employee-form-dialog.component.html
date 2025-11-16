@@ -1,0 +1,102 @@
+<div class="employee-form-dialog">
+  <div class="dialog-header">
+    <h2 mat-dialog-title>{{ isEditMode ? 'Edit Employee' : 'Add New Employee' }}</h2>
+    <button mat-icon-button (click)="onCancel()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <mat-dialog-content>
+    <form [formGroup]="employeeForm" class="employee-form">
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>First Name *</mat-label>
+          <input matInput formControlName="firstName" placeholder="First Name">
+          <mat-error *ngIf="f['firstName'].hasError('required')">First name is required</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Last Name *</mat-label>
+          <input matInput formControlName="lastName" placeholder="Last Name">
+          <mat-error *ngIf="f['lastName'].hasError('required')">Last name is required</mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Email *</mat-label>
+          <input matInput type="email" formControlName="email" placeholder="email@example.com">
+          <mat-error *ngIf="f['email'].hasError('required')">Email is required</mat-error>
+          <mat-error *ngIf="f['email'].hasError('email')">Invalid email format</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Phone *</mat-label>
+          <input matInput formControlName="phone" placeholder="+1234567890">
+          <mat-error *ngIf="f['phone'].hasError('required')">Phone is required</mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Position *</mat-label>
+          <mat-select formControlName="position">
+            <mat-option value="">Select Position</mat-option>
+            <mat-option *ngFor="let position of positions" [value]="position">
+              {{ position }}
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="f['position'].hasError('required')">Position is required</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Department *</mat-label>
+          <mat-select formControlName="department">
+            <mat-option value="">Select Department</mat-option>
+            <mat-option *ngFor="let dept of departments" [value]="dept">
+              {{ dept }}
+            </mat-option>
+          </mat-select>
+          <mat-error *ngIf="f['department'].hasError('required')">Department is required</mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Hire Date *</mat-label>
+          <input matInput [matDatepicker]="picker" formControlName="hireDate">
+          <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+          <mat-datepicker #picker></mat-datepicker>
+          <mat-error *ngIf="f['hireDate'].hasError('required')">Hire date is required</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Salary</mat-label>
+          <input matInput type="number" formControlName="salary" placeholder="0.00" step="0.01" min="0">
+          <mat-icon matPrefix>attach_money</mat-icon>
+          <mat-error *ngIf="f['salary'].hasError('min')">Salary must be positive</mat-error>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Status *</mat-label>
+          <mat-select formControlName="status">
+            <mat-option value="ACTIVE">Active</mat-option>
+            <mat-option value="INACTIVE">Inactive</mat-option>
+            <mat-option value="ON_LEAVE">On Leave</mat-option>
+          </mat-select>
+          <mat-error *ngIf="f['status'].hasError('required')">Status is required</mat-error>
+        </mat-form-field>
+      </div>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-stroked-button (click)="onCancel()">Cancel</button>
+    <button mat-flat-button color="primary" (click)="onSubmit()" [disabled]="employeeForm.invalid">
+      {{ isEditMode ? 'Update' : 'Create' }}
+    </button>
+  </mat-dialog-actions>
+</div>
+

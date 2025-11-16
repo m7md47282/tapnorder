@@ -1,0 +1,26 @@
+@use "sass:map";
+@use "@angular/material" as mat;
+@use "../variables" as *;
+@use "../colors" as *;
+
+html {
+  @include mat.theme(
+    (
+      color: mat.$azure-palette,
+      typography: $font-family,
+    )
+  );
+
+  @include mat.theme-overrides(
+    (
+      primary: $color-primary,
+      error: $color-error,
+      body-medium-size: 14px,
+      body-large-size: 14px,
+      outline-variant: $color-neutral-border,
+      level1: 0px 12px 24px -4px color-with-opacity($color-neutral-text, 0.3),
+      level2: color-with-opacity($color-neutral-text, 0.12) 0px 1px 16px,
+      level3: 0px 12px 24px -4px color-with-opacity($color-neutral-text, 0.3),
+    )
+  );
+}

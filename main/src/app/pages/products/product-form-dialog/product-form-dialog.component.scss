@@ -1,0 +1,67 @@
+.product-form-dialog {
+  min-width: 500px;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px 0;
+  margin-bottom: 8px;
+
+  h2 {
+    margin: 0;
+    font-size: 20px;
+  }
+}
+
+mat-dialog-content {
+  padding: 20px 24px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.product-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+
+  .full-width {
+    width: 100%;
+  }
+
+  .half-width {
+    flex: 1;
+  }
+}
+
+mat-dialog-actions {
+  padding: 16px 24px;
+  border-top: 1px solid #e0e0e0;
+  margin: 0;
+
+  button {
+    min-width: 100px;
+  }
+}
+
+@media (max-width: 600px) {
+  .product-form-dialog {
+    min-width: auto;
+    width: 100%;
+  }
+
+  .form-row {
+    flex-direction: column;
+
+    .half-width {
+      width: 100%;
+    }
+  }
+}
+

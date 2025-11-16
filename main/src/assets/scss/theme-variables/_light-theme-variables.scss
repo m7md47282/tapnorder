@@ -1,0 +1,25 @@
+@use "../colors" as *;
+
+html .light-theme {
+    color-scheme: light;
+    --mat-sys-corner-small: 7px;
+    --mat-sys-background: #{$color-neutral-bg};
+    --mat-sys-surface-bright: #{$color-neutral-bg-light};
+    --mat-sys-surface: #{$color-neutral-bg};
+    --mat-sys-surface-container: #{$color-neutral-bg};
+    --mat-sys-surface-container-low: #{$color-neutral-bg};
+    --mat-sys-on-background: #{$color-neutral-text};
+    --mat-sys-outline: #{$color-neutral-border};
+    --mat-sys-outline-variant: #{$color-neutral-border};
+    --mat-form-field-outlined-hover-outline-color: #{$color-neutral-border};
+    --mat-checkbox-unselected-hover-state-layer-color: #{$color-neutral-border};
+    --mat-menu-item-hover-state-layer-color: #{$color-neutral-bg-subtle};
+    --mat-button-toggle-state-layer-color: #{$color-neutral-bg-subtle};
+    --mat-option-focus-state-layer-color: #{$color-neutral-bg-subtle};
+    --mat-option-hover-state-layer-color: #{$color-neutral-bg-subtle};
+    --mat-slide-toggle-unselected-track-color: #{$color-neutral-bg-subtle};
+    --mat-stepper-header-focus-state-layer-color: #{$color-neutral-bg-subtle};
+    --mat-stepper-header-hover-state-layer-color: #{$color-neutral-bg-subtle};
+    --mat-dialog-supporting-text-color: var(--mat-sys-on-background);
+    --mat-expansion-header-hover-state-layer-color: #{$color-neutral-bg-subtle};
+  }

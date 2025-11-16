@@ -1,0 +1,61 @@
+@use "sass:map";
+@use "@angular/material" as mat;
+@use "../variables" as *;
+@use "../colors" as *;
+
+// Success snackbar
+::ng-deep .success-snackbar {
+  .mdc-snackbar__surface {
+    background-color: $color-success !important;
+    color: $color-white !important;
+  }
+  .mdc-snackbar__label {
+    color: $color-white !important;
+  }
+  .mat-mdc-snack-bar-action {
+    color: $color-white !important;
+  }
+}
+
+// Error snackbar
+::ng-deep .error-snackbar {
+  .mdc-snackbar__surface {
+    background-color: $color-error !important;
+    color: $color-white !important;
+  }
+  .mdc-snackbar__label {
+    color: $color-white !important;
+  }
+  .mat-mdc-snack-bar-action {
+    color: $color-white !important;
+  }
+}
+
+// Warning snackbar
+::ng-deep .warning-snackbar {
+  .mdc-snackbar__surface {
+    background-color: $color-warning !important;
+    color: $color-white !important;
+  }
+  .mdc-snackbar__label {
+    color: $color-white !important;
+  }
+  .mat-mdc-snack-bar-action {
+    color: $color-white !important;
+  }
+}
+
+// Info snackbar
+::ng-deep .info-snackbar {
+  .mdc-snackbar__surface {
+    background-color: $color-primary !important;
+    color: $color-white !important;
+  }
+  .mdc-snackbar__label {
+    color: $color-white !important;
+  }
+  .mat-mdc-snack-bar-action {
+    color: $color-white !important;
+  }
+}
+

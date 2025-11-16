@@ -1,0 +1,85 @@
+// ============================================
+// WHITELABEL COLOR SYSTEM
+// ============================================
+// Minimal color system with max 3 main colors
+// 
+// TO REBRAND/WHITELABEL:
+// Simply change the 3 main color values below:
+// 1. $color-primary - Your main brand color
+// 2. $color-secondary - Your accent color  
+// 3. $color-neutral-* - Your neutral colors (backgrounds, text, borders)
+//
+// All other colors will automatically adjust based on these 3 colors.
+// ============================================
+
+// PRIMARY COLOR - Main brand color (buttons, links, primary actions)
+// Change this to your brand's primary color
+$color-primary: #5d87ff !default;
+$color-primary-dark: #3772ff !default;
+$color-primary-light: rgba(93, 135, 255, 0.15) !default;
+
+// SECONDARY COLOR - Accent color (secondary actions, highlights)
+// Change this to your brand's secondary/accent color
+$color-secondary: #44b7f7 !default;
+$color-secondary-light: rgba(68, 183, 247, 0.15) !default;
+
+// NEUTRAL COLORS - Backgrounds, text, borders
+// Change these to match your brand's neutral palette
+$color-neutral-bg: #ffffff !default;
+$color-neutral-bg-light: #f2f6fa !default;
+$color-neutral-bg-subtle: #f6f9fc !default;
+$color-neutral-text: #2a3547 !default;
+$color-neutral-text-secondary: #86868b !default;
+$color-neutral-border: #d7dde2 !default;
+$color-neutral-shadow: rgba(0, 0, 0, 0.1) !default;
+
+// SEMANTIC COLORS (derived from primary/secondary or custom)
+$color-success: #13deb9 !default;
+$color-success-light: rgba(19, 222, 185, 0.15) !default;
+$color-warning: #ffae1f !default;
+$color-warning-light: rgba(255, 174, 31, 0.15) !default;
+$color-error: #f74456 !default;
+$color-error-light: rgba(247, 68, 86, 0.15) !default;
+
+// UTILITY COLORS
+$color-white: #ffffff !default;
+$color-black: #000000 !default;
+$color-transparent: transparent !default;
+
+// OPACITY VARIANTS (for overlays, backgrounds)
+$opacity-light: 0.1 !default;
+$opacity-medium: 0.15 !default;
+$opacity-heavy: 0.3 !default;
+$opacity-overlay: 0.85 !default;
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+// Use these functions to create color variants
+
+@function color-with-opacity($color, $opacity: 0.15) {
+  // Handle both hex colors and rgba colors
+  @if type-of($color) == color {
+    @return rgba($color, $opacity);
+  } @else {
+    // For string colors like var(--mat-sys-primary), return as-is
+    @return $color;
+  }
+}
+
+@function color-lighten($color, $amount: 10%) {
+  @if type-of($color) == color {
+    @return lighten($color, $amount);
+  } @else {
+    @return $color;
+  }
+}
+
+@function color-darken($color, $amount: 10%) {
+  @if type-of($color) == color {
+    @return darken($color, $amount);
+  } @else {
+    @return $color;
+  }
+}
+
