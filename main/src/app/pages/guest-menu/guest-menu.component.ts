@@ -482,9 +482,9 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
         undefined, // notes
         this.currency
       );
-
+    
       // Store order data for receipt
-      this.receiptItems = [...this.cartItems];
+    this.receiptItems = [...this.cartItems];
       this.orderNumber = order.orderNumber;
       this.orderDate = order.createdAt;
       this.orderTableNumber = order.tableId || '';
@@ -498,16 +498,16 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
         .subscribe(status => {
           order.status = status;
         });
-
+    
       // Show success notification
       this.notification.success('Order placed successfully!');
 
       // Show receipt
-      this.showReceipt = true;
-      this.closeCart();
-
-      // Clear cart after showing receipt
-      this.cartService.clearCart();
+    this.showReceipt = true;
+    this.closeCart();
+    
+    // Clear cart after showing receipt
+    this.cartService.clearCart();
 
     } catch (error) {
       console.error('Error creating order:', error);
