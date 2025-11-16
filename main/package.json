@@ -3,11 +3,13 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build",
-    "build:prod": "ng build --configuration production",
-    "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "postinstall": "ng version || true",
+    "start": "npx ng serve",
+    "build": "npx ng build",
+    "build:prod": "npx ng build --configuration production",
+    "watch": "npx ng build --watch --configuration development",
+    "test": "npx ng test",
+    "vercel-build": "npm ci && npx ng build --configuration production"
   },
   "private": true,
   "dependencies": {
