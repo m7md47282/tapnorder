@@ -23,7 +23,16 @@
     "lib": [
       "ES2022",
       "dom"
-    ]
+    ],
+    "types": [
+      "node"
+    ],
+    "paths": {
+      "crypto": ["./src/polyfills/crypto.ts"],
+      "fs": ["./src/polyfills/fs.ts"],
+      "stream": ["./src/polyfills/stream.ts"],
+      "events": ["./src/polyfills/events.ts"]
+    }
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,

@@ -293,24 +293,24 @@
             </div>
           }
 
-          <div class="modal-price-section">
-            <div class="modal-price">
-              <span class="current-price">{{ currency }} {{ selectedItem.price | number:'1.2-2' }}</span>
-              @if (selectedItem.originalPrice) {
-                <span class="original-price">{{ currency }} {{ selectedItem.originalPrice | number:'1.2-2' }}</span>
-              }
-            </div>
-            @if (selectedItem.originalPrice) {
-              <div class="modal-savings">
-                Save {{ currency }} {{ calculateSavings(selectedItem) | number:'1.2-2' }}
-              </div>
-            }
-          </div>
+        
 
           <div class="modal-actions">
             <button mat-raised-button class="add-to-cart-btn" (click)="addToCart(selectedItem)">
-              <mat-icon>add_shopping_cart</mat-icon>
-              <span>Add to Cart</span>
+              <div class="btn-content">
+                <div class="flex align-items-center gap-2">
+                  <mat-icon>add</mat-icon>
+                  <span>Add</span>
+                </div>
+                <div class="">
+                  <div class="price">
+                    <span class="">{{ currency }} {{ selectedItem.price | number:'1.2-2' }}</span>
+                    @if (selectedItem.originalPrice) {
+                      <span class="">{{ currency }} {{ selectedItem.originalPrice | number:'1.2-2' }}</span>
+                    }
+                  </div>
+                </div>
+              </div>
             </button>
           </div>
         </div>

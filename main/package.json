@@ -3,13 +3,12 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "postinstall": "ng version || true",
+    "postinstall": "node scripts/setup-polyfills.js && ng version || true",
     "start": "npx ng serve",
     "build": "npx ng build",
     "build:prod": "npx ng build --configuration production",
     "watch": "npx ng build --watch --configuration development",
-    "test": "npx ng test",
-    "vercel-build": "npm ci && npx ng build --configuration production"
+    "test": "npx ng test"
   },
   "private": true,
   "dependencies": {
@@ -29,6 +28,8 @@
     "angular-tabler-icons": "^3.26.0",
     "apexcharts": "^4.7.0",
     "buffer": "^6.0.3",
+    "crypto-browserify": "^3.12.1",
+    "events": "^3.3.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.3",
     "ng-apexcharts": "^1.16.0",
@@ -36,6 +37,7 @@
     "process": "^0.11.10",
     "rxjs": "~7.8.2",
     "sass": "^1.89.2",
+    "stream-browserify": "^3.0.0",
     "tslib": "^2.8.1",
     "xlsx": "^0.18.5",
     "xlsx-populate": "^1.21.0",

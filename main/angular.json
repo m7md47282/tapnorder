@@ -17,7 +17,7 @@
         "build": {
           "builder": "@angular/build:application",
           "options": {
-            "allowedCommonJsDependencies": ["apexcharts", "bezier-easing", "moment", "xlsx-populate", "buffer", "process"],
+            "allowedCommonJsDependencies": ["apexcharts", "bezier-easing", "moment", "xlsx-populate", "buffer", "process", "crypto-browserify", "crypto", "fs", "stream", "events", "stream-browserify"],
             "outputPath": {
               "base": "dist/Modernize"
             },
