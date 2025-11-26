@@ -1,0 +1,70 @@
+<mat-card class="ai-insights-widget">
+  <mat-card-header>
+    <div class="widget-header">
+      <div class="header-content">
+        <mat-icon class="ai-icon">psychology</mat-icon>
+        <div>
+          <mat-card-title>AI Business Advisor</mat-card-title>
+          <mat-card-subtitle>Data-driven insights to scale your business</mat-card-subtitle>
+        </div>
+      </div>
+      <button mat-icon-button [routerLink]="['/dashboard/ai-advisor']" matTooltip="View Full AI Advisor">
+        <mat-icon>arrow_forward</mat-icon>
+      </button>
+    </div>
+  </mat-card-header>
+
+  <mat-card-content>
+    @if (isLoading) {
+      <div class="loading-state">
+        <mat-spinner diameter="30"></mat-spinner>
+        <p>Analyzing your business...</p>
+      </div>
+    } @else if (topInsights.length === 0) {
+      <div class="empty-state">
+        <mat-icon>insights</mat-icon>
+        <p>No insights available at the moment</p>
+      </div>
+    } @else {
+      <div class="insights-list">
+        @for (insight of topInsights; track insight.id) {
+          <div class="insight-item" [routerLink]="['/dashboard/ai-advisor']" [queryParams]="{tab: 'insights'}">
+            <div class="insight-header">
+              <mat-icon [style.color]="getPriorityColor(insight.priority)" class="priority-icon">
+                {{ getPriorityIcon(insight.priority) }}
+              </mat-icon>
+              <div class="insight-content">
+                <h4 class="insight-title">{{ insight.title }}</h4>
+                <p class="insight-description">{{ insight.description }}</p>
+              </div>
+            </div>
+            @if (insight.estimatedImpact) {
+              <div class="insight-impact">
+                @if (insight.estimatedImpact.revenue) {
+                  <span class="impact-badge revenue">
+                    <mat-icon>attach_money</mat-icon>
+                    +${{ insight.estimatedImpact.revenue | number:'1.0-0' }}/mo
+                  </span>
+                }
+                @if (insight.estimatedImpact.percentage) {
+                  <span class="impact-badge percentage">
+                    <mat-icon>trending_up</mat-icon>
+                    +{{ insight.estimatedImpact.percentage }}%
+                  </span>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <div class="widget-footer">
+      <button mat-stroked-button color="primary" [routerLink]="['/dashboard/ai-advisor']" class="view-all-btn">
+        <mat-icon>visibility</mat-icon>
+        View All Insights & Offers
+      </button>
+    </div>
+  </mat-card-content>
+</mat-card>
+

@@ -6,8 +6,11 @@ import {
 import {
   HttpClient,
   provideHttpClient,
-  withInterceptorsFromDi,
+  withInterceptors,
 } from '@angular/common/http';
+import { authInterceptor } from './interceptors/auth.interceptor';
+import { errorInterceptor } from './interceptors/error.interceptor';
+import { apiBaseUrlInterceptor } from './interceptors/api-base-url.interceptor';
 import { routes } from './app.routes';
 import {
   provideRouter,
@@ -42,7 +45,13 @@ export const appConfig: ApplicationConfig = {
       }),
       withComponentInputBinding()
     ),
-    provideHttpClient(withInterceptorsFromDi()),
+    provideHttpClient(
+      withInterceptors([
+        apiBaseUrlInterceptor,  // First: Add base URL
+        authInterceptor,          // Second: Add auth token
+        errorInterceptor         // Third: Handle errors
+      ])
+    ),
     provideClientHydration(),
     provideAnimationsAsync(),
     provideNativeDateAdapter(),

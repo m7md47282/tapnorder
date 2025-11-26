@@ -1,0 +1,278 @@
+<div class="admin-ai-advisor">
+  <div class="advisor-header">
+    <div class="header-content">
+      <div class="ai-icon-wrapper">
+        <mat-icon class="ai-icon">psychology</mat-icon>
+      </div>
+      <div>
+        <h2>AI Business Advisor</h2>
+        <p class="subtitle">Data-driven insights to scale your restaurant</p>
+      </div>
+    </div>
+    <button mat-icon-button (click)="loadData()" [disabled]="isLoading">
+      <mat-icon>refresh</mat-icon>
+    </button>
+  </div>
+
+  <!-- Tabs -->
+  <mat-tab-group [(selectedIndex)]="activeTabIndex" class="advisor-tabs">
+    <!-- Insights Tab -->
+    <mat-tab label="Insights">
+      <div class="tab-content">
+        @if (isLoading) {
+          <div class="loading-state">
+            <mat-spinner diameter="40"></mat-spinner>
+            <p>Analyzing your business data...</p>
+          </div>
+        } @else {
+          <div class="insights-grid">
+            @for (insight of insights; track insight.id) {
+              <mat-card class="insight-card" [class.high-priority]="insight.priority === 'high'">
+                <mat-card-header>
+                  <div class="card-header-content">
+                    <mat-icon [style.color]="getPriorityColor(insight.priority)">
+                      {{ getPriorityIcon(insight.priority) }}
+                    </mat-icon>
+                    <div>
+                      <mat-card-title>{{ insight.title }}</mat-card-title>
+                      <mat-card-subtitle>{{ insight.type | titlecase }} • {{ insight.priority | titlecase }} Priority</mat-card-subtitle>
+                    </div>
+                  </div>
+                </mat-card-header>
+                <mat-card-content>
+                  <p class="insight-description">{{ insight.description }}</p>
+                  <div class="impact-section">
+                    <strong>Impact:</strong> {{ insight.impact }}
+                  </div>
+                  @if (insight.estimatedImpact) {
+                    <div class="estimated-impact">
+                      @if (insight.estimatedImpact.revenue) {
+                        <span class="impact-badge revenue">
+                          <mat-icon>attach_money</mat-icon>
+                          +${{ insight.estimatedImpact.revenue | number:'1.0-0' }}/mo
+                        </span>
+                      }
+                      @if (insight.estimatedImpact.percentage) {
+                        <span class="impact-badge percentage">
+                          <mat-icon>trending_up</mat-icon>
+                          +{{ insight.estimatedImpact.percentage }}%
+                        </span>
+                      }
+                      @if (insight.estimatedImpact.customers) {
+                        <span class="impact-badge customers">
+                          <mat-icon>people</mat-icon>
+                          +{{ insight.estimatedImpact.customers }} customers
+                        </span>
+                      }
+                    </div>
+                  }
+                  <div class="action-items">
+                    <strong>Action Items:</strong>
+                    <ul>
+                      @for (action of insight.actionItems; track action) {
+                        <li>{{ action }}</li>
+                      }
+                    </ul>
+                  </div>
+                </mat-card-content>
+              </mat-card>
+            }
+          </div>
+        }
+      </div>
+    </mat-tab>
+
+    <!-- Offers Tab -->
+    <mat-tab label="Offer Suggestions">
+      <div class="tab-content">
+        @if (isLoading) {
+          <div class="loading-state">
+            <mat-spinner diameter="40"></mat-spinner>
+            <p>Generating offer recommendations...</p>
+          </div>
+        } @else {
+          <div class="offers-grid">
+            @for (offer of offers; track offer.id) {
+              <mat-card class="offer-card">
+                <mat-card-header>
+                  <div class="offer-header">
+                    <div>
+                      <mat-card-title>{{ offer.name }}</mat-card-title>
+                      <mat-card-subtitle>
+                        <span class="offer-type" [style.background-color]="getOfferTypeColor(offer.type)">
+                          {{ offer.type | titlecase }}
+                        </span>
+                        @if (offer.discount) {
+                          <span class="discount-badge">{{ offer.discount }}% OFF</span>
+                        }
+                      </mat-card-subtitle>
+                    </div>
+                    <mat-chip [class]="'timing-' + offer.timing">
+                      {{ offer.timing | titlecase }}
+                    </mat-chip>
+                  </div>
+                </mat-card-header>
+                <mat-card-content>
+                  <p class="offer-description">{{ offer.description }}</p>
+                  
+                  <div class="expected-impact">
+                    <h4>Expected Impact:</h4>
+                    <div class="impact-metrics">
+                      <div class="metric">
+                        <mat-icon>trending_up</mat-icon>
+                        <div>
+                          <span class="metric-label">Revenue Increase</span>
+                          <span class="metric-value">+${{ offer.expectedImpact.revenueIncrease | number:'1.0-0' }}/mo</span>
+                        </div>
+                      </div>
+                      <div class="metric">
+                        <mat-icon>people</mat-icon>
+                        <div>
+                          <span class="metric-label">New Customers</span>
+                          <span class="metric-value">+{{ offer.expectedImpact.customerIncrease }}</span>
+                        </div>
+                      </div>
+                      <div class="metric">
+                        <mat-icon>shopping_cart</mat-icon>
+                        <div>
+                          <span class="metric-label">Avg Order Value</span>
+                          <span class="metric-value">+${{ offer.expectedImpact.avgOrderValueIncrease | number:'1.2-2' }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="implementation-steps">
+                    <h4>Implementation Steps:</h4>
+                    <ol>
+                      @for (step of offer.implementation; track step) {
+                        <li>{{ step }}</li>
+                      }
+                    </ol>
+                  </div>
+
+                  @if (offer.targetItems && offer.targetItems.length > 0) {
+                    <div class="target-items">
+                      <strong>Target Items:</strong>
+                      <mat-chip-listbox>
+                        @for (item of offer.targetItems; track item) {
+                          <mat-chip>{{ item }}</mat-chip>
+                        }
+                      </mat-chip-listbox>
+                    </div>
+                  }
+                </mat-card-content>
+                <mat-card-actions>
+                  <button mat-stroked-button color="primary">
+                    <mat-icon>add</mat-icon>
+                    Create Offer
+                  </button>
+                  <button mat-button>
+                    <mat-icon>info</mat-icon>
+                    Learn More
+                  </button>
+                </mat-card-actions>
+              </mat-card>
+            }
+          </div>
+        }
+      </div>
+    </mat-tab>
+
+    <!-- Chat Tab -->
+    <mat-tab label="Ask Advisor">
+      <div class="tab-content chat-tab">
+        <div class="chat-messages-container">
+          @for (message of chatMessages; track message.timestamp) {
+            <div class="chat-message" [class.user]="message.role === 'user'" [class.assistant]="message.role === 'assistant'">
+              @if (message.role === 'assistant') {
+                <div class="message-avatar">
+                  <mat-icon>psychology</mat-icon>
+                </div>
+              }
+              <div class="message-content">
+                <div class="message-text">{{ message.content }}</div>
+                <div class="message-time">{{ message.timestamp | date:'short' }}</div>
+              </div>
+              @if (message.role === 'user') {
+                <div class="message-avatar user-avatar">
+                  <mat-icon>person</mat-icon>
+                </div>
+              }
+            </div>
+          }
+          @if (isChatLoading) {
+            <div class="chat-message assistant">
+              <div class="message-avatar">
+                <mat-icon>psychology</mat-icon>
+              </div>
+              <div class="message-content">
+                <div class="typing-indicator">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+        <div class="chat-input-container">
+          <mat-form-field appearance="outline" class="chat-input-field">
+            <textarea 
+              matInput 
+              [(ngModel)]="chatInput" 
+              placeholder="Ask me anything about scaling your business..."
+              rows="2"
+              (keydown)="onKeyPress($event)"
+              [disabled]="isChatLoading">
+            </textarea>
+          </mat-form-field>
+          <button 
+            mat-raised-button 
+            color="primary" 
+            class="send-btn"
+            (click)="sendMessage()"
+            [disabled]="!chatInput.trim() || isChatLoading">
+            <mat-icon>send</mat-icon>
+            Send
+          </button>
+        </div>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+
+  <!-- Quick Stats -->
+  @if (metrics) {
+    <div class="quick-stats">
+      <div class="stat-card">
+        <mat-icon>trending_up</mat-icon>
+        <div>
+          <span class="stat-label">Revenue Growth</span>
+          <span class="stat-value positive">+{{ metrics.trends.revenueGrowth }}%</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <mat-icon>shopping_cart</mat-icon>
+        <div>
+          <span class="stat-label">Avg Order Value</span>
+          <span class="stat-value">${{ metrics.avgOrderValue | number:'1.2-2' }}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <mat-icon>account_balance</mat-icon>
+        <div>
+          <span class="stat-label">Profit Margin</span>
+          <span class="stat-value positive">{{ (metrics.profitMargins.overall * 100) | number:'1.0-0' }}%</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <mat-icon>people</mat-icon>
+        <div>
+          <span class="stat-label">Returning Customers</span>
+          <span class="stat-value">{{ metrics.customerTrends.returningCustomers }}</span>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+

@@ -36,6 +36,7 @@ export interface yearlyChart {
 @Component({
     selector: 'app-yearly-breakup',
     templateUrl: './yearly-breakup.component.html',
+    styleUrls: ['./yearly-breakup.component.scss'],
     imports: [MaterialModule, NgApexchartsModule, TablerIconsModule],
     encapsulation: ViewEncapsulation.None,
 })
@@ -53,7 +54,8 @@ export class AppYearlyBreakupComponent {
             series: [38, 40, 25],
             labels: ["2025", "2024", "2023"],
             chart: {
-                width: 125,
+                width: '100%',
+                height: 200,
                 type: "donut",
                 fontFamily: "inherit",
                 foreColor: "#adb0bb",
@@ -85,7 +87,8 @@ export class AppYearlyBreakupComponent {
                     breakpoint: 991,
                     options: {
                         chart: {
-                            width: 120,
+                            width: '100%',
+                            height: 180,
                         },
                     },
                 },

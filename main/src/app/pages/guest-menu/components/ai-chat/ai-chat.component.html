@@ -1,0 +1,133 @@
+<!-- Floating Chat Button -->
+<button 
+  mat-fab 
+  class="ai-chat-fab" 
+  (click)="toggleChat()"
+  [class.active]="isOpen">
+  <mat-icon>smart_toy</mat-icon>
+</button>
+
+<!-- Chat Window -->
+@if (isOpen) {
+  <div class="ai-chat-container">
+    <div class="chat-header">
+      <div class="header-content">
+        <mat-icon class="ai-icon">smart_toy</mat-icon>
+        <div class="header-text">
+          <h3>AI Assistant</h3>
+          <span class="status">Online</span>
+        </div>
+      </div>
+      <button mat-icon-button class="close-btn" (click)="closeChat()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <div class="chat-messages">
+      @for (message of messages; track message.id) {
+        <div class="message" [class.user]="message.role === 'user'" [class.assistant]="message.role === 'assistant'">
+          @if (message.role === 'assistant') {
+            <div class="message-avatar">
+              <mat-icon>smart_toy</mat-icon>
+            </div>
+          }
+          <div class="message-content">
+            <div class="message-text">{{ message.content }}</div>
+            @if (message.suggestions && message.suggestions.length > 0) {
+              <div class="suggestions">
+                <p class="suggestions-label">Recommended for you:</p>
+                @for (item of message.suggestions; track item.id) {
+                  <button mat-stroked-button class="suggestion-item" (click)="addSuggestedItem(item)">
+                    <img [src]="item.image" [alt]="item.name" class="suggestion-image" />
+                    <div class="suggestion-info">
+                      <span class="suggestion-name">{{ item.name }}</span>
+                      <span class="suggestion-price">JOD {{ item.price | number:'1.2-2' }}</span>
+                    </div>
+                    <mat-icon>add</mat-icon>
+                  </button>
+                }
+              </div>
+            }
+            @if (message.customOrder) {
+              <div class="custom-order-card">
+                <div class="custom-order-header">
+                  <mat-icon class="sparkle-icon">auto_awesome</mat-icon>
+                  <span>Custom Order Created</span>
+                </div>
+                <div class="custom-order-content">
+                  <div class="base-item">
+                    <strong>{{ message.customOrder.baseItem.name }}</strong>
+                    @if (message.customOrder.modifications.length > 0) {
+                      <div class="modifications">
+                        @for (mod of message.customOrder.modifications; track mod) {
+                          <span class="mod-badge">{{ mod }}</span>
+                        }
+                      </div>
+                    }
+                  </div>
+                  @if (message.customOrder.addons.length > 0) {
+                    <div class="addons">
+                      <p class="addons-label">Add-ons:</p>
+                      <div class="addons-list">
+                        @for (addon of message.customOrder.addons; track addon.id) {
+                          <span class="addon-badge">{{ addon.name }}</span>
+                        }
+                      </div>
+                    </div>
+                  }
+                  <div class="custom-order-total">
+                    <strong>Total: JOD {{ message.customOrder.totalPrice | number:'1.2-2' }}</strong>
+                  </div>
+                  <button mat-raised-button class="add-custom-order-btn" (click)="addCustomOrderToCart(message.customOrder!)">
+                    <mat-icon>add_shopping_cart</mat-icon>
+                    <span>Add to Cart</span>
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+          @if (message.role === 'user') {
+            <div class="message-avatar user-avatar">
+              <mat-icon>person</mat-icon>
+            </div>
+          }
+        </div>
+      }
+      @if (isLoading) {
+        <div class="message assistant">
+          <div class="message-avatar">
+            <mat-icon>smart_toy</mat-icon>
+          </div>
+          <div class="message-content">
+            <div class="typing-indicator">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="chat-input-container">
+      <mat-form-field appearance="outline" class="chat-input-field">
+        <textarea 
+          matInput 
+          [(ngModel)]="inputMessage" 
+          placeholder="Ask me anything... e.g., 'I like my latte thick but not too bitter'"
+          rows="1"
+          (keydown)="onKeyPress($event)"
+          [disabled]="isLoading">
+        </textarea>
+      </mat-form-field>
+      <button 
+        mat-icon-button 
+        class="send-btn" 
+        (click)="sendMessage()"
+        [disabled]="!inputMessage.trim() || isLoading">
+        <mat-icon>send</mat-icon>
+      </button>
+    </div>
+  </div>
+}
+

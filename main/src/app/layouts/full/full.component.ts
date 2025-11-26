@@ -155,6 +155,11 @@ export class FullComponent implements OnInit, OnDestroy {
           iconName: 'package',
           route: '/products'
         });
+        items.push({
+          displayName: 'Categories',
+          iconName: 'category',
+          route: '/products/categories'
+        });
       }
       
       if (roleNav.some(n => n.route === '/sales')) {

@@ -18,7 +18,7 @@ import { UserRole } from 'src/app/models/user.model';
 })
 export class AppSideLoginComponent {
   form = new FormGroup({
-    username: new FormControl('', [Validators.required, Validators.minLength(3)]),
+    email: new FormControl('', [Validators.required, Validators.email]), // Backend uses email
     password: new FormControl('', [Validators.required]),
     rememberMe: new FormControl(false),
   });
@@ -47,11 +47,11 @@ export class AppSideLoginComponent {
     }
 
     this.isLoading = true;
-    const { username, password, rememberMe } = this.form.value;
+    const { email, password, rememberMe } = this.form.value;
 
     this.authService.login(
       {
-        username: username!,
+        email: email!,
         password: password!,
       },
       rememberMe || false

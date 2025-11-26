@@ -30,6 +30,7 @@ export interface monthlyChart {
     selector: 'app-monthly-earnings',
     imports: [NgApexchartsModule, MaterialModule, TablerIconsModule],
     templateUrl: './monthly-earnings.component.html',
+    styleUrls: ['./monthly-earnings.component.scss']
 })
 export class AppMonthlyEarningsComponent {
     @ViewChild('chart') chart: ChartComponent = Object.create(null);
@@ -52,7 +53,8 @@ export class AppMonthlyEarningsComponent {
                 toolbar: {
                     show: false,
                 },
-                height: 85,
+                height: 120,
+                width: '100%',
                 sparkline: {
                     enabled: true,
                 },

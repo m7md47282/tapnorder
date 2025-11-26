@@ -1,0 +1,16 @@
+<div class="ai-advisor-page">
+  <div class="page-header">
+    <button mat-icon-button (click)="goBack()" class="back-btn">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <div class="header-content">
+      <h1>AI Business Advisor</h1>
+      <p class="subtitle">Data-driven insights and strategies to scale your restaurant</p>
+    </div>
+  </div>
+
+  <div class="page-content">
+    <app-admin-ai-advisor [initialTab]="initialTab"></app-admin-ai-advisor>
+  </div>
+</div>
+

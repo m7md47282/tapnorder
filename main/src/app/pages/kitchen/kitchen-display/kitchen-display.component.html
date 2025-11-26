@@ -1,160 +1,66 @@
-<div class="kitchen-display-container" [class.large-text]="largeTextMode" [class.fullscreen]="isFullscreen">
-  <!-- Fullscreen Mode: Compact Header with Icons -->
-  <div class="fullscreen-header" *ngIf="isFullscreen">
-    <div class="fullscreen-controls">
-      <!-- View Mode Toggle -->
-      <button mat-icon-button [matMenuTriggerFor]="viewModeMenu" matTooltip="View Mode">
-        <mat-icon>{{ viewMode.value === 'orders' ? 'list' : 'view_module' }}</mat-icon>
-      </button>
-      <mat-menu #viewModeMenu="matMenu">
-        <button mat-menu-item (click)="viewMode.setValue('orders')">
-          <mat-icon>list</mat-icon>
-          <span>Orders</span>
-        </button>
-        <button mat-menu-item (click)="viewMode.setValue('batch')">
-          <mat-icon>view_module</mat-icon>
-          <span>Batch Cooking</span>
-        </button>
-      </mat-menu>
-
-      <!-- Large Text Toggle -->
-      <button mat-icon-button (click)="toggleLargeText()" matTooltip="Toggle Large Text">
-        <mat-icon>format_size</mat-icon>
-      </button>
-
-      <!-- Sound Alerts Toggle -->
-      <button mat-icon-button (click)="toggleSoundAlerts()" matTooltip="Toggle Sound Alerts">
-        <mat-icon>{{ soundAlerts ? 'volume_up' : 'volume_off' }}</mat-icon>
-      </button>
-
-      <!-- Refresh -->
-      <button mat-icon-button (click)="loadOrders()" matTooltip="Refresh">
-        <mat-icon>refresh</mat-icon>
-      </button>
-
-      <!-- Exit Fullscreen -->
-      <button mat-icon-button (click)="toggleFullscreen()" matTooltip="Exit Fullscreen">
-        <mat-icon>fullscreen_exit</mat-icon>
-      </button>
-    </div>
-  </div>
-
-  <!-- Normal Mode: Full Header -->
+<div class="kitchen-display-container" [class.fullscreen]="isFullscreen">
+  <!-- Minimal Header -->
   <div class="kitchen-header" *ngIf="!isFullscreen">
-    <div>
       <h1>Kitchen Board</h1>
-      <p class="subtitle">Manage and track order preparation</p>
-    </div>
-    <div class="header-actions">
-      <!-- View Mode Toggle -->
-      <mat-form-field appearance="outline" class="view-mode-field">
-        <mat-label>View</mat-label>
-        <mat-select [formControl]="viewMode">
-          <mat-option value="orders">Orders</mat-option>
-          <mat-option value="batch">Batch Cooking</mat-option>
+    <div class="header-controls">
+      <!-- Status Filter -->
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Status</mat-label>
+        <mat-select [formControl]="statusFilter">
+          <mat-option value="all">Active (New, Cooking, Ready)</mat-option>
+          <mat-option [value]="KitchenOrderStatus.NEW">New</mat-option>
+          <mat-option [value]="KitchenOrderStatus.IN_PROGRESS">Cooking</mat-option>
+          <mat-option [value]="KitchenOrderStatus.READY">Ready</mat-option>
+          <mat-option [value]="KitchenOrderStatus.COMPLETED">Completed</mat-option>
         </mat-select>
       </mat-form-field>
 
-      <!-- Visual Enhancement Controls -->
-      <button mat-icon-button [matMenuTriggerFor]="settingsMenu" matTooltip="Settings">
-        <mat-icon>settings</mat-icon>
+      <button mat-icon-button (click)="toggleFullscreen()" matTooltip="Fullscreen">
+        <mat-icon>fullscreen</mat-icon>
       </button>
-      <mat-menu #settingsMenu="matMenu">
-        <button mat-menu-item (click)="toggleLargeText()">
-          <mat-icon>{{ largeTextMode ? 'text_fields' : 'text_fields' }}</mat-icon>
-          <span>{{ largeTextMode ? 'Normal Text' : 'Large Text' }}</span>
-        </button>
-        <button mat-menu-item (click)="toggleFullscreen()">
-          <mat-icon>{{ isFullscreen ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
-          <span>{{ isFullscreen ? 'Exit Fullscreen' : 'Fullscreen' }}</span>
-        </button>
-        <button mat-menu-item (click)="toggleSoundAlerts()">
-          <mat-icon>{{ soundAlerts ? 'volume_up' : 'volume_off' }}</mat-icon>
-          <span>{{ soundAlerts ? 'Sound ON' : 'Sound OFF' }}</span>
-        </button>
-      </mat-menu>
-
-      <button mat-icon-button (click)="toggleAutoRefresh()" matTooltip="{{ autoRefresh ? 'Auto Refresh ON' : 'Auto Refresh OFF' }}">
-        <mat-icon>{{ autoRefresh ? 'pause' : 'play_arrow' }}</mat-icon>
-      </button>
-      <button mat-icon-button color="primary" (click)="loadOrders()" matTooltip="Refresh">
+      <button mat-icon-button (click)="loadOrders()" matTooltip="Refresh">
         <mat-icon>refresh</mat-icon>
       </button>
     </div>
   </div>
 
-  <!-- Filters -->
-  <div class="filters-section" *ngIf="viewMode.value === 'orders' && !isFullscreen">
-    <mat-form-field appearance="outline" class="filter-field">
-      <mat-label>Status</mat-label>
-      <mat-select [formControl]="statusFilter">
-        <mat-option value="all">All Status</mat-option>
-        <mat-option [value]="KitchenOrderStatus.NEW">New</mat-option>
-        <mat-option [value]="KitchenOrderStatus.IN_PROGRESS">In Progress</mat-option>
-        <mat-option [value]="KitchenOrderStatus.READY">Ready</mat-option>
-        <mat-option [value]="KitchenOrderStatus.COMPLETED">Completed</mat-option>
-      </mat-select>
-    </mat-form-field>
-
-    <mat-form-field appearance="outline" class="filter-field">
-      <mat-label>Station</mat-label>
-      <mat-select [formControl]="stationFilter">
-        <mat-option *ngFor="let station of stations" [value]="station">
-          {{ station === 'all' ? 'All Stations' : station }}
-        </mat-option>
-      </mat-select>
-    </mat-form-field>
+  <!-- Fullscreen Header -->
+  <div class="fullscreen-header" *ngIf="isFullscreen">
+    <button mat-icon-button (click)="toggleFullscreen()" matTooltip="Exit Fullscreen">
+      <mat-icon>fullscreen_exit</mat-icon>
+    </button>
+    <button mat-icon-button (click)="loadOrders()" matTooltip="Refresh">
+      <mat-icon>refresh</mat-icon>
+    </button>
   </div>
 
-  <!-- Orders View -->
-  <div *ngIf="viewMode.value === 'orders'">
+  <!-- Orders Grid - Optimized for Distance Viewing -->
     <div class="orders-grid" *ngIf="!isLoading && filteredOrders.length > 0">
-      <mat-card *ngFor="let order of filteredOrders" 
+    <div *ngFor="let order of filteredOrders" 
                 class="order-card" 
+         [class.status-new]="order.status === KitchenOrderStatus.NEW"
+         [class.status-progress]="order.status === KitchenOrderStatus.IN_PROGRESS"
+         [class.status-ready]="order.status === KitchenOrderStatus.READY"
+         [class.status-completed]="order.status === KitchenOrderStatus.COMPLETED"
                 [class.urgent]="order.priority === 'URGENT' || order.priority === 'RUSH'"
-                [class.ready]="order.status === KitchenOrderStatus.READY"
-                [class.overdue]="isOrderOverdue(order.id)"
-                [class.held]="order.isHeld">
-        <mat-card-header>
+         [class.overdue]="isOrderOverdue(order.id)">
+      
+      <!-- Order Header - Large and Bold -->
           <div class="order-header">
-            <div>
-              <mat-card-title>
-                <span class="order-number">{{ order.orderNumber }}</span>
-                <mat-chip *ngIf="order.priority === 'URGENT' || order.priority === 'RUSH'" 
-                          [color]="getPriorityColor(order.priority)" 
-                          class="priority-chip">
-                  {{ order.priority }}
-                </mat-chip>
-                <mat-chip *ngIf="order.isHeld" color="warn" class="hold-chip">
-                  HELD
-                </mat-chip>
-                <mat-chip *ngIf="isOrderOverdue(order.id)" color="warn" class="overdue-chip">
-                  OVERDUE
-                </mat-chip>
-              </mat-card-title>
-              <mat-card-subtitle>
-                <span *ngIf="order.tableNumber">Table {{ order.tableNumber }}</span>
-                <span *ngIf="!order.tableNumber">{{ getOrderTypeLabel(order.orderType) }}</span>
-                <span *ngIf="order.serverName" class="separator">•</span>
-                <span *ngIf="order.serverName">Server: {{ order.serverName }}</span>
-              </mat-card-subtitle>
-              
-              <!-- Timer Display -->
-              <div class="order-timer" 
-                   [class.overdue-timer]="isOrderOverdue(order.id) && order.status !== KitchenOrderStatus.COMPLETED"
-                   [class.completed-timer]="order.status === KitchenOrderStatus.COMPLETED"
-                   [class.preparing-timer]="order.status === KitchenOrderStatus.IN_PROGRESS"
-                   [class.waiting-timer]="order.status === KitchenOrderStatus.NEW">
-                <div class="timer-display">
-                  <mat-icon class="timer-icon" 
-                            [class.completed-icon]="order.status === KitchenOrderStatus.COMPLETED">
-                    {{ order.status === KitchenOrderStatus.COMPLETED ? 'check_circle' : 'timer' }}
-                  </mat-icon>
-                  <div class="timer-info">
-                    <div class="timer-label">{{ getTimerLabel(order.id) }}</div>
-                    <div class="timer-countdown" 
-                         [class.overdue-text]="isOrderOverdue(order.id) && order.status !== KitchenOrderStatus.COMPLETED"
-                         [class.completed-text]="order.status === KitchenOrderStatus.COMPLETED">
+        <div class="order-number-section">
+          <div class="order-number">{{ order.orderNumber }}</div>
+          <div class="order-meta">
+            <span *ngIf="order.tableNumber" class="table-number">Table {{ order.tableNumber }}</span>
+            <span *ngIf="order.serverName" class="server-name">{{ order.serverName }}</span>
+            <span *ngIf="order.orderType && !order.tableNumber" class="order-type">{{ getOrderTypeLabel(order.orderType) }}</span>
+          </div>
+        </div>
+        
+        <div class="header-right">
+          <!-- Timer - Small in Top Right -->
+          <div class="timer-compact" 
+               [class.overdue]="isOrderOverdue(order.id) && order.status !== KitchenOrderStatus.COMPLETED">
+            <div class="timer-value-compact">
                       <span *ngIf="order.status === KitchenOrderStatus.COMPLETED">00:00</span>
                       <span *ngIf="order.status !== KitchenOrderStatus.COMPLETED && !isOrderOverdue(order.id)">
                         -{{ getTimerCountdown(order.id) }}
@@ -163,304 +69,96 @@
                         +{{ getElapsedTimeFormatted(order.id) }}
                       </span>
                     </div>
-                    <div class="timer-details">
-                      <span class="elapsed-time" *ngIf="order.status !== KitchenOrderStatus.COMPLETED">
-                        {{ getTimerLabel(order.id) }}: {{ getElapsedTimeFormatted(order.id) }}
-                      </span>
-                      <span class="estimated-time" *ngIf="order.status !== KitchenOrderStatus.COMPLETED">
-                        Est: {{ order.estimatedTime || 15 }} min
-                      </span>
-                      <span class="completed-time" *ngIf="order.status === KitchenOrderStatus.COMPLETED">
-                        Final Time: {{ getElapsedTimeFormatted(order.id) }}
-                      </span>
                     </div>
-                  </div>
-                </div>
-                <div class="timer-progress-bar" *ngIf="order.status !== KitchenOrderStatus.COMPLETED">
-                  <div class="timer-progress-fill" 
-                       [style.width.%]="getTimerProgress(order.id)"
-                       [class.overdue-progress]="isOrderOverdue(order.id)">
-                  </div>
-                </div>
-                <div class="timer-progress-bar completed" *ngIf="order.status === KitchenOrderStatus.COMPLETED">
-                  <div class="timer-progress-fill completed-progress" [style.width.%]="100">
-                  </div>
+          
+          <!-- Status Badge -->
+          <div class="status-badge" [class]="'status-' + order.status.toLowerCase().replace('_', '-')">
+            {{ order.status === KitchenOrderStatus.NEW ? 'NEW' : 
+               order.status === KitchenOrderStatus.IN_PROGRESS ? 'COOKING' : 
+               order.status === KitchenOrderStatus.READY ? 'READY' : 'DONE' }}
                 </div>
               </div>
             </div>
-            <div class="order-status-badge">
-              <mat-chip [color]="getStatusColor(order.status)">
-                {{ order.status }}
-              </mat-chip>
-            </div>
-          </div>
-        </mat-card-header>
 
-        <mat-card-content>
-          <!-- Order Actions - Moved to Top -->
-          <div class="order-actions order-actions-top">
-            <span [matMenuTriggerFor]="orderMenu" matTooltip="More options" class="more-options-trigger">
-              <mat-icon>more_vert</mat-icon>
-            </span>
-            <mat-menu #orderMenu="matMenu">
-              <button mat-menu-item (click)="openMessageDialog(order)">
-                <mat-icon>message</mat-icon>
-                <span>Send Message</span>
-              </button>
-              <button mat-menu-item *ngIf="!order.isHeld" (click)="holdOrder(order)">
-                <mat-icon>pause</mat-icon>
-                <span>Hold Order</span>
-              </button>
-              <button mat-menu-item *ngIf="order.isHeld" (click)="releaseOrder(order)">
-                <mat-icon>play_arrow</mat-icon>
-                <span>Release Order</span>
-              </button>
-              <button mat-menu-item (click)="reprintTicket(order)">
-                <mat-icon>print</mat-icon>
-                <span>Reprint Ticket</span>
-              </button>
-              <button mat-menu-item (click)="cancelOrder(order, 'Cancelled by kitchen')">
-                <mat-icon>cancel</mat-icon>
-                <span>Cancel Order</span>
-              </button>
-            </mat-menu>
-
+      <!-- Action Buttons - Large Touch Targets -->
+      <div class="action-buttons">
             <button *ngIf="order.status === KitchenOrderStatus.NEW" 
-                    mat-stroked-button 
-                    color="primary"
+                class="action-btn btn-start"
                     (click)="updateOrderStatus(order, KitchenOrderStatus.IN_PROGRESS)">
               <mat-icon>play_arrow</mat-icon>
-              Start Cooking
+          START
             </button>
             <button *ngIf="order.status === KitchenOrderStatus.IN_PROGRESS" 
-                    mat-stroked-button 
-                    color="accent"
+                class="action-btn btn-ready"
                     (click)="updateOrderStatus(order, KitchenOrderStatus.READY)">
               <mat-icon>check_circle</mat-icon>
-              Mark Ready
+          READY
             </button>
             <button *ngIf="order.status === KitchenOrderStatus.READY" 
-                    mat-flat-button 
-                    color="primary"
+                class="action-btn btn-complete"
                     (click)="updateOrderStatus(order, KitchenOrderStatus.COMPLETED)">
               <mat-icon>done_all</mat-icon>
-              Complete Order
+          COMPLETE
             </button>
           </div>
 
-          <!-- Special Instructions -->
-          <div *ngIf="order.specialInstructions" class="special-instructions">
+      <!-- Priority/Urgent Indicators -->
+      <div class="priority-indicators" *ngIf="order.priority === 'URGENT' || order.priority === 'RUSH' || isOrderOverdue(order.id)">
+        <div class="priority-badge urgent" *ngIf="order.priority === 'URGENT' || order.priority === 'RUSH'">
+          {{ order.priority }}
+        </div>
+        <div class="priority-badge overdue" *ngIf="isOrderOverdue(order.id)">
+          OVERDUE
+        </div>
+      </div>
+
+      <!-- Special Instructions - Large and Visible -->
+      <div class="special-instructions" *ngIf="order.specialInstructions">
             <mat-icon>info</mat-icon>
             <span>{{ order.specialInstructions }}</span>
           </div>
 
-          <!-- Hold Reason -->
-          <div *ngIf="order.isHeld && order.holdReason" class="hold-notice">
-            <mat-icon>pause_circle</mat-icon>
-            <span>{{ order.holdReason }}</span>
-          </div>
-
-          <!-- Messages -->
-          <div *ngIf="order.messages && order.messages.length > 0" class="messages-section">
-            <div *ngFor="let msg of order.messages" class="message-item">
-              <strong>{{ msg.from }}:</strong> {{ msg.message }}
-              <span class="message-time">{{ getElapsedTime(msg.timestamp) }}</span>
+      <!-- Order Items - Simplified List -->
+      <div class="order-items">
+        <div *ngFor="let item of order.items" 
+             class="order-item"
+             [class.item-completed]="item.status === KitchenOrderStatus.COMPLETED || item.status === KitchenOrderStatus.READY">
+          <div class="item-header">
+            <div class="item-name">
+              <span class="item-quantity">x{{ item.quantity }}</span>
+              <span class="item-title">{{ item.productName }}</span>
             </div>
+            <div class="item-station" *ngIf="item.station">{{ item.station }}</div>
           </div>
 
-          <!-- Order Items -->
-          <div class="order-items">
-            <div *ngFor="let item of order.items" class="order-item" 
-                 [class.completed]="item.status === KitchenOrderStatus.COMPLETED"
-                 [class.low-stock]="item.isLowStock">
-              <!-- Item Actions - Moved to Top -->
-              <div class="item-actions item-actions-top">
-                @if (item.recipe) {
-                  <button mat-icon-button 
-                          color="primary"
-                          (click)="showRecipe(item)"
-                          matTooltip="View Recipe">
-                    <mat-icon>menu_book</mat-icon>
-                  </button>
-                }
-                @if (item.isLowStock) {
-                  <button mat-icon-button 
-                          color="warn"
-                          (click)="checkInventory(item)"
-                          matTooltip="Check Inventory">
-                    <mat-icon>inventory</mat-icon>
-                  </button>
-                }
-                @if (item.status === KitchenOrderStatus.NEW) {
-                  <button mat-mini-fab 
-                          color="primary" 
-                          (click)="updateItemStatus(order, item, KitchenOrderStatus.IN_PROGRESS)"
-                          matTooltip="Start preparing">
-                    <mat-icon>play_arrow</mat-icon>
-                  </button>
-                }
-                @if (item.status === KitchenOrderStatus.IN_PROGRESS) {
-                  <button mat-mini-fab 
-                          color="accent" 
-                          (click)="updateItemStatus(order, item, KitchenOrderStatus.READY)"
-                          matTooltip="Mark as ready">
-                    <mat-icon>check</mat-icon>
-                  </button>
-                }
-              </div>
-              <div class="item-info">
-                <div class="item-name">
-                  <strong>{{ item.productName }}</strong>
-                  <span class="quantity">x{{ item.quantity }}</span>
-                  <mat-chip *ngIf="item.station" class="station-chip" color="accent">
-                    {{ item.station }}
-                  </mat-chip>
-                  <mat-chip *ngIf="item.isLowStock" color="warn" class="stock-alert-chip">
-                    <mat-icon>warning</mat-icon>
-                    LOW STOCK
-                  </mat-chip>
-                </div>
-
-                <!-- Allergens & Dietary Info -->
-                <div *ngIf="item.allergens && item.allergens.length > 0" class="allergen-info">
-                  <mat-icon class="allergen-icon">warning</mat-icon>
-                  <span class="allergen-label">Allergens:</span>
-                  <span class="allergen-list">{{ getAllergenDisplay(item) }}</span>
-                </div>
-                <div *ngIf="item.dietaryInfo && item.dietaryInfo.length > 0" class="dietary-info">
-                  <mat-icon class="dietary-icon">restaurant</mat-icon>
-                  <span>{{ item.dietaryInfo.join(', ') }}</span>
-                </div>
-
-                <!-- Cooking Info -->
-                <div *ngIf="item.cookingTime || item.temperature" class="cooking-info">
-                  <span *ngIf="item.cookingTime">
-                    <mat-icon>timer</mat-icon>
-                    {{ item.cookingTime }} min
-                  </span>
-                  <span *ngIf="item.temperature" class="separator">•</span>
-                  <span *ngIf="item.temperature">
-                    <mat-icon>whatshot</mat-icon>
-                    {{ item.temperature }}
-                  </span>
-                </div>
-
-                <div *ngIf="item.modifiers && item.modifiers.length > 0" class="modifiers">
-                  <span *ngFor="let modifier of item.modifiers" class="modifier-tag">
-                    {{ modifier }}
-                  </span>
+          <!-- Modifiers and Special Instructions -->
+          <div class="item-details" *ngIf="item.modifiers?.length || item.specialInstructions">
+            <div *ngIf="item.modifiers?.length" class="modifiers">
+              <span *ngFor="let modifier of item.modifiers" class="modifier">{{ modifier }}</span>
                 </div>
                 <div *ngIf="item.specialInstructions" class="item-instructions">
-                  <mat-icon class="small-icon">restaurant</mat-icon>
                   {{ item.specialInstructions }}
-                </div>
-                <div class="item-status">
-                  <mat-chip [color]="getStatusColor(item.status)" class="item-status-chip">
-                    {{ item.status }}
-                  </mat-chip>
-                </div>
-              </div>
-            </div>
-          </div>
-        </mat-card-content>
-      </mat-card>
-    </div>
-  </div>
-
-  <!-- Batch Cooking View -->
-  <div *ngIf="viewMode.value === 'batch'" [class.fullscreen-content]="isFullscreen">
-    <div class="batch-grid" *ngIf="batchCookingItems.length > 0">
-      <mat-card *ngFor="let batchItem of batchCookingItems" class="batch-card">
-        <mat-card-header>
-          <mat-card-title>
-            <span class="batch-product-name">{{ batchItem.productName }}</span>
-            <mat-chip color="primary" class="total-quantity-chip">
-              Total: {{ batchItem.totalQuantity }}
-            </mat-chip>
-            <mat-chip *ngIf="batchItem.station" color="accent" class="station-chip">
-              {{ batchItem.station }}
-            </mat-chip>
-          </mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <!-- Allergens -->
-          <div *ngIf="batchItem.allergens && batchItem.allergens.length > 0" class="allergen-info">
-            <mat-icon class="allergen-icon">warning</mat-icon>
-            <span class="allergen-label">Allergens:</span>
-            <span class="allergen-list">{{ batchItem.allergens.join(', ') }}</span>
-          </div>
-
-          <!-- Recipe -->
-          <div *ngIf="batchItem.recipe" class="recipe-section">
-            <button mat-stroked-button (click)="showRecipeFromBatch(batchItem.recipe)">
-              <mat-icon>menu_book</mat-icon>
-              View Recipe
-            </button>
-            <div class="recipe-summary">
-              <span><mat-icon>timer</mat-icon> {{ batchItem.recipe.cookingTime }} min cook</span>
-              <span><mat-icon>schedule</mat-icon> {{ batchItem.recipe.prepTime }} min prep</span>
-              <span *ngIf="batchItem.recipe.temperature">
-                <mat-icon>whatshot</mat-icon> {{ batchItem.recipe.temperature }}
-              </span>
             </div>
           </div>
 
-          <!-- Orders List -->
-          <div class="batch-orders-list">
-            <div *ngFor="let orderInfo of batchItem.orders" class="batch-order-item">
-              <span class="order-ref">{{ orderInfo.orderNumber }}</span>
-              <span *ngIf="orderInfo.tableNumber" class="table-ref">Table {{ orderInfo.tableNumber }}</span>
-              <span class="qty">Qty: {{ orderInfo.quantity }}</span>
-              <span *ngIf="orderInfo.specialInstructions" class="special-inst">
-                <mat-icon>info</mat-icon>
-                {{ orderInfo.specialInstructions }}
-              </span>
-            </div>
+          <!-- Allergens Warning -->
+          <div class="allergen-warning" *ngIf="item.allergens && item.allergens.length > 0 && getAllergenDisplay(item)">
+            <mat-icon>warning</mat-icon>
+            <span>{{ getAllergenDisplay(item) }}</span>
           </div>
-        </mat-card-content>
-      </mat-card>
-    </div>
-    <div *ngIf="batchCookingItems.length === 0" class="empty-state">
-      <mat-icon class="empty-icon">restaurant_menu</mat-icon>
-      <h2>No items for batch cooking</h2>
-      <p>There are no items ready for batch preparation.</p>
-    </div>
-  </div>
-
-  <!-- Message Dialog -->
-  <div *ngIf="selectedOrderForMessage" class="message-dialog-overlay" (click)="selectedOrderForMessage = null">
-    <div class="message-dialog" (click)="$event.stopPropagation()">
-      <div class="message-dialog-header">
-        <h3>Send Message - {{ selectedOrderForMessage.orderNumber }}</h3>
-        <button mat-icon-button (click)="selectedOrderForMessage = null">
-          <mat-icon>close</mat-icon>
-        </button>
-      </div>
-      <div class="message-dialog-content">
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Message to {{ selectedOrderForMessage.serverName || 'FOH' }}</mat-label>
-          <textarea matInput [(ngModel)]="newMessage" rows="3"></textarea>
-        </mat-form-field>
-        <div class="message-dialog-actions">
-          <button mat-stroked-button (click)="selectedOrderForMessage = null">Cancel</button>
-          <button mat-flat-button color="primary" (click)="sendMessage(selectedOrderForMessage, newMessage)">
-            Send
-          </button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Empty State -->
-  <div *ngIf="!isLoading && viewMode.value === 'orders' && filteredOrders.length === 0" class="empty-state">
-    <mat-icon class="empty-icon">restaurant_menu</mat-icon>
-    <h2>No orders found</h2>
-    <p>There are no orders matching the current filters.</p>
+  <div *ngIf="!isLoading && filteredOrders.length === 0" class="empty-state">
+    <mat-icon>restaurant_menu</mat-icon>
+    <h2>No Orders</h2>
   </div>
 
   <!-- Loading State -->
   <div *ngIf="isLoading" class="loading-state">
-    <mat-spinner diameter="50"></mat-spinner>
-    <p>Loading orders...</p>
+    <mat-spinner diameter="80"></mat-spinner>
   </div>
 </div>

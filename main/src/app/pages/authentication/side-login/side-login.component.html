@@ -21,14 +21,14 @@
     <form [formGroup]="form" (ngSubmit)="submit()" class="mac-login-form">
       <div class="mac-form-group">
         <mat-form-field appearance="outline" class="mac-form-field" color="primary">
-          <mat-label>Username</mat-label>
-          <input matInput formControlName="username" class="mac-input" />
-          <mat-icon matPrefix>person_outline</mat-icon>
-          <mat-error *ngIf="f['username'].hasError('required')">
-            Username is required
+          <mat-label>Email</mat-label>
+          <input matInput type="email" formControlName="email" class="mac-input" />
+          <mat-icon matPrefix>email_outline</mat-icon>
+          <mat-error *ngIf="f['email'].hasError('required')">
+            Email is required
           </mat-error>
-          <mat-error *ngIf="f['username'].hasError('minlength')">
-            Username must be at least 3 characters
+          <mat-error *ngIf="f['email'].hasError('email')">
+            Please enter a valid email address
           </mat-error>
         </mat-form-field>
       </div>

@@ -1,11 +1,12 @@
 import { Injectable } from '@angular/core';
 import { Observable, BehaviorSubject, from, of } from 'rxjs';
-import { map, catchError, tap } from 'rxjs/operators';
+import { map, catchError, tap, switchMap } from 'rxjs/operators';
 import { Order, OrderStatus } from '../models/order.model';
 import { CartItem } from './cart.service';
 import { IndexedDBService } from './indexeddb.service';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
+import { InventoryDeductionService } from './inventory-deduction.service';
 import { environment } from '../../environments/environment';
 
 /**
@@ -25,7 +26,8 @@ export class OrderService {
   constructor(
     private indexedDB: IndexedDBService,
     private api: ApiService,
-    private auth: AuthService
+    private auth: AuthService,
+    private inventoryDeduction: InventoryDeductionService
   ) {
     this.loadOrders();
   }
@@ -91,6 +93,22 @@ export class OrderService {
 
     // Save to IndexedDB
     await this.indexedDB.saveOrder(order);
+
+    // Deduct inventory for this order
+    this.inventoryDeduction.deductInventoryForOrder(order).subscribe({
+      next: (success) => {
+        if (success) {
+          console.log(`Inventory deducted successfully for order ${order.orderNumber}`);
+        } else {
+          console.warn(`Inventory deduction had issues for order ${order.orderNumber}`);
+        }
+      },
+      error: (error) => {
+        console.error('Error deducting inventory:', error);
+        // Don't fail the order creation if inventory deduction fails
+        // The order is already saved, inventory can be updated manually
+      }
+    });
 
     // TODO: When backend is available, also save to API
     // if (environment.apiUrl && this.auth.isAuthenticated()) {

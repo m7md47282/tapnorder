@@ -1,0 +1,254 @@
+@use "../../../assets/scss/variables" as *;
+@use "../../../assets/scss/colors" as *;
+
+.dashboard-container {
+  padding: 24px;
+  min-height: calc(100vh - 72px);
+}
+
+.dashboard-header {
+  margin-bottom: 32px;
+
+  h1 {
+    margin: 0 0 8px;
+    font-size: 32px;
+    font-weight: 700;
+    color: $color-neutral-text;
+    letter-spacing: -0.5px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 16px;
+    color: $color-neutral-text-secondary;
+  }
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.metric-card {
+  background: $color-white;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid $color-neutral-border;
+  box-shadow: 0 1px 3px color-with-opacity($color-black, 0.05);
+
+  .metric-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+
+    .metric-label {
+      font-size: 14px;
+      color: $color-neutral-text-secondary;
+      font-weight: 500;
+    }
+
+    .metric-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: color-with-opacity($color-primary, 0.1);
+
+      mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+        color: $color-primary;
+      }
+
+      &.success {
+        background: color-with-opacity($color-success, 0.1);
+        mat-icon {
+          color: $color-success;
+        }
+      }
+
+      &.warning {
+        background: color-with-opacity($color-warning, 0.1);
+        mat-icon {
+          color: $color-warning;
+        }
+      }
+
+      &.error {
+        background: color-with-opacity($color-error, 0.1);
+        mat-icon {
+          color: $color-error;
+        }
+      }
+    }
+  }
+
+  .metric-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: $color-neutral-text;
+    margin-bottom: 4px;
+    line-height: 1.2;
+
+    &.positive {
+      color: $color-success;
+    }
+
+    &.negative {
+      color: $color-error;
+    }
+  }
+
+  .metric-change {
+    font-size: 12px;
+    color: $color-neutral-text-secondary;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+
+    &.positive {
+      color: $color-success;
+    }
+
+    &.negative {
+      color: $color-error;
+    }
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+  }
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.grid-col-8 {
+  grid-column: span 8;
+}
+
+.grid-col-4 {
+  grid-column: span 4;
+}
+
+.grid-col-6 {
+  grid-column: span 6;
+}
+
+.grid-col-12 {
+  grid-column: span 12;
+}
+
+.dashboard-card {
+  background: $color-white;
+  border-radius: 12px;
+  border: 1px solid $color-neutral-border;
+  box-shadow: 0 1px 3px color-with-opacity($color-black, 0.05);
+  overflow: hidden;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+
+  &.chart-card-large {
+    min-height: 450px;
+  }
+
+  &.chart-card-medium {
+    min-height: 350px;
+  }
+
+  // Ensure chart containers fill available space
+  ::ng-deep {
+    mat-card-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    apx-chart {
+      width: 100% !important;
+      flex: 1;
+      min-height: 300px;
+      display: block;
+    }
+
+    .apexcharts-canvas {
+      width: 100% !important;
+    }
+
+    .apexcharts-svg {
+      width: 100% !important;
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 1200px) {
+  .grid-col-8 {
+    grid-column: span 12;
+  }
+
+  .grid-col-4 {
+    grid-column: span 12;
+  }
+
+  .grid-col-6 {
+    grid-column: span 12;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: 16px;
+  }
+
+  .dashboard-header {
+    margin-bottom: 24px;
+
+    h1 {
+      font-size: 24px;
+    }
+
+    p {
+      font-size: 14px;
+    }
+  }
+
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .metric-card {
+    padding: 16px;
+
+    .metric-value {
+      font-size: 24px;
+    }
+  }
+
+  .dashboard-grid {
+    gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

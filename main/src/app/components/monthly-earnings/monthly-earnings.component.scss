@@ -1,0 +1,45 @@
+@use "../../../assets/scss/variables" as *;
+@use "../../../assets/scss/colors" as *;
+
+.cardWithShadow {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  mat-card-content {
+    padding: 24px 24px 0 !important;
+  }
+
+  mat-card-title {
+    margin-bottom: 8px;
+    font-size: 18px;
+    font-weight: 600;
+    color: $color-neutral-text;
+  }
+
+  apx-chart {
+    width: 100%;
+    height: 120px;
+    flex: 1;
+    min-height: 100px;
+    display: block;
+    margin-top: auto;
+  }
+
+  ::ng-deep {
+    .apexcharts-canvas {
+      width: 100% !important;
+      max-width: 100%;
+    }
+
+    .apexcharts-svg {
+      width: 100% !important;
+      max-width: 100%;
+    }
+
+    .apexcharts-inner {
+      width: 100% !important;
+    }
+  }
+}
+

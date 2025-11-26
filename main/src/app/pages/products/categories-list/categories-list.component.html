@@ -1,0 +1,118 @@
+<div class="categories-container">
+  <div class="categories-header">
+    <div>
+      <h1>Categories</h1>
+      <p class="subtitle">Manage product categories</p>
+    </div>
+    <button mat-raised-button color="primary" (click)="openAddDialog()">
+      <mat-icon>add</mat-icon>
+      Add Category
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-section">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>Search categories...</mat-label>
+      <input matInput [formControl]="searchControl" placeholder="Search by name or description">
+      <mat-icon matPrefix>search</mat-icon>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="status-field">
+      <mat-label>Status</mat-label>
+      <mat-select [formControl]="statusFilter">
+        <mat-option value="all">All Categories</mat-option>
+        <mat-option value="active">Active</mat-option>
+        <mat-option value="inactive">Inactive</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <!-- Categories Table -->
+  <div class="table-container">
+    <table mat-table [dataSource]="dataSource" matSort class="categories-table">
+      
+      <!-- Icon Column -->
+      <ng-container matColumnDef="icon">
+        <th mat-header-cell *matHeaderCellDef>Icon</th>
+        <td mat-cell *matCellDef="let category">
+          <mat-icon class="category-icon">{{ getCategoryIcon(category) }}</mat-icon>
+        </td>
+      </ng-container>
+
+      <!-- Name Column -->
+      <ng-container matColumnDef="name">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header="name">Name</th>
+        <td mat-cell *matCellDef="let category">
+          <strong>{{ category.name }}</strong>
+        </td>
+      </ng-container>
+
+      <!-- Description Column -->
+      <ng-container matColumnDef="description">
+        <th mat-header-cell *matHeaderCellDef>Description</th>
+        <td mat-cell *matCellDef="let category">
+          {{ category.description || 'No description' }}
+        </td>
+      </ng-container>
+
+      <!-- Item Count Column -->
+      <ng-container matColumnDef="itemCount">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header="itemCount">Items</th>
+        <td mat-cell *matCellDef="let category">
+          <span class="item-count-badge">{{ category.itemCount || 0 }}</span>
+        </td>
+      </ng-container>
+
+      <!-- Status Column -->
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header="isActive">Status</th>
+        <td mat-cell *matCellDef="let category">
+          <mat-chip [color]="getStatusColor(category.isActive)">
+            {{ getStatusLabel(category.isActive) }}
+          </mat-chip>
+        </td>
+      </ng-container>
+
+      <!-- Actions Column -->
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Actions</th>
+        <td mat-cell *matCellDef="let category">
+          <button mat-icon-button color="primary" (click)="openEditDialog(category)" matTooltip="Edit">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button 
+            mat-icon-button 
+            color="warn" 
+            (click)="deleteCategory(category)" 
+            [disabled]="(category.itemCount || 0) > 0"
+            matTooltip="Delete">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+      <!-- No data row -->
+      <tr class="mat-row" *matNoDataRow>
+        <td class="mat-cell" [attr.colspan]="displayedColumns.length">
+          <div class="no-data">
+            <mat-icon>category</mat-icon>
+            <p>No categories found</p>
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    <mat-paginator [pageSizeOptions]="[5, 10, 25, 50]" showFirstLastButtons></mat-paginator>
+  </div>
+
+  <!-- Loading -->
+  <div class="loading-container" *ngIf="isLoading">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Loading categories...</p>
+  </div>
+</div>
+

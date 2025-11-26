@@ -58,47 +58,34 @@ export class ApiService {
 
   /**
    * Handle HTTP errors
+   * Note: Error notifications are handled by error.interceptor.ts
+   * This method just extracts and formats error messages for rethrowing
    */
   private handleError(error: HttpErrorResponse): Observable<never> {
+    // Extract error message from various possible structures
     let errorMessage = 'An unknown error occurred';
 
     if (error.error instanceof ErrorEvent) {
       // Client-side error
-      errorMessage = `Error: ${error.error.message}`;
+      errorMessage = error.error.message;
+    } else if (error.error) {
+      // Server-side error - try multiple possible error message locations
+      errorMessage = error.error.message || 
+                     error.error.error || 
+                     error.error.errors?.[0] ||
+                     (typeof error.error === 'string' ? error.error : null) ||
+                     error.message ||
+                     `Error Code: ${error.status}`;
     } else {
-      // Server-side error
-      switch (error.status) {
-        case 400:
-          errorMessage = error.error?.message || 'Bad request';
-          break;
-        case 401:
-          errorMessage = 'Unauthorized. Please login again.';
-          this.localStorage.clearAuthData();
-          // Redirect to login will be handled by auth guard
-          break;
-        case 403:
-          errorMessage = 'You do not have permission to perform this action.';
-          break;
-        case 404:
-          errorMessage = 'Resource not found.';
-          break;
-        case 422:
-          errorMessage = error.error?.message || 'Validation error';
-          break;
-        case 500:
-          errorMessage = 'Internal server error. Please try again later.';
-          break;
-        default:
-          errorMessage = error.error?.message || `Error Code: ${error.status}\nMessage: ${error.message}`;
-      }
+      errorMessage = error.message || `Error Code: ${error.status}`;
     }
 
-    // Show notification for errors (except 401 which is handled by auth guard)
-    if (error.status !== 401) {
-      this.notification.error(errorMessage);
-    }
-
-    return throwError(() => new Error(errorMessage));
+    // Attach the original error for debugging
+    const enhancedError = new Error(errorMessage);
+    (enhancedError as any).originalError = error;
+    (enhancedError as any).status = error.status;
+    
+    return throwError(() => enhancedError);
   }
 
   /**
@@ -119,7 +106,18 @@ export class ApiService {
       headers: this.getHeaders(includeAuth),
       params: httpParams
     }).pipe(
-      map(response => response.data || response as any),
+      map(response => {
+        // Handle both wrapped ApiResponse and direct data responses
+        if (response && typeof response === 'object') {
+          // If response has 'data' property and 'success' property, it's wrapped
+          if ('data' in response && 'success' in response) {
+            return (response as ApiResponse<T>).data || response as any;
+          }
+          // Otherwise, return response as-is
+          return response as any;
+        }
+        return response as any;
+      }),
       catchError(this.handleError.bind(this))
     );
   }
@@ -131,7 +129,18 @@ export class ApiService {
     return this.http.post<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, body, {
       headers: this.getHeaders(includeAuth)
     }).pipe(
-      map(response => response.data || response as any),
+      map(response => {
+        // Handle both wrapped ApiResponse and direct data responses
+        if (response && typeof response === 'object') {
+          // If response has 'data' property and 'success' property, it's wrapped
+          if ('data' in response && 'success' in response) {
+            return (response as ApiResponse<T>).data || response as any;
+          }
+          // Otherwise, return response as-is
+          return response as any;
+        }
+        return response as any;
+      }),
       catchError(this.handleError.bind(this))
     );
   }
@@ -143,7 +152,16 @@ export class ApiService {
     return this.http.put<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, body, {
       headers: this.getHeaders(includeAuth)
     }).pipe(
-      map(response => response.data || response as any),
+      map(response => {
+        // Handle both wrapped ApiResponse and direct data responses
+        if (response && typeof response === 'object') {
+          if ('data' in response && 'success' in response) {
+            return (response as ApiResponse<T>).data || response as any;
+          }
+          return response as any;
+        }
+        return response as any;
+      }),
       catchError(this.handleError.bind(this))
     );
   }
@@ -155,7 +173,16 @@ export class ApiService {
     return this.http.patch<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, body, {
       headers: this.getHeaders(includeAuth)
     }).pipe(
-      map(response => response.data || response as any),
+      map(response => {
+        // Handle both wrapped ApiResponse and direct data responses
+        if (response && typeof response === 'object') {
+          if ('data' in response && 'success' in response) {
+            return (response as ApiResponse<T>).data || response as any;
+          }
+          return response as any;
+        }
+        return response as any;
+      }),
       catchError(this.handleError.bind(this))
     );
   }
@@ -167,7 +194,16 @@ export class ApiService {
     return this.http.delete<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, {
       headers: this.getHeaders(includeAuth)
     }).pipe(
-      map(response => response.data || response as any),
+      map(response => {
+        // Handle both wrapped ApiResponse and direct data responses
+        if (response && typeof response === 'object') {
+          if ('data' in response && 'success' in response) {
+            return (response as ApiResponse<T>).data || response as any;
+          }
+          return response as any;
+        }
+        return response as any;
+      }),
       catchError(this.handleError.bind(this))
     );
   }
@@ -194,9 +230,38 @@ export class ApiService {
     return this.http.post<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, formData, {
       headers
     }).pipe(
-      map(response => response.data || response as any),
+      map(response => {
+        // Handle both wrapped ApiResponse and direct data responses
+        if (response && typeof response === 'object') {
+          if ('data' in response && 'success' in response) {
+            return (response as ApiResponse<T>).data || response as any;
+          }
+          return response as any;
+        }
+        return response as any;
+      }),
       catchError(this.handleError.bind(this))
     );
+  }
+
+  /**
+   * Upload attachment (base64 encoded file)
+   * POST /attachments
+   * 
+   * @param request - Upload attachment request with base64 encoded file
+   * @returns Observable<Attachment>
+   */
+  uploadAttachment(request: {
+    file: string; // Base64 encoded file content or data URL
+    fileName: string;
+    mimeType: string;
+    uploadedBy?: string;
+    relatedEntityType?: string;
+    relatedEntityId?: string;
+    folder?: string;
+    metadata?: Record<string, any>;
+  }): Observable<any> {
+    return this.post<any>('/attachments', request);
   }
 }
 

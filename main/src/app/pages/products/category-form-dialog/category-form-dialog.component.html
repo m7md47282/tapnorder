@@ -1,0 +1,75 @@
+<div class="category-form-dialog">
+  <h2 mat-dialog-title>{{ isEditMode ? 'Edit Category' : 'Add Category' }}</h2>
+
+  <mat-dialog-content>
+    <form [formGroup]="categoryForm" class="category-form">
+      
+      <!-- Name -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Category Name *</mat-label>
+        <input matInput formControlName="name" placeholder="e.g., Appetizers, Main Dishes">
+        <mat-icon matPrefix>category</mat-icon>
+        <mat-error *ngIf="f['name'].hasError('required')">Category name is required</mat-error>
+        <mat-error *ngIf="f['name'].hasError('minlength')">Name must be at least 2 characters</mat-error>
+        <mat-error *ngIf="f['name'].hasError('maxlength')">Name must be less than 100 characters</mat-error>
+      </mat-form-field>
+
+      <!-- Description -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Description</mat-label>
+        <textarea matInput formControlName="description" rows="3" placeholder="Optional description"></textarea>
+      </mat-form-field>
+
+      <!-- Icon -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Icon</mat-label>
+        <input matInput formControlName="icon" placeholder="Material icon name (e.g., restaurant_menu)">
+        <mat-icon matPrefix>image</mat-icon>
+        <mat-hint>Leave empty for auto-suggestion</mat-hint>
+      </mat-form-field>
+
+      <!-- Icon Preview -->
+      <div class="icon-preview" *ngIf="categoryForm.get('icon')?.value || getSuggestedIcon()">
+        <mat-icon>{{ categoryForm.get('icon')?.value || getSuggestedIcon() }}</mat-icon>
+        <span>Preview</span>
+      </div>
+
+      <!-- Suggested Icons -->
+      <div class="suggested-icons">
+        <label>Suggested Icons:</label>
+        <div class="icon-grid">
+          <button 
+            type="button"
+            mat-icon-button 
+            *ngFor="let icon of suggestedIcons"
+            (click)="categoryForm.patchValue({ icon: icon })"
+            [class.selected]="categoryForm.get('icon')?.value === icon"
+            matTooltip="{{ icon }}">
+            <mat-icon>{{ icon }}</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Display Order -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Display Order</mat-label>
+        <input matInput type="number" formControlName="displayOrder" min="0">
+        <mat-hint>Lower numbers appear first</mat-hint>
+      </mat-form-field>
+
+      <!-- Active Status -->
+      <mat-checkbox formControlName="isActive" class="full-width">
+        Active (category will be visible)
+      </mat-checkbox>
+
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="onCancel()">Cancel</button>
+    <button mat-raised-button color="primary" (click)="onSubmit()" [disabled]="categoryForm.invalid">
+      {{ isEditMode ? 'Update' : 'Create' }}
+    </button>
+  </mat-dialog-actions>
+</div>
+

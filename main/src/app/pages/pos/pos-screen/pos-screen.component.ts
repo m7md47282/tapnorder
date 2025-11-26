@@ -3,9 +3,15 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { MaterialModule } from '../../../material.module';
 import { Product, CartItem, Sale, PaymentMethod, SaleStatus, Customer, Table } from '../../../models/product.model';
+import { Item } from '../../../models/item.model';
+import { Category } from '../../../models/category.model';
 import { ApiService } from '../../../services/api.service';
+import { ItemsService } from '../../../services/items.service';
+import { CategoriesService } from '../../../services/categories.service';
 import { NotificationService } from '../../../services/notification.service';
 import { AuthService } from '../../../services/auth.service';
+import { LocalStorageService } from '../../../services/local-storage.service';
+import { InventoryDeductionService } from '../../../services/inventory-deduction.service';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
@@ -28,6 +34,7 @@ export class PosScreenComponent implements OnInit, OnDestroy {
   filteredProducts: Product[] = [];
   selectedCategory: string = 'all';
   categories: string[] = ['all'];
+  quickFilterCategories: Category[] = []; // Categories for quick filters
   activeQuickFilter: string | null = null;
   
   // Cart
@@ -73,54 +80,42 @@ export class PosScreenComponent implements OnInit, OnDestroy {
   // Expose enum to template
   PaymentMethod = PaymentMethod;
   
-  private destroy$ = new Subject<void>();
+  // Menu ID for items API
+  menuId: string | null = null;
   
-  // Mock data for development - Coffee Shop Items
-  private mockProducts: Product[] = [
-    // Hot Coffee Drinks
-    { id: '1', name: 'Espresso', sku: 'ESP', price: 2.50, stock: 999, category: 'Hot Coffee', image: '/assets/images/products/product-1.png', isActive: true, taxRate: 0.1 },
-    { id: '2', name: 'Americano', sku: 'AMR', price: 3.00, stock: 999, category: 'Hot Coffee', image: '/assets/images/products/product-2.png', isActive: true, taxRate: 0.1 },
-    { id: '3', name: 'Cappuccino', sku: 'CAP', price: 4.50, stock: 999, category: 'Hot Coffee', image: '/assets/images/products/product-3.png', isActive: true, taxRate: 0.1 },
-    { id: '4', name: 'Latte', sku: 'LAT', price: 4.75, stock: 999, category: 'Hot Coffee', image: '/assets/images/products/product-4.png', isActive: true, taxRate: 0.1 },
-    { id: '5', name: 'Mocha', sku: 'MOC', price: 5.25, stock: 999, category: 'Hot Coffee', image: '/assets/images/products/s11.jpg', isActive: true, taxRate: 0.1 },
-    { id: '6', name: 'Macchiato', sku: 'MAC', price: 4.00, stock: 999, category: 'Hot Coffee', image: '/assets/images/products/s4.jpg', isActive: true, taxRate: 0.1 },
-    { id: '7', name: 'Flat White', sku: 'FLW', price: 4.50, stock: 999, category: 'Hot Coffee', image: '/assets/images/products/s5.jpg', isActive: true, taxRate: 0.1 },
-    { id: '8', name: 'Cortado', sku: 'COR', price: 3.75, stock: 999, category: 'Hot Coffee', image: '/assets/images/products/s6.jpg', isActive: true, taxRate: 0.1 },
-    
-    // Iced Coffee Drinks
-    { id: '9', name: 'Iced Coffee', sku: 'ICF', price: 3.50, stock: 999, category: 'Iced Coffee', image: '/assets/images/products/s7.jpg', isActive: true, taxRate: 0.1 },
-    { id: '10', name: 'Iced Latte', sku: 'ILT', price: 4.75, stock: 999, category: 'Iced Coffee', image: '/assets/images/products/s9.jpg', isActive: true, taxRate: 0.1 },
-    { id: '11', name: 'Cold Brew', sku: 'CBR', price: 4.50, stock: 999, category: 'Iced Coffee', image: '/assets/images/products/product-1.png', isActive: true, taxRate: 0.1 },
-    { id: '12', name: 'Iced Mocha', sku: 'IMO', price: 5.25, stock: 999, category: 'Iced Coffee', image: '/assets/images/products/product-2.png', isActive: true, taxRate: 0.1 },
-    
-    // Tea & Other Beverages
-    { id: '13', name: 'Green Tea', sku: 'GRT', price: 3.00, stock: 999, category: 'Tea', image: '/assets/images/products/s6.jpg', isActive: true, taxRate: 0.1 },
-    { id: '14', name: 'Black Tea', sku: 'BLT', price: 3.00, stock: 999, category: 'Tea', image: '/assets/images/products/s5.jpg', isActive: true, taxRate: 0.1 },
-    { id: '15', name: 'Chai Latte', sku: 'CHL', price: 4.50, stock: 999, category: 'Tea', image: '/assets/images/products/s4.jpg', isActive: true, taxRate: 0.1 },
-    
-    // Pastries & Food
-    { id: '16', name: 'Croissant', sku: 'CRS', price: 3.50, stock: 50, category: 'Pastries', image: '/assets/images/products/product-3.png', isActive: true, taxRate: 0.1 },
-    { id: '17', name: 'Muffin', sku: 'MUF', price: 3.25, stock: 40, category: 'Pastries', image: '/assets/images/products/product-4.png', isActive: true, taxRate: 0.1 },
-    { id: '18', name: 'Bagel', sku: 'BGL', price: 2.75, stock: 35, category: 'Pastries', image: '/assets/images/products/s11.jpg', isActive: true, taxRate: 0.1 },
-    { id: '19', name: 'Danish', sku: 'DAN', price: 3.75, stock: 30, category: 'Pastries', image: '/assets/images/products/s4.jpg', isActive: true, taxRate: 0.1 },
-    
-    // Add-ons
-    { id: '20', name: 'Extra Shot', sku: 'XSH', price: 0.75, stock: 999, category: 'Add-ons', image: '/assets/images/products/s5.jpg', isActive: true, taxRate: 0.1 },
-    { id: '21', name: 'Oat Milk', sku: 'OAT', price: 0.50, stock: 999, category: 'Add-ons', image: '/assets/images/products/s6.jpg', isActive: true, taxRate: 0.1 },
-    { id: '22', name: 'Almond Milk', sku: 'ALM', price: 0.50, stock: 999, category: 'Add-ons', image: '/assets/images/products/s7.jpg', isActive: true, taxRate: 0.1 },
-    { id: '23', name: 'Syrup Shot', sku: 'SYP', price: 0.50, stock: 999, category: 'Add-ons', image: '/assets/images/products/s9.jpg', isActive: true, taxRate: 0.1 },
-  ];
+  private destroy$ = new Subject<void>();
 
   constructor(
     private api: ApiService,
+    private itemsService: ItemsService,
+    private categoriesService: CategoriesService,
     private notification: NotificationService,
     private authService: AuthService,
+    private localStorage: LocalStorageService,
     private route: ActivatedRoute,
     private router: Router,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private inventoryDeduction: InventoryDeductionService
   ) {}
 
   ngOnInit(): void {
+    // Get menuId from route params or localStorage
+    this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
+      const newMenuId = params['menuId'] || this.localStorage.getItem<string>('menuId') || null;
+      if (newMenuId !== this.menuId) {
+        this.menuId = newMenuId;
+        if (this.menuId) {
+          this.localStorage.setItem('menuId', this.menuId);
+        }
+        this.loadProducts();
+      }
+    });
+    
+    // If no menuId in route, try localStorage
+    if (!this.menuId) {
+      this.menuId = this.localStorage.getItem<string>('menuId');
+    }
+    
     this.loadProducts();
     this.setupSearch();
     this.updateCategories();
@@ -209,29 +204,56 @@ export class PosScreenComponent implements OnInit, OnDestroy {
   loadProducts(): void {
     this.isLoading = true;
     
-    // Mock API call - replace with real API
-    setTimeout(() => {
-      this.products = this.mockProducts;
-      this.filteredProducts = this.products;
-      this.isLoading = false;
-    }, 500);
-
-    // Real API call (uncomment when backend is ready):
-    // this.api.get<Product[]>('/products', { isActive: true }).subscribe({
-    //   next: (products) => {
-    //     this.products = products;
-    //     this.filteredProducts = products;
-    //     this.isLoading = false;
-    //   },
-    //   error: () => {
-    //     this.isLoading = false;
-    //   }
-    // });
+    // Build query - menuId is optional
+    const query: any = { 
+      isAvailable: true // Only load available items
+    };
+    
+    // Add menuId if available
+    if (this.menuId) {
+      query.menuId = this.menuId;
+    }
+    
+    this.itemsService.getItems(query).subscribe({
+      next: (items) => {
+        // Convert Items to Products for display
+        this.products = items.map(item => this.itemToProduct(item));
+        this.filteredProducts = this.products;
+        this.updateCategories();
+        this.loadQuickFilterCategories(items);
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading items:', error);
+        this.products = [];
+        this.filteredProducts = [];
+        this.updateCategories();
+        this.quickFilterCategories = [];
+        this.isLoading = false;
+        this.notification.error('Failed to load products from the database. Please try again.');
+      }
+    });
   }
 
   updateCategories(): void {
     const cats = new Set(this.products.map(p => p.category || 'Uncategorized'));
     this.categories = ['all', ...Array.from(cats)];
+  }
+
+  loadQuickFilterCategories(items: Item[]): void {
+    // Extract categories from items for quick filters
+    this.quickFilterCategories = this.categoriesService.extractCategoriesFromItems(
+      items, 
+      this.menuId || 'default', 
+      false // Only active categories
+    );
+    // Sort by display order or name
+    this.quickFilterCategories.sort((a, b) => {
+      if (a.displayOrder !== undefined && b.displayOrder !== undefined) {
+        return a.displayOrder - b.displayOrder;
+      }
+      return a.name.localeCompare(b.name);
+    });
   }
 
   filterProducts(): void {
@@ -266,27 +288,18 @@ export class PosScreenComponent implements OnInit, OnDestroy {
     this.filterProducts();
   }
 
-  applyQuickFilter(filter: string): void {
-    this.activeQuickFilter = filter;
+  applyQuickFilter(categoryId: string): void {
+    this.activeQuickFilter = categoryId;
     this.selectedCategory = 'all';
     this.searchTerm = '';
     this.searchControl.setValue('');
     
-    if (filter === 'popular') {
-      // Filter popular items (you can customize this logic)
-      this.filteredProducts = this.products.filter(p => 
-        ['Latte', 'Cappuccino', 'Espresso', 'Iced Coffee', 'Croissant'].includes(p.name)
-      );
-    } else if (filter === 'hot') {
-      this.filteredProducts = this.products.filter(p => p.category === 'Hot Coffee');
-    } else if (filter === 'iced') {
-      this.filteredProducts = this.products.filter(p => p.category === 'Iced Coffee');
-    } else if (filter === 'tea') {
-      this.filteredProducts = this.products.filter(p => p.category === 'Tea');
-    } else if (filter === 'pastries') {
-      this.filteredProducts = this.products.filter(p => p.category === 'Pastries');
-    } else if (filter === 'addons') {
-      this.filteredProducts = this.products.filter(p => p.category === 'Add-ons');
+    // Find category by ID to get its name
+    const category = this.quickFilterCategories.find(c => c.id === categoryId);
+    
+    // Filter products by category name (products use category name, not ID)
+    if (category) {
+      this.filteredProducts = this.products.filter(p => p.category === category.name);
     } else {
       this.filterProducts();
     }
@@ -441,6 +454,21 @@ export class PosScreenComponent implements OnInit, OnDestroy {
       cashierId: currentUser?.id || '',
       cashierName: currentUser?.username || 'Cashier',
     };
+
+    // Deduct inventory for this sale
+    this.inventoryDeduction.deductInventoryForSale(sale).subscribe({
+      next: (success) => {
+        if (success) {
+          console.log(`Inventory deducted successfully for sale ${sale.saleNumber}`);
+        } else {
+          console.warn(`Inventory deduction had issues for sale ${sale.saleNumber}`);
+        }
+      },
+      error: (error) => {
+        console.error('Error deducting inventory:', error);
+        // Don't fail the sale if inventory deduction fails
+      }
+    });
 
     // Mock API call
     setTimeout(() => {
@@ -616,5 +644,36 @@ export class PosScreenComponent implements OnInit, OnDestroy {
       this.addToCart(this.selectedProductForDetails);
       this.closeProductDetailsDialog();
     }
+  }
+
+  /**
+   * Convert Item model to Product model for display compatibility
+   */
+  private itemToProduct(item: Item): Product {
+    return {
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      sku: item.id.substring(0, 8).toUpperCase(), // Generate SKU from ID
+      barcode: undefined,
+      price: item.price,
+      cost: undefined,
+      stock: item.isAvailable ? 999 : 0, // Map isAvailable to stock (999 for available, 0 for unavailable)
+      category: item.category,
+      categoryId: undefined,
+      image: item.imageUrl,
+      isActive: item.isAvailable,
+      taxRate: 0.1, // Default tax rate
+      unit: 'item',
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt
+    };
+  }
+
+  /**
+   * Get category icon for quick filter button
+   */
+  getCategoryIcon(category: Category): string {
+    return category.icon || this.categoriesService.getCategoryIcon(category.name);
   }
 }

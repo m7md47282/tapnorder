@@ -13,37 +13,37 @@
 // ============================================
 
 // PRIMARY COLOR - Main brand color (buttons, links, primary actions)
-// Change this to your brand's primary color
-$color-primary: #5d87ff !default;
-$color-primary-dark: #3772ff !default;
-$color-primary-light: rgba(93, 135, 255, 0.15) !default;
+// Using golden/yellow-orange color: #FFB800 (golden)
+$color-primary: #FFB800 !default;
+$color-primary-dark: #e6a600 !default;
+$color-primary-light: rgba(255, 184, 0, 0.3) !default; // Golden at 30% opacity
 
 // SECONDARY COLOR - Accent color (secondary actions, highlights)
-// Change this to your brand's secondary/accent color
-$color-secondary: #44b7f7 !default;
-$color-secondary-light: rgba(68, 183, 247, 0.15) !default;
+// Using palette color: #5E5E5E (dark gray) for secondary elements
+$color-secondary: #5E5E5E !default;
+$color-secondary-light: rgba(94, 94, 94, 0.15) !default;
 
 // NEUTRAL COLORS - Backgrounds, text, borders
-// Change these to match your brand's neutral palette
-$color-neutral-bg: #ffffff !default;
-$color-neutral-bg-light: #f2f6fa !default;
-$color-neutral-bg-subtle: #f6f9fc !default;
-$color-neutral-text: #2a3547 !default;
-$color-neutral-text-secondary: #86868b !default;
-$color-neutral-border: #d7dde2 !default;
-$color-neutral-shadow: rgba(0, 0, 0, 0.1) !default;
+// Using palette colors: #FFFFFF (white), #2B2B2B (dark), #5E5E5E (gray)
+$color-neutral-bg: #FFFFFF !default;
+$color-neutral-bg-light: rgba(255, 184, 0, 0.05) !default; // Golden tint at 5%
+$color-neutral-bg-subtle: rgba(255, 184, 0, 0.08) !default; // Golden tint at 8%
+$color-neutral-text: #2B2B2B !default;
+$color-neutral-text-secondary: #5E5E5E !default;
+$color-neutral-border: rgba(94, 94, 94, 0.3) !default;
+$color-neutral-shadow: rgba(43, 43, 43, 0.1) !default;
 
-// SEMANTIC COLORS (derived from primary/secondary or custom)
-$color-success: #13deb9 !default;
-$color-success-light: rgba(19, 222, 185, 0.15) !default;
-$color-warning: #ffae1f !default;
-$color-warning-light: rgba(255, 174, 31, 0.15) !default;
-$color-error: #f74456 !default;
-$color-error-light: rgba(247, 68, 86, 0.15) !default;
+// SEMANTIC COLORS (using palette colors where possible)
+$color-success: #5E5E5E !default;
+$color-success-light: rgba(94, 94, 94, 0.15) !default;
+$color-warning: #FFB800 !default; // Golden for warnings
+$color-warning-light: rgba(255, 184, 0, 0.3) !default; // Golden at 30% opacity
+$color-error: #FFB800 !default; // Using golden for errors (can be adjusted)
+$color-error-light: rgba(255, 184, 0, 0.3) !default; // Golden at 30% opacity
 
 // UTILITY COLORS
-$color-white: #ffffff !default;
-$color-black: #000000 !default;
+$color-white: #FFFFFF !default;
+$color-black: #2B2B2B !default;
 $color-transparent: transparent !default;
 
 // OPACITY VARIANTS (for overlays, backgrounds)

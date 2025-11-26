@@ -1,0 +1,62 @@
+@use "../../../../assets/scss/variables" as *;
+@use "../../../../assets/scss/colors" as *;
+
+.ai-advisor-page {
+  padding: 24px;
+  min-height: calc(100vh - 64px);
+  background: color-with-opacity($color-neutral-bg-subtle, 0.3);
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+
+  .back-btn {
+    color: $color-neutral-text;
+  }
+
+  .header-content {
+    flex: 1;
+
+    h1 {
+      margin: 0;
+      font-size: 32px;
+      font-weight: 700;
+      color: $color-neutral-text;
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      font-size: 16px;
+      color: $color-neutral-text-secondary;
+    }
+  }
+}
+
+.page-content {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .ai-advisor-page {
+    padding: 16px;
+  }
+
+  .page-header {
+    .header-content {
+      h1 {
+        font-size: 24px;
+      }
+
+      .subtitle {
+        font-size: 14px;
+      }
+    }
+  }
+}
+

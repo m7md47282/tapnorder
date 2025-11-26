@@ -187,6 +187,156 @@ export class KitchenDisplayComponent implements OnInit, OnDestroy {
       priority: 'NORMAL',
       serverName: 'Sarah',
       customerName: 'Table 12'
+    },
+    {
+      id: '4',
+      orderNumber: 'ORD-004',
+      saleId: 'sale-4',
+      tableNumber: '13',
+      orderType: 'DINE_IN',
+      items: [
+        {
+          id: 'item-5',
+          productId: '5',
+          productName: 'Ice Cream',
+          quantity: 1,
+          status: KitchenOrderStatus.READY,
+          station: 'Dessert'
+        }
+      ],
+      status: KitchenOrderStatus.READY,
+      createdAt: new Date(Date.now() - 900000).toISOString(), // 15 minutes ago
+      startedAt: new Date(Date.now() - 840000).toISOString(),
+      readyAt: new Date(Date.now() - 60000).toISOString(), // 1 minute ago
+      estimatedTime: 5,
+      priority: 'NORMAL',
+      serverName: 'Sarah',
+      customerName: 'Table 13'
+    },
+    {
+      id: '5',
+      orderNumber: 'ORD-005',
+      saleId: 'sale-5',
+      tableNumber: '14',
+      orderType: 'DINE_IN',
+      items: [
+        {
+          id: 'item-6',
+          productId: '6',
+          productName: 'Ice Cream',
+          quantity: 1,
+          status: KitchenOrderStatus.READY,
+          station: 'Dessert'
+        }
+      ],
+      status: KitchenOrderStatus.READY,
+      createdAt: new Date(Date.now() - 900000).toISOString(), // 15 minutes ago
+      startedAt: new Date(Date.now() - 840000).toISOString(),
+      readyAt: new Date(Date.now() - 60000).toISOString(), // 1 minute ago
+      estimatedTime: 5,
+      priority: 'NORMAL',
+      serverName: 'Sarah',
+      customerName: 'Table 14'
+    },
+    {
+      id: '6',
+      orderNumber: 'ORD-006',
+      saleId: 'sale-6',
+      tableNumber: '15',
+      orderType: 'DINE_IN',
+      items: [
+        {
+          id: 'item-7',
+          productId: '7',
+          productName: 'Ice Cream',
+          quantity: 1,
+          status: KitchenOrderStatus.READY,
+          station: 'Dessert'
+        }
+      ],
+      status: KitchenOrderStatus.READY,
+      createdAt: new Date(Date.now() - 900000).toISOString(), // 15 minutes ago
+      startedAt: new Date(Date.now() - 840000).toISOString(),
+      readyAt: new Date(Date.now() - 60000).toISOString(), // 1 minute ago
+      estimatedTime: 5,
+      priority: 'NORMAL',
+      serverName: 'Sarah',
+      customerName: 'Table 15'
+    },
+    {
+      id: '7',
+      orderNumber: 'ORD-007',
+      saleId: 'sale-7',
+      tableNumber: '16',
+      orderType: 'DINE_IN',
+      items: [
+        {
+          id: 'item-8',
+          productId: '8',
+          productName: 'Ice Cream',
+          quantity: 1,
+          status: KitchenOrderStatus.READY,
+          station: 'Dessert'
+        }
+      ],
+      status: KitchenOrderStatus.READY,
+      createdAt: new Date(Date.now() - 900000).toISOString(), // 15 minutes ago
+      startedAt: new Date(Date.now() - 840000).toISOString(),
+      readyAt: new Date(Date.now() - 60000).toISOString(), // 1 minute ago
+      estimatedTime: 5,
+      priority: 'NORMAL',
+      serverName: 'Sarah',
+      customerName: 'Table 16'  
+    },
+    {
+      id: '8',
+      orderNumber: 'ORD-008',
+      saleId: 'sale-8',
+      tableNumber: '17',
+      orderType: 'DINE_IN',
+      items: [
+        {
+          id: 'item-9',
+          productId: '9',
+          productName: 'Ice Cream',
+          quantity: 1,
+          status: KitchenOrderStatus.READY,
+          station: 'Dessert'
+        }
+      ],
+      status: KitchenOrderStatus.READY,
+      createdAt: new Date(Date.now() - 900000).toISOString(), // 15 minutes ago
+      startedAt: new Date(Date.now() - 840000).toISOString(),
+      readyAt: new Date(Date.now() - 60000).toISOString(), // 1 minute ago
+      estimatedTime: 5,
+      priority: 'NORMAL',
+      serverName: 'Sarah',
+      customerName: 'Table 17'
+    },
+    {
+      id: '9',
+      orderNumber: 'ORD-009',
+      saleId: 'sale-9',
+      tableNumber: '18',
+      orderType: 'DINE_IN',
+      items: [
+        {
+          id: 'item-10',
+          productId: '10',
+          productName: 'Ice Cream',
+          quantity: 1,
+          status: KitchenOrderStatus.READY,
+          station: 'Dessert'
+        }
+      ],
+      status: KitchenOrderStatus.READY,
+      createdAt: new Date(Date.now() - 900000).toISOString(), // 15 minutes ago
+      startedAt: new Date(Date.now() - 840000).toISOString(),
+      readyAt: new Date(Date.now() - 60000).toISOString(), // 1 minute ago
+      estimatedTime: 5,
+      priority: 'NORMAL',
+      serverName: 'Sarah',
+      customerName: 'Table 18'
     }
   ];
 
@@ -263,7 +413,16 @@ export class KitchenDisplayComponent implements OnInit, OnDestroy {
     const station = this.stationFilter.value || 'all';
 
     this.filteredOrders = this.orders.filter(order => {
-      const matchesStatus = status === 'all' || order.status === status;
+      // By default (when 'all'), show only NEW, IN_PROGRESS, and READY (exclude COMPLETED)
+      let matchesStatus: boolean;
+      if (status === 'all') {
+        matchesStatus = order.status === KitchenOrderStatus.NEW || 
+                       order.status === KitchenOrderStatus.IN_PROGRESS || 
+                       order.status === KitchenOrderStatus.READY;
+      } else {
+        matchesStatus = order.status === status;
+      }
+      
       const matchesStation = station === 'all' || 
         order.items.some(item => item.station === station);
       

@@ -3,8 +3,12 @@ import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { MaterialModule } from '../../../material.module';
 import { Product } from '../../../models/product.model';
+import { Item } from '../../../models/item.model';
 import { ApiService } from '../../../services/api.service';
+import { ItemsService } from '../../../services/items.service';
 import { NotificationService } from '../../../services/notification.service';
+import { LocalStorageService } from '../../../services/local-storage.service';
+import { ActivatedRoute } from '@angular/router';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
@@ -51,24 +55,38 @@ export class StockManagementComponent implements OnInit, OnDestroy {
   totalStockValue: number = 0;
   lowStockCount: number = 0;
   
+  // Menu ID for items API
+  menuId: string | null = null;
+  
   private destroy$ = new Subject<void>();
-
-  // Mock data
-  private mockProducts: Product[] = [
-    { id: '1', name: 'Coca Cola 500ml', sku: 'CC500', price: 2.50, cost: 1.50, stock: 100, category: 'Beverages', image: '/assets/images/products/product-1.png', isActive: true },
-    { id: '2', name: 'Bread White', sku: 'BR001', price: 1.50, cost: 0.80, stock: 5, category: 'Food', image: '/assets/images/products/product-2.png', isActive: true },
-    { id: '3', name: 'Milk 1L', sku: 'ML001', price: 3.00, cost: 2.00, stock: 75, category: 'Dairy', image: '/assets/images/products/product-3.png', isActive: true },
-    { id: '4', name: 'Eggs Dozen', sku: 'EG001', price: 4.50, cost: 3.00, stock: 0, category: 'Dairy', image: '/assets/images/products/product-4.png', isActive: true },
-    { id: '5', name: 'Rice 1kg', sku: 'RC001', price: 5.00, cost: 3.50, stock: 40, category: 'Food', image: '/assets/images/products/s11.jpg', isActive: true },
-  ];
 
   constructor(
     private api: ApiService,
+    private itemsService: ItemsService,
     private notification: NotificationService,
+    private localStorage: LocalStorageService,
+    private route: ActivatedRoute,
     private dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
+    // Get menuId from route params or localStorage
+    this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
+      const newMenuId = params['menuId'] || this.localStorage.getItem<string>('menuId') || null;
+      if (newMenuId !== this.menuId) {
+        this.menuId = newMenuId;
+        if (this.menuId) {
+          this.localStorage.setItem('menuId', this.menuId);
+        }
+        this.loadProducts();
+      }
+    });
+    
+    // If no menuId in route, try localStorage
+    if (!this.menuId) {
+      this.menuId = this.localStorage.getItem<string>('menuId');
+    }
+    
     this.loadProducts();
     this.setupFilters();
   }
@@ -105,14 +123,42 @@ export class StockManagementComponent implements OnInit, OnDestroy {
   loadProducts(): void {
     this.isLoading = true;
 
-    // Mock API call
-    setTimeout(() => {
-      this.dataSource.data = this.mockProducts;
-      this.updateCategories();
-      this.calculateStats();
-      this.setupTable();
-      this.isLoading = false;
-    }, 500);
+    // Build query - menuId is optional
+    const query: any = {};
+    
+    // Add menuId if available
+    if (this.menuId) {
+      query.menuId = this.menuId;
+    }
+    
+    // Apply filters
+    if (this.categoryFilter.value && this.categoryFilter.value !== 'all') {
+      query.category = this.categoryFilter.value;
+    }
+    
+    if (this.searchControl.value) {
+      query.search = this.searchControl.value;
+    }
+
+    this.itemsService.getItems(query).subscribe({
+      next: (items) => {
+        // Convert Items to Products for display
+        this.dataSource.data = items.map(item => this.itemToProduct(item));
+        this.updateCategories();
+        this.calculateStats();
+        this.setupTable();
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading items:', error);
+        this.dataSource.data = [];
+        this.updateCategories();
+        this.calculateStats();
+        this.setupTable();
+        this.isLoading = false;
+        this.notification.error('Failed to load products from the database. Please try again.');
+      }
+    });
   }
 
   setupTable(): void {
@@ -143,11 +189,8 @@ export class StockManagementComponent implements OnInit, OnDestroy {
   };
 
   applyFilters(): void {
-    this.dataSource.filter = Math.random().toString();
-    if (this.dataSource.paginator) {
-      this.dataSource.paginator.firstPage();
-    }
-    this.calculateStats();
+    // Reload from API with filters (menuId is optional)
+    this.loadProducts();
   }
 
   updateCategories(): void {
@@ -218,5 +261,29 @@ export class StockManagementComponent implements OnInit, OnDestroy {
 
   getStockValue(product: Product): number {
     return (product.cost || product.price) * product.stock;
+  }
+
+  /**
+   * Convert Item model to Product model for display compatibility
+   */
+  private itemToProduct(item: Item): Product {
+    return {
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      sku: item.id.substring(0, 8).toUpperCase(), // Generate SKU from ID
+      barcode: undefined,
+      price: item.price,
+      cost: undefined,
+      stock: item.isAvailable ? 999 : 0, // Map isAvailable to stock (999 for available, 0 for unavailable)
+      category: item.category,
+      categoryId: undefined,
+      image: item.imageUrl,
+      isActive: item.isAvailable,
+      taxRate: 0.1, // Default tax rate
+      unit: 'item',
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt
+    };
   }
 }

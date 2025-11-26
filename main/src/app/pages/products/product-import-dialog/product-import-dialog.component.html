@@ -1,0 +1,159 @@
+<div class="import-dialog">
+  <div class="dialog-header">
+    <h2>Import Products</h2>
+    <button mat-icon-button (click)="onCancel()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <mat-dialog-content>
+    <!-- Step 1: Download Template -->
+    <div class="step-section">
+      <div class="step-header">
+        <span class="step-number">1</span>
+        <span class="step-title">Download Template</span>
+      </div>
+      <p class="step-description">Get the Excel template with category dropdowns</p>
+      <button mat-stroked-button (click)="downloadTemplate()" [disabled]="isProcessing">
+        <mat-icon>download</mat-icon>
+        Download Template
+      </button>
+    </div>
+
+    <!-- Step 2: Upload File -->
+    <div class="step-section">
+      <div class="step-header">
+        <span class="step-number">2</span>
+        <span class="step-title">Upload Excel File</span>
+      </div>
+      <div class="upload-area">
+        <input 
+          type="file" 
+          accept=".xlsx,.xls" 
+          (change)="onFileSelected($event)"
+          #fileInput
+          style="display: none;"
+        />
+        <button 
+          mat-stroked-button 
+          type="button" 
+          (click)="fileInput.click()"
+          [disabled]="isProcessing"
+        >
+          <mat-icon>upload_file</mat-icon>
+          {{ selectedFile ? selectedFile.name : 'Select File' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Step 3: Preview -->
+    @if (showPreview && previewData.length > 0) {
+      <div class="step-section">
+      <div class="step-header">
+        <span class="step-number">3</span>
+        <span class="step-title">Preview</span>
+        <span class="step-count">{{ parsedData.length }} products</span>
+      </div>
+      
+      <div class="preview-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Price</th>
+              <th>Category</th>
+              <th>Available</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of previewData; track item.name || $index; let i = $index) {
+              <tr>
+                <td>{{ item.name }}</td>
+                <td>${{ item.price | number:'1.2-2' }}</td>
+                <td>
+                  <mat-form-field appearance="outline" class="category-select">
+                    <mat-select 
+                      [value]="getCurrentCategoryIdForRow(item)" 
+                      (selectionChange)="updateCategoryForRow(i, $event.value)"
+                      [disabled]="isProcessing || categories.length === 0"
+                    >
+                      @for (cat of categories; track cat.id) {
+                        <mat-option [value]="cat.id">
+                          {{ cat.name }}
+                        </mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                </td>
+                <td>
+                  <span [class]="item.isAvailable ? 'badge-success' : 'badge-error'">
+                    {{ item.isAvailable ? 'Yes' : 'No' }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      </div>
+    }
+
+    <!-- Results -->
+    @if (importResult) {
+      <div class="results-section">
+      <div class="result-summary">
+        <div class="result-item">
+          <mat-icon>check_circle</mat-icon>
+          <span>{{ importResult.success }} imported</span>
+        </div>
+        @if (importResult.failed > 0) {
+          <div class="result-item error">
+            <mat-icon>error</mat-icon>
+            <span>{{ importResult.failed }} failed</span>
+          </div>
+        }
+      </div>
+      @if (importResult.errors.length > 0) {
+        <div class="errors">
+          @for (error of importResult.errors; track error) {
+            <div class="error-item">{{ error }}</div>
+          }
+        </div>
+      }
+      </div>
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions>
+    <button mat-button (click)="onCancel()" [disabled]="isProcessing">
+      {{ importResult ? 'Close' : 'Cancel' }}
+    </button>
+    @if (!importResult) {
+      <button 
+        mat-raised-button 
+        color="primary" 
+        (click)="importProducts()" 
+        [disabled]="parsedData.length === 0 || isProcessing"
+      >
+        Import {{ parsedData.length }} Products
+      </button>
+    }
+    @if (importResult) {
+      <button 
+        mat-raised-button 
+        color="primary" 
+        (click)="onClose()"
+      >
+        Done
+      </button>
+    }
+  </mat-dialog-actions>
+
+  <!-- Loading -->
+  @if (isProcessing) {
+    <div class="loading-overlay">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Importing...</p>
+    </div>
+  }
+</div>

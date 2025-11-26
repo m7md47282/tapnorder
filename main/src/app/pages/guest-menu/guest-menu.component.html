@@ -28,13 +28,11 @@
     <!-- Restaurant Info Card -->
     <div class="restaurant-info-card">
       <div class="restaurant-logo">
-        <div class="logo-placeholder">
-          <span class="logo-text">TETA RAHEEBEH®</span>
-        </div>
+        <img src="/assets/images/logos/tc-logo.png" alt="Restaurant Logo" class="logo-image" />
       </div>
       
-      <h1 class="restaurant-name">{{ restaurantName }}</h1>
-      <p class="restaurant-cuisine">{{ cuisine }}</p>
+      <!-- <h1 class="restaurant-name">{{ restaurantName }}</h1>
+      <p class="restaurant-cuisine">{{ cuisine }}</p> -->
 
       <div class="restaurant-rating">
         <mat-icon class="star-icon">star</mat-icon>
@@ -42,7 +40,7 @@
         <span class="rating-count">({{ ratingCount | number }}+)</span>
       </div>
 
-      <div class="restaurant-badges">
+      <!-- <div class="restaurant-badges">
         <div class="badge-item">
           <mat-icon class="trophy-icon">emoji_events</mat-icon>
         </div>
@@ -50,7 +48,7 @@
           <mat-icon class="check-icon">check_circle</mat-icon>
           <span>Price match</span>
         </div>
-      </div>
+      </div> -->
 
       <!-- <div class="delivery-info">
         <div class="delivery-item">
@@ -158,73 +156,52 @@
         <h2>{{ currentCategoryName }}</h2>
       </div>
       @if (selectedCategory === 'picks-for-you') {
-        <p class="section-subtitle">Trending items we think you'll love</p>
+        <p class="section-subtitle">
+          @if (guestUuid) {
+            AI-powered recommendations just for you
+          } @else {
+            Trending items we think you'll love
+          }
+        </p>
       }
     </div>
 
-    <div class="menu-items-scroll">
-      @for (item of filteredItems; track item.id) {
-        <div class="menu-item-card" (click)="openItemModal(item)">
-          <div class="item-image-container">
-            <div class="item-background orange-bg">
-              <img [src]="item.image" [alt]="item.name" />
-            </div>
-            <button class="item-nav-btn" (click)="addToCart(item); $event.stopPropagation()">
-              <mat-icon>add</mat-icon>
-            </button>
-            @if (item.badge) {
-              <div class="item-badge" [class.orange]="item.badgeColor === 'orange'">
-                <mat-icon class="badge-star">star</mat-icon>
-                <span>{{ item.badge }}</span>
-              </div>
-            }
-          </div>
-          <div class="item-info">
-            <h3 class="item-name">{{ item.name }}</h3>
-            @if (item.description) {
-              <p class="item-description">{{ item.description }}</p>
-            }
-            <div class="item-price">
-              <span class="current-price">{{ currency }} {{ item.price | number:'1.2-2' }}</span>
-              @if (item.originalPrice) {
-                <span class="original-price">{{ currency }} {{ item.originalPrice | number:'1.2-2' }}</span>
-              }
-            </div>
-          </div>
+    <div class="menu-items-scroll items-center">
+      @if (isLoadingItems) {
+        <div class="loading-container">
+          <mat-spinner diameter="50"></mat-spinner>
+          <p>Loading menu items...</p>
         </div>
-      }
-    </div>
-  </div>
-
-  <!-- Offers Section -->
-  @if (offerItems.length > 0) {
-    <div class="offers-section">
-      <h2 class="section-title">Offers</h2>
-      <div class="offers-scroll">
-        @for (item of offerItems; track item.id) {
-          <div class="offer-card" (click)="openItemModal(item)">
-            <div class="offer-image-container" [class.teal-bg]="item.badgeColor === 'teal'" [class.orange-bg]="item.badgeColor === 'orange'">
-              @if (item.originalPrice) {
-                <div class="discount-banner">
-                  Save {{ currency }} {{ calculateSavings(item) | number:'1.2-2' }}
-                </div>
-              }
+      } @else if (filteredItems.length === 0) {
+        <div class="empty-state">
+          <mat-icon class="empty-icon">restaurant_menu</mat-icon>
+          <p>No items available in this category</p>
+        </div>
+      } @else {
+        @for (item of filteredItems; track item.id) {
+          <div class="menu-item-card" (click)="openItemModal(item)">
+            <div class="item-image-container">
+              <div class="item-background orange-bg">
+                @if(item?.image){
+                  <img [src]="item.image" [alt]="item.name" />
+                }
+              </div>
+              <button class="item-nav-btn" (click)="addToCart(item); $event.stopPropagation()">
+                <mat-icon>add</mat-icon>
+              </button>
               @if (item.badge) {
-                <div class="offer-badge" [class.top-rated]="item.badge === 'Top rated'">
-                  @if (item.badge === 'Top rated') {
-                    <mat-icon class="badge-star">star</mat-icon>
-                  }
+                <div class="item-badge" [class.orange]="item.badgeColor === 'orange'">
+                  <mat-icon class="badge-star">star</mat-icon>
                   <span>{{ item.badge }}</span>
                 </div>
               }
-              <img [src]="item.image" [alt]="item.name" />
-              <button class="add-btn" (click)="addToCart(item); $event.stopPropagation()">
-                <mat-icon>add</mat-icon>
-              </button>
             </div>
-            <div class="offer-info">
-              <h3 class="offer-name">{{ item.name }}</h3>
-              <div class="offer-price">
+            <div class="item-info">
+              <h3 class="item-name">{{ item.name }}</h3>
+              @if (item.description) {
+                <p class="item-description">{{ item.description }}</p>
+              }
+              <div class="item-price">
                 <span class="current-price">{{ currency }} {{ item.price | number:'1.2-2' }}</span>
                 @if (item.originalPrice) {
                   <span class="original-price">{{ currency }} {{ item.originalPrice | number:'1.2-2' }}</span>
@@ -233,107 +210,53 @@
             </div>
           </div>
         }
-      </div>
+      }
     </div>
-  }
+  </div>
 
-  <!-- Appetizers Section -->
-  @if (appetizerItems.length > 0) {
-    <div class="items-section">
-      <h2 class="section-title">Appetizers</h2>
-      <div class="items-list">
-        @for (item of appetizerItems; track item.id) {
-          <div class="item-row" (click)="openItemModal(item)">
-            <div class="item-image-wrapper" [class.teal-bg]="item.badgeColor === 'teal'" [class.orange-bg]="item.badgeColor === 'orange'">
-              <img [src]="item.image" [alt]="item.name" />
-              @if (item.badge) {
-                <div class="item-badge-new" [class.new-badge]="item.badge === 'NEW'">
-                  {{ item.badge }}
+  <!-- Dynamic Category Sections - Only show when "Picks for you" is selected -->
+  @if (selectedCategory === 'picks-for-you') {
+    @for (category of categories; track category.id) {
+      @if (category.id !== 'picks-for-you') {
+        @if (getCategoryItems(category.id).length > 0) {
+          <div class="items-section">
+            <h2 class="section-title">
+              <mat-icon class="section-icon">{{ category.icon }}</mat-icon>
+              {{ category.name }}
+            </h2>
+            <div class="items-list">
+              @for (item of getCategoryItems(category.id); track item.id) {
+                <div class="item-row" (click)="openItemModal(item)">
+                  <div class="item-image-wrapper" [class.teal-bg]="item.badgeColor === 'teal'" [class.orange-bg]="item.badgeColor === 'orange'">
+                    <img [src]="item.image" [alt]="item.name" />
+                    @if (item.badge) {
+                      <div class="item-badge-new" [class.new-badge]="item.badge === 'NEW'">
+                        {{ item.badge }}
+                      </div>
+                    }
+                  </div>
+                  <div class="item-details">
+                    <h3 class="item-name">{{ item.name }}</h3>
+                    @if (item.description) {
+                      <p class="item-description">{{ item.description }}</p>
+                    }
+                    <div class="item-price">
+                      <span class="current-price">{{ currency }} {{ item.price | number:'1.2-2' }}</span>
+                      @if (item.originalPrice) {
+                        <span class="original-price">{{ currency }} {{ item.originalPrice | number:'1.2-2' }}</span>
+                      }
+                    </div>
+                  </div>
+                  <button class="add-btn-right" (click)="addToCart(item); $event.stopPropagation()">
+                    <mat-icon>add</mat-icon>
+                  </button>
                 </div>
               }
             </div>
-            <div class="item-details">
-              <h3 class="item-name">{{ item.name }}</h3>
-              @if (item.description) {
-                <p class="item-description">{{ item.description }}</p>
-              }
-              <div class="item-price">
-                <span class="current-price">{{ currency }} {{ item.price | number:'1.2-2' }}</span>
-              </div>
-            </div>
-            <button class="add-btn-right" (click)="addToCart(item); $event.stopPropagation()">
-              <mat-icon>add</mat-icon>
-            </button>
           </div>
         }
-      </div>
-    </div>
-  }
-
-  <!-- Main Dishes Section -->
-  @if (mainDishItems.length > 0) {
-    <div class="items-section">
-      <h2 class="section-title">Main Dishes</h2>
-      <div class="items-list">
-        @for (item of mainDishItems; track item.id) {
-          <div class="item-row" (click)="openItemModal(item)">
-            <div class="item-image-wrapper" [class.teal-bg]="item.badgeColor === 'teal'" [class.orange-bg]="item.badgeColor === 'orange'">
-              <img [src]="item.image" [alt]="item.name" />
-              @if (item.badge) {
-                <div class="item-badge-new" [class.new-badge]="item.badge === 'NEW'">
-                  {{ item.badge }}
-                </div>
-              }
-            </div>
-            <div class="item-details">
-              <h3 class="item-name">{{ item.name }}</h3>
-              @if (item.description) {
-                <p class="item-description">{{ item.description }}</p>
-              }
-              <div class="item-price">
-                <span class="current-price">{{ currency }} {{ item.price | number:'1.2-2' }}</span>
-              </div>
-            </div>
-            <button class="add-btn-right" (click)="addToCart(item); $event.stopPropagation()">
-              <mat-icon>add</mat-icon>
-            </button>
-          </div>
-        }
-      </div>
-    </div>
-  }
-
-  <!-- Drinks Section -->
-  @if (beverageItems.length > 0) {
-    <div class="items-section">
-      <h2 class="section-title">Drinks</h2>
-      <div class="items-list">
-        @for (item of beverageItems; track item.id) {
-          <div class="item-row" (click)="openItemModal(item)">
-            <div class="item-image-wrapper" [class.teal-bg]="item.badgeColor === 'teal'" [class.orange-bg]="item.badgeColor === 'orange'">
-              <img [src]="item.image" [alt]="item.name" />
-              @if (item.badge) {
-                <div class="item-badge-new" [class.new-badge]="item.badge === 'NEW'">
-                  {{ item.badge }}
-                </div>
-              }
-            </div>
-            <div class="item-details">
-              <h3 class="item-name">{{ item.name }}</h3>
-              @if (item.description) {
-                <p class="item-description">{{ item.description }}</p>
-              }
-              <div class="item-price">
-                <span class="current-price">{{ currency }} {{ item.price | number:'1.2-2' }}</span>
-              </div>
-            </div>
-            <button class="add-btn-right" (click)="addToCart(item); $event.stopPropagation()">
-              <mat-icon>add</mat-icon>
-            </button>
-          </div>
-        }
-      </div>
-    </div>
+      }
+    }
   }
 
   <!-- Item Detail Modal -->
@@ -524,6 +447,14 @@
       </div>
     </div>
   }
+
+  <!-- AI Chat Component -->
+  <app-ai-chat
+    [menuItems]="menuItems"
+    [guestUuid]="guestUuid"
+    (addCustomOrder)="onAddCustomOrder($event)"
+    (addItem)="onAddItemFromAI($event)">
+  </app-ai-chat>
 
   <!-- Floating Cart Button -->
   <button mat-fab class="floating-cart-btn" (click)="toggleCart()" [class.has-items]="cartItemCount > 0">

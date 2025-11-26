@@ -1,0 +1,593 @@
+@use "../../../../../assets/scss/variables" as *;
+@use "../../../../../assets/scss/colors" as *;
+
+.admin-ai-advisor {
+  background: $color-white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px color-with-opacity($color-black, 0.08);
+  overflow: hidden;
+}
+
+.advisor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px;
+  background: linear-gradient(135deg, $color-primary 0%, darken($color-primary, 8%) 100%);
+  color: $color-white;
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    .ai-icon-wrapper {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: color-with-opacity($color-white, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(10px);
+
+      .ai-icon {
+        font-size: 32px;
+        width: 32px;
+        height: 32px;
+      }
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      margin: 4px 0 0;
+      opacity: 0.9;
+      font-size: 14px;
+    }
+  }
+
+  button {
+    color: $color-white;
+  }
+}
+
+
+.advisor-tabs {
+  ::ng-deep .mat-mdc-tab-header {
+    border-bottom: 1px solid $color-neutral-border;
+  }
+}
+
+.tab-content {
+  padding: 24px;
+  min-height: 400px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 16px;
+
+  p {
+    color: $color-neutral-text-secondary;
+    margin: 0;
+  }
+}
+
+// Insights Grid
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 20px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.insight-card {
+  &:hover {
+    box-shadow: 0 4px 12px color-with-opacity($color-black, 0.1);
+  }
+
+  &.high-priority {
+    border-left: 4px solid $color-error;
+  }
+
+  .card-header-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    mat-icon {
+      font-size: 28px;
+      width: 28px;
+      height: 28px;
+    }
+  }
+
+  .insight-description {
+    color: $color-neutral-text;
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+
+  .impact-section {
+    padding: 12px;
+    background: color-with-opacity($color-primary, 0.05);
+    border-radius: 8px;
+    margin-bottom: 16px;
+    font-size: 14px;
+  }
+
+  .estimated-impact {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .impact-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 600;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    &.revenue {
+      background: color-with-opacity($color-success, 0.1);
+      color: darken($color-success, 10%);
+    }
+
+    &.percentage {
+      background: color-with-opacity($color-primary, 0.1);
+      color: $color-primary;
+    }
+
+    &.customers {
+      background: color-with-opacity($color-secondary, 0.1);
+      color: $color-secondary;
+    }
+  }
+
+  .action-items {
+    margin-top: 16px;
+
+    strong {
+      display: block;
+      margin-bottom: 8px;
+      color: $color-neutral-text;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 20px;
+
+      li {
+        margin-bottom: 6px;
+        color: $color-neutral-text-secondary;
+        line-height: 1.5;
+      }
+    }
+  }
+}
+
+// Offers Grid
+.offers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+  gap: 24px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.offer-card {
+  border: 2px solid $color-neutral-border;
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: $color-primary;
+    box-shadow: 0 8px 16px color-with-opacity($color-primary, 0.1);
+  }
+
+  .offer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .offer-type {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+    color: $color-white;
+    margin-right: 8px;
+  }
+
+  .discount-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    background: $color-error;
+    color: $color-white;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  mat-chip {
+    &.timing-immediate {
+      background: $color-error;
+      color: $color-white;
+    }
+
+    &.timing-this-week {
+      background: $color-warning;
+      color: $color-white;
+    }
+
+    &.timing-this-month {
+      background: $color-primary;
+      color: $color-white;
+    }
+  }
+
+  .offer-description {
+    color: $color-neutral-text;
+    margin-bottom: 20px;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .expected-impact {
+    margin-bottom: 20px;
+    padding: 16px;
+    background: color-with-opacity($color-success, 0.05);
+    border-radius: 8px;
+
+    h4 {
+      margin: 0 0 12px;
+      font-size: 14px;
+      font-weight: 600;
+      color: $color-neutral-text;
+    }
+  }
+
+  .impact-metrics {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .metric {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    mat-icon {
+      color: $color-success;
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+    }
+
+    div {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .metric-label {
+      font-size: 12px;
+      color: $color-neutral-text-secondary;
+    }
+
+    .metric-value {
+      font-size: 16px;
+      font-weight: 700;
+      color: $color-success;
+    }
+  }
+
+  .implementation-steps {
+    margin-bottom: 16px;
+
+    h4 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: $color-neutral-text;
+    }
+
+    ol {
+      margin: 0;
+      padding-left: 20px;
+
+      li {
+        margin-bottom: 6px;
+        color: $color-neutral-text-secondary;
+        line-height: 1.5;
+      }
+    }
+  }
+
+  .target-items {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid $color-neutral-border;
+
+    strong {
+      display: block;
+      margin-bottom: 8px;
+      color: $color-neutral-text;
+    }
+  }
+}
+
+// Chat Tab
+.chat-tab {
+  display: flex;
+  flex-direction: column;
+  height: 500px;
+  padding: 0;
+}
+
+.chat-messages-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  background: color-with-opacity($color-neutral-bg-subtle, 0.3);
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: color-with-opacity($color-neutral-border, 0.5);
+    border-radius: 3px;
+  }
+}
+
+.chat-message {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  animation: fadeIn 0.3s ease;
+
+  &.user {
+    flex-direction: row-reverse;
+
+    .message-content {
+      background: $color-primary;
+      color: $color-white;
+      border-bottom-right-radius: 4px;
+    }
+  }
+
+  &.assistant {
+    .message-content {
+      background: $color-white;
+      color: $color-neutral-text;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 2px 8px color-with-opacity($color-black, 0.08);
+    }
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-avatar {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, $color-primary 0%, darken($color-primary, 8%) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $color-white;
+  flex-shrink: 0;
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  &.user-avatar {
+    background: color-with-opacity($color-neutral-border, 0.3);
+    color: $color-neutral-text;
+  }
+}
+
+.message-content {
+  max-width: 70%;
+  padding: 12px 16px;
+  border-radius: 18px;
+}
+
+.message-text {
+  font-size: 14px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.message-time {
+  font-size: 11px;
+  opacity: 0.6;
+  margin-top: 4px;
+}
+
+.typing-indicator {
+  display: flex;
+  gap: 4px;
+  padding: 8px 0;
+
+  span {
+    width: 8px;
+    height: 8px;
+    background: $color-neutral-text-secondary;
+    border-radius: 50%;
+    animation: typing 1.4s infinite;
+
+    &:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    &:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+  }
+}
+
+@keyframes typing {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.7;
+  }
+  30% {
+    transform: translateY(-10px);
+    opacity: 1;
+  }
+}
+
+.chat-input-container {
+  display: flex;
+  gap: 12px;
+  padding: 16px 20px;
+  background: $color-white;
+  border-top: 1px solid $color-neutral-border;
+  align-items: flex-end;
+}
+
+.chat-input-field {
+  flex: 1;
+  margin: 0;
+}
+
+.send-btn {
+  mat-icon {
+    margin-right: 4px;
+  }
+}
+
+// Quick Stats
+.quick-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  padding: 20px 24px;
+  background: color-with-opacity($color-neutral-bg-subtle, 0.3);
+  border-top: 1px solid $color-neutral-border;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: $color-white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px color-with-opacity($color-black, 0.05);
+
+  mat-icon {
+    font-size: 32px;
+    width: 32px;
+    height: 32px;
+    color: $color-primary;
+  }
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: $color-neutral-text-secondary;
+  }
+
+  .stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: $color-neutral-text;
+
+    &.positive {
+      color: $color-success;
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 768px) {
+  .advisor-header {
+    padding: 16px;
+
+    .header-content {
+      .ai-icon-wrapper {
+        width: 48px;
+        height: 48px;
+
+        .ai-icon {
+          font-size: 28px;
+          width: 28px;
+          height: 28px;
+        }
+      }
+
+      h2 {
+        font-size: 20px;
+      }
+    }
+  }
+
+  .tab-content {
+    padding: 16px;
+  }
+
+  .insights-grid,
+  .offers-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+

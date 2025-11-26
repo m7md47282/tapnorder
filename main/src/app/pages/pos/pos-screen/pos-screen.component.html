@@ -25,62 +25,25 @@
 
         <!-- Quick Filters -->
         <div class="quick-filters">
-          <button 
-            mat-stroked-button 
-            [class.active]="activeQuickFilter === 'popular'"
-            (click)="applyQuickFilter('popular')"
-            class="quick-filter-btn">
-            <mat-icon>star</mat-icon>
-            Popular
-          </button>
-          <button 
-            mat-stroked-button 
-            [class.active]="activeQuickFilter === 'hot'"
-            (click)="applyQuickFilter('hot')"
-            class="quick-filter-btn">
-            <mat-icon>local_cafe</mat-icon>
-            Hot Coffee
-          </button>
-          <button 
-            mat-stroked-button 
-            [class.active]="activeQuickFilter === 'iced'"
-            (click)="applyQuickFilter('iced')"
-            class="quick-filter-btn">
-            <mat-icon>ac_unit</mat-icon>
-            Iced
-          </button>
-          <button 
-            mat-stroked-button 
-            [class.active]="activeQuickFilter === 'tea'"
-            (click)="applyQuickFilter('tea')"
-            class="quick-filter-btn">
-            <mat-icon>emoji_food_beverage</mat-icon>
-            Tea
-          </button>
-          <button 
-            mat-stroked-button 
-            [class.active]="activeQuickFilter === 'pastries'"
-            (click)="applyQuickFilter('pastries')"
-            class="quick-filter-btn">
-            <mat-icon>bakery_dining</mat-icon>
-            Pastries
-          </button>
-          <button 
-            mat-stroked-button 
-            [class.active]="activeQuickFilter === 'addons'"
-            (click)="applyQuickFilter('addons')"
-            class="quick-filter-btn">
-            <mat-icon>add_circle</mat-icon>
-            Add-ons
-          </button>
-          <button 
-            mat-stroked-button 
-            *ngIf="activeQuickFilter"
-            (click)="clearQuickFilter()"
-            class="quick-filter-btn clear-btn">
-            <mat-icon>clear</mat-icon>
-            Clear
-          </button>
+          @for (category of quickFilterCategories; track category.id) {
+            <button 
+              mat-stroked-button 
+              [class.active]="activeQuickFilter === category.id"
+              (click)="applyQuickFilter(category.id)"
+              class="quick-filter-btn">
+              <mat-icon>{{ getCategoryIcon(category) }}</mat-icon>
+              {{ category.name }}
+            </button>
+          }
+          @if (activeQuickFilter) {
+            <button 
+              mat-stroked-button 
+              (click)="clearQuickFilter()"
+              class="quick-filter-btn clear-btn">
+              <mat-icon>clear</mat-icon>
+              Clear
+            </button>
+          }
         </div>
 
         <mat-form-field appearance="outline" class="search-field">
@@ -89,13 +52,13 @@
           <mat-icon matPrefix>search</mat-icon>
         </mat-form-field>
 
-        <div class="category-chips">
+        <!-- <div class="category-chips">
           <mat-chip-listbox [(ngModel)]="selectedCategory" (ngModelChange)="onCategoryChange($event)">
             <mat-chip-option *ngFor="let category of categories" [value]="category">
               {{ category === 'all' ? 'All' : category }}
             </mat-chip-option>
           </mat-chip-listbox>
-        </div>
+        </div> -->
       </div>
 
       <!-- Products Grid -->
@@ -227,37 +190,32 @@
       </div>
 
       <!-- Totals -->
-      <div class="cart-totals" *ngIf="cart.length > 0">
-        <div class="total-row">
-          <span>Subtotal:</span>
+      @if (cart.length > 0) {
+        <div class="cart-totals">
+          <div class="total-row">
+            <span>Subtotal:</span>
           <span>${{ subtotal | number:'1.2-2' }}</span>
         </div>
         <div class="total-row">
           <span>Tax:</span>
           <span>${{ tax | number:'1.2-2' }}</span>
         </div>
-        <div class="total-row discount" *ngIf="discount > 0">
-          <span>Discount:</span>
-          <span>-${{ discount | number:'1.2-2' }}</span>
+          @if (discount > 0) {
+            <div class="total-row discount">
+              <span>Discount:</span>
+              <span>-${{ discount | number:'1.2-2' }}</span>
+            </div>
+          }
+
+          <div class="total-row grand-total">
+            <span>Total:</span>
+            <span>${{ total | number:'1.2-2' }}</span>
+          </div>
         </div>
-        <mat-divider></mat-divider>
-        <div class="total-row grand-total">
-          <span>Total:</span>
-          <span>${{ total | number:'1.2-2' }}</span>
-        </div>
-      </div>
+      }
 
       <!-- Checkout Section -->
       <div class="checkout-section">
-        <button 
-          mat-stroked-button 
-          color="warn" 
-          class="clear-order-btn"
-          (click)="clearCart()"
-          [disabled]="cart.length === 0 || isProcessing">
-          <mat-icon>delete_sweep</mat-icon>
-          Clear Order
-        </button>
         <button 
           mat-flat-button 
           color="primary" 

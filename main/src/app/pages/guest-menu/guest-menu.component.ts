@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -9,6 +9,10 @@ import { OrderService } from '../../services/order.service';
 import { OrderTrackingService } from '../../services/order-tracking.service';
 import { NotificationService } from '../../services/notification.service';
 import { Order, OrderStatus } from '../../models/order.model';
+import { ItemsService } from '../../services/items.service';
+import { CategoriesService } from '../../services/categories.service';
+import { Item } from '../../models/item.model';
+import { Category } from '../../models/category.model';
 import { Subject, takeUntil } from 'rxjs';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
@@ -34,16 +38,18 @@ export interface MenuItem {
 }
 
 import { OrderStatusComponent } from './components/order-status/order-status.component';
+import { AiChatComponent } from './components/ai-chat/ai-chat.component';
+import { AiAssistantService, CustomOrderSuggestion } from '../../services/ai-assistant.service';
 
 @Component({
   selector: 'app-guest-menu',
   standalone: true,
-  imports: [CommonModule, MaterialModule, FormsModule, OrderStatusComponent],
+  imports: [CommonModule, MaterialModule, FormsModule, OrderStatusComponent, AiChatComponent],
   templateUrl: './guest-menu.component.html',
   styleUrls: ['./guest-menu.component.scss']
 })
 export class GuestMenuComponent implements OnInit, OnDestroy {
-  restaurantName: string = 'Teta Raheebeh';
+  restaurantName: string = 'Triple Chocolate';
   cuisine: string = 'Arabic';
   rating: number = 4.6;
   ratingCount: number = 1000;
@@ -66,6 +72,10 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
   branchId: string | null = null;
   tableId: string | null = null;
   guestUuid: string | null = null;
+  menuId: string | null = null;
+  
+  // Loading state
+  isLoadingItems: boolean = false;
   
   // Order Management
   activeOrder: Order | null = null;
@@ -94,187 +104,37 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   
   categories: MenuCategory[] = [
-    { id: 'picks-for-you', name: 'Picks for you', icon: 'local_fire_department' },
-    { id: 'offers', name: 'Offers', icon: 'local_offer' },
-    { id: 'appetizers', name: 'Appetizers', icon: 'restaurant_menu' },
-    { id: 'fatt', name: 'Fatt', icon: 'lunch_dining' },
-    { id: 'mains', name: 'Main Dishes', icon: 'dinner_dining' },
-    { id: 'desserts', name: 'Desserts', icon: 'cake' },
-    { id: 'beverages', name: 'Beverages', icon: 'local_drink' }
+    { id: 'picks-for-you', name: 'Picks for you', icon: 'local_fire_department' }
   ];
 
-  menuItems: MenuItem[] = [
-    {
-      id: '1',
-      name: 'Chicken Ouzi Box',
-      description: 'Traditional chicken ouzi with rice and sides',
-      price: 4.17,
-      originalPrice: 5.95,
-      image: '/assets/images/products/product-1.png',
-      category: 'picks-for-you',
-      badge: 'Top rated',
-      badgeColor: 'orange',
-      rating: 4.8,
-      isTopRated: true
-    },
-    {
-      id: '2',
-      name: 'Cauliflower Makloba Box',
-      description: 'Cauliflower makloba with chicken and traditional sides',
-      price: 4.95,
-      image: '/assets/images/products/product-2.png',
-      category: 'picks-for-you',
-      badge: 'Top rated',
-      badgeColor: 'orange',
-      rating: 4.7,
-      isTopRated: true
-    },
-    {
-      id: '3',
-      name: 'Stuffed Grape Leaves',
-      description: 'Traditional stuffed grape leaves with lemon',
-      price: 3.50,
-      image: '/assets/images/products/product-3.png',
-      category: 'appetizers',
-      rating: 4.5
-    },
-    {
-      id: '4',
-      name: 'Hummus Plate',
-      description: 'Creamy hummus with olive oil and pita bread',
-      price: 2.50,
-      image: '/assets/images/products/product-4.png',
-      category: 'appetizers',
-      rating: 4.6
-    },
-    {
-      id: '5',
-      name: 'Mansaf',
-      description: 'Traditional Jordanian mansaf with lamb',
-      price: 8.50,
-      image: '/assets/images/products/product-1.png',
-      category: 'mains',
-      rating: 4.9,
-      isTopRated: true
-    },
-    {
-      id: '6',
-      name: 'Knafeh',
-      description: 'Sweet cheese pastry with syrup',
-      price: 3.00,
-      image: '/assets/images/products/product-2.png',
-      category: 'desserts',
-      rating: 4.7
-    },
-    {
-      id: '12',
-      name: 'Mansaf',
-      description: 'Traditional Jordanian mansaf with lamb and rice',
-      price: 8.50,
-      image: '/assets/images/products/product-1.png',
-      category: 'mains',
-      rating: 4.9,
-      isTopRated: true
-    },
-    {
-      id: '13',
-      name: 'Grilled Chicken',
-      description: 'Marinated grilled chicken with herbs',
-      price: 7.50,
-      image: '/assets/images/products/product-2.png',
-      category: 'mains',
-      rating: 4.6
-    },
-    {
-      id: '14',
-      name: 'Fresh Orange Juice',
-      description: 'Freshly squeezed orange juice',
-      price: 2.00,
-      image: '/assets/images/products/product-3.png',
-      category: 'beverages',
-      badge: '',
-      badgeColor: 'orange',
-      rating: 4.5
-    },
-    {
-      id: '15',
-      name: 'Mint Lemonade',
-      description: 'Refreshing mint and lemon drink',
-      price: 1.75,
-      image: '/assets/images/products/product-4.png',
-      category: 'beverages',
-      badge: '',
-      badgeColor: 'teal',
-      rating: 4.7
-    },
-    // Offer items
-    {
-      id: '7',
-      name: 'Chicken Fatteh',
-      description: '',
-      price: 1.37,
-      originalPrice: 1.95,
-      image: '/assets/images/products/product-1.png',
-      category: 'offers',
-      badge: '',
-      badgeColor: 'teal',
-      rating: 4.8
-    },
-    {
-      id: '8',
-      name: 'Economy Tablia',
-      description: '',
-      price: 6.97,
-      originalPrice: 9.95,
-      image: '/assets/images/products/product-2.png',
-      category: 'offers',
-      badge: '',
-      badgeColor: 'orange',
-      rating: 4.7
-    },
-    {
-      id: '9',
-      name: 'Chicken Ouzi Box',
-      description: '',
-      price: 4.17,
-      originalPrice: 5.95,
-      image: '/assets/images/products/product-1.png',
-      category: 'offers',
-      badge: 'Top rated',
-      badgeColor: 'orange',
-      rating: 4.8,
-      isTopRated: true
-    },
-    // Regular items for vertical list
-    {
-      id: '10',
-      name: 'lasagna',
-      description: 'Minced meat, lasagna sauce, béchamel, lasagna dough',
-      price: 3.95,
-      image: '/assets/images/products/product-3.png',
-      category: 'appetizers',
-      badge: 'NEW',
-      badgeColor: 'red',
-      rating: 4.5
-    },
-    {
-      id: '11',
-      name: 'Fried Kibbeh',
-      description: '1 piece',
-      price: 0.95,
-      image: '/assets/images/products/product-4.png',
-      category: 'appetizers',
-      badge: '',
-      badgeColor: 'teal',
-      rating: 4.6
-    }
-  ];
+  menuItems: MenuItem[] = [];
+  filteredItems: MenuItem[] = [];
+  
+  // Map category names to category IDs for items that only have category names
+  private categoryNameToIdMap: Map<string, string> = new Map();
 
-  get filteredItems(): MenuItem[] {
-    if (this.selectedCategory === 'picks-for-you') {
-      return this.menuItems.filter(item => item.isTopRated || item.rating && item.rating >= 4.6);
-    }
-    return this.menuItems.filter(item => item.category === this.selectedCategory);
+  /**
+   * Get items grouped by category
+   */
+  get itemsByCategory(): Map<string, MenuItem[]> {
+    const grouped = new Map<string, MenuItem[]>();
+    
+    this.menuItems.forEach(item => {
+      const categoryId = item.category;
+      if (!grouped.has(categoryId)) {
+        grouped.set(categoryId, []);
+      }
+      grouped.get(categoryId)!.push(item);
+    });
+    
+    return grouped;
+  }
+
+  /**
+   * Get category items for a specific category ID
+   */
+  getCategoryItems(categoryId: string): MenuItem[] {
+    return this.menuItems.filter(item => item.category === categoryId);
   }
 
   get currentCategoryName(): string {
@@ -311,7 +171,11 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
     private indexedDB: IndexedDBService,
     private orderService: OrderService,
     private orderTracking: OrderTrackingService,
-    private notification: NotificationService
+    private notification: NotificationService,
+    private aiService: AiAssistantService,
+    private itemsService: ItemsService,
+    private categoriesService: CategoriesService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -327,6 +191,10 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
       this.placeId = params['place_id'] || null;
       this.branchId = params['branch_id'] || null;
       this.tableId = params['table_id'] || null;
+      this.menuId = params['menu_id'] || null;
+
+      // Load items from database
+      this.loadItems();
 
       // Only initialize guest UUID if place_id and branch_id are present
       if (this.placeId && this.branchId) {
@@ -357,6 +225,10 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
         this.branchId!,
         this.tableId
       );
+
+      // Update filtered items when guest UUID is set
+      this.updateFilteredItems();
+      this.cdr.detectChanges();
 
       // Initialize orders for this guest
       await this.orderService.initializeOrders(this.guestUuid);
@@ -398,6 +270,30 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
 
   selectCategory(categoryId: string): void {
     this.selectedCategory = categoryId;
+    this.updateFilteredItems();
+  }
+
+  /**
+   * Update filtered items based on current category and guest UUID
+   * This method ensures filteredItems is updated outside of change detection
+   * FILTER DISABLED FOR TESTING - showing all items
+   */
+  private updateFilteredItems(): void {
+    // DISABLED FOR TESTING - Show all items regardless of filter
+    this.filteredItems = [...this.menuItems];
+    
+    // Original filtering logic (commented out for testing):
+    // if (this.selectedCategory === 'picks-for-you') {
+    //   // Use AI-driven recommendations if guest UUID exists
+    //   if (this.guestUuid) {
+    //     this.filteredItems = this.aiService.getPersonalizedRecommendations(this.guestUuid, this.menuItems);
+    //   } else {
+    //     // Fallback to top-rated items
+    //     this.filteredItems = this.menuItems.filter(item => item.isTopRated || (item.rating && item.rating >= 4.6));
+    //   }
+    // } else {
+    //   this.filteredItems = this.menuItems.filter(item => item.category === this.selectedCategory);
+    // }
   }
 
   openItemModal(item: MenuItem): void {
@@ -498,6 +394,11 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
         .subscribe(status => {
           order.status = status;
         });
+    
+      // Update AI preferences from order
+      if (this.guestUuid) {
+        this.aiService.updatePreferencesFromOrder(this.guestUuid, order);
+      }
     
       // Show success notification
       this.notification.success('Order placed successfully!');
@@ -719,7 +620,200 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
   }
 
   getItemBackgroundColor(item: MenuItem): string {
-    return item.badgeColor === 'orange' ? '#ff9800' : '#4caf50';
+    return item.badgeColor === 'orange' ? '#FFB800' : '#5E5E5E';
+  }
+
+  onAddCustomOrder(customOrder: CustomOrderSuggestion): void {
+    // Create notes string with modifications and addons
+    const notesParts: string[] = [];
+    
+    if (customOrder.modifications.length > 0) {
+      notesParts.push(...customOrder.modifications);
+    }
+    
+    if (customOrder.addons.length > 0) {
+      notesParts.push(`Add-ons: ${customOrder.addons.map(a => a.name).join(', ')}`);
+    }
+    
+    const notes = notesParts.join(' | ');
+    
+    // Add base item to cart with notes
+    this.cartService.addToCart(customOrder.baseItem, 1, notes);
+    
+    // Add addons as separate items (if they have price > 0)
+    customOrder.addons.forEach(addon => {
+      if (addon.price > 0) {
+        this.cartService.addToCart(addon, 1);
+      }
+    });
+
+    // Show notification
+    this.notification.success(`Custom order added to cart!`);
+  }
+
+  onAddItemFromAI(item: MenuItem): void {
+    this.addToCart(item);
+    this.notification.success(`${item.name} added to cart!`);
+  }
+
+  /**
+   * Load items from the database
+   */
+  loadItems(): void {
+    this.isLoadingItems = true;
+    
+    // Build query - only load available items
+    const query: any = { 
+      isAvailable: true
+    };
+    
+    // Add menuId if available
+    if (this.menuId) {
+      query.menuId = this.menuId;
+    }
+    
+    // Load categories first, then items
+    this.loadCategories();
+    
+    this.itemsService.getItems(query).subscribe({
+      next: (items) => {
+        // Ensure items is an array
+        const itemsArray = Array.isArray(items) ? items : [];
+        
+        // Convert Items to MenuItems
+        this.menuItems = itemsArray.map(item => this.itemToMenuItem(item));
+        
+        // Update filtered items after loading
+        this.updateFilteredItems();
+        
+        this.isLoadingItems = false;
+      },
+      error: (error) => {
+        console.error('Error loading items:', error);
+        this.menuItems = [];
+        this.filteredItems = [];
+        this.isLoadingItems = false;
+        this.notification.error('Failed to load menu items. Please try again.');
+      }
+    });
+  }
+
+  /**
+   * Normalize category name to ID format
+   */
+  private normalizeCategoryId(categoryName: string): string {
+    return categoryName.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  }
+
+  /**
+   * Convert Item model to MenuItem format
+   */
+  private itemToMenuItem(item: any): MenuItem {
+    // Default image if not provided
+    const defaultImage = '/assets/images/products/product-1.png';
+    
+    // Use categoryId if available (preferred), otherwise try to match by category name
+    let categoryId: string;
+    if (item.categoryId) {
+      // Use categoryId directly - it should match the category.id from API
+      categoryId = item.categoryId;
+    } else if (item.category) {
+      // Try to find matching category ID from the name-to-id map
+      const matchedId = this.categoryNameToIdMap.get(item.category);
+      if (matchedId) {
+        categoryId = matchedId;
+      } else {
+        // Fallback: normalize category name to ID format
+        categoryId = this.normalizeCategoryId(item.category);
+      }
+    } else {
+      categoryId = 'uncategorized';
+    }
+    
+    // Determine if item should be top-rated (you can customize this logic)
+    const isTopRated = item.price > 5; // Example: items over 5 JOD are top-rated
+    
+    // Generate rating (you can customize this logic or get from item.specs)
+    const rating = item.specs?.calories ? 4.5 + (item.specs.calories % 10) / 10 : 4.5;
+    
+    return {
+      id: item.id,
+      name: item.name,
+      description: item.description,
+      price: item.price,
+      image: item.imageUrl || defaultImage,
+      category: categoryId, // Use category ID that matches category.id from API
+      rating: Math.min(5, Math.max(4, rating)), // Keep rating between 4 and 5
+      isTopRated: isTopRated
+    };
+  }
+
+  /**
+   * Load categories from API
+   */
+  private loadCategories(): void {
+    // Build query for categories
+    const query: any = { 
+      isActive: true 
+    };
+    
+    // Add menuId if available
+    if (this.menuId) {
+      query.menuId = this.menuId;
+    }
+    
+    // Load categories from API
+    this.categoriesService.getCategories(query).subscribe({
+      next: (categories) => {
+        // Ensure categories is an array
+        const categoriesArray = Array.isArray(categories) ? categories : [];
+        
+        // Build category name to ID mapping for items that only have category names
+        this.categoryNameToIdMap.clear();
+        categoriesArray.forEach(cat => {
+          // Map category name to its ID
+          this.categoryNameToIdMap.set(cat.name, cat.id);
+          // Also map normalized name to ID for better matching
+          const normalizedName = this.normalizeCategoryId(cat.name);
+          if (normalizedName !== cat.id) {
+            this.categoryNameToIdMap.set(normalizedName, cat.id);
+          }
+        });
+        
+        // Convert Category model to MenuCategory format
+        // Keep "Picks for you" as the first category
+        const dynamicCategories: MenuCategory[] = categoriesArray
+          .filter(cat => cat.isActive !== false)
+          .map(cat => ({
+            id: cat.id,
+            name: cat.name,
+            icon: this.categoriesService.getCategoryIcon(cat.name) || 'restaurant'
+          }))
+          .sort((a, b) => {
+            // Sort by displayOrder if available, otherwise by name
+            const catA = categoriesArray.find(c => c.id === a.id);
+            const catB = categoriesArray.find(c => c.id === b.id);
+            if (catA?.displayOrder !== undefined && catB?.displayOrder !== undefined) {
+              return (catA.displayOrder || 0) - (catB.displayOrder || 0);
+            }
+            return a.name.localeCompare(b.name);
+          });
+
+        // Update categories array, keeping "Picks for you" first
+        this.categories = [
+          { id: 'picks-for-you', name: 'Picks for you', icon: 'local_fire_department' },
+          ...dynamicCategories
+        ];
+      },
+      error: (error) => {
+        console.error('Error loading categories:', error);
+        // Fallback: keep "Picks for you" category only
+        this.categories = [
+          { id: 'picks-for-you', name: 'Picks for you', icon: 'local_fire_department' }
+        ];
+        this.categoryNameToIdMap.clear();
+      }
+    });
   }
 }
 

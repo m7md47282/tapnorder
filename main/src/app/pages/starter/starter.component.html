@@ -1,24 +1,110 @@
-<div class="row">
-  <div class="col-lg-8">
-    <app-sales-overview></app-sales-overview>
+<div class="dashboard-container">
+  <!-- Dashboard Header -->
+  <div class="dashboard-header">
+    <h1>Dashboard</h1>
+    <p>Welcome back! Here's what's happening with your restaurant today.</p>
   </div>
-  <div class="col-lg-4">
-    <app-yearly-breakup></app-yearly-breakup>
-    <app-monthly-earnings></app-monthly-earnings>
-  </div>
-</div>
 
-<div class="row">
-  <div class="col-lg-4">
-    <app-recent-transactions></app-recent-transactions>
-  </div>
-  <div class="col-lg-8">
-    <app-product-performance></app-product-performance>
-  </div>
-</div>
+  <!-- Key Metrics -->
+  <div class="metrics-grid">
+    <div class="metric-card">
+      <div class="metric-header">
+        <span class="metric-label">Total Revenue</span>
+        <div class="metric-icon success">
+          <mat-icon>attach_money</mat-icon>
+        </div>
+      </div>
+      <div class="metric-value">${{ metrics.totalRevenue | number:'1.0-0' }}</div>
+      <div class="metric-change positive">
+        <mat-icon>trending_up</mat-icon>
+        <span>+{{ metrics.revenueChange }}% from last month</span>
+      </div>
+    </div>
 
-<div class="row">
-  <div class="col-12">
-    <app-blog-card></app-blog-card>
+    <div class="metric-card">
+      <div class="metric-header">
+        <span class="metric-label">Total Orders</span>
+        <div class="metric-icon">
+          <mat-icon>shopping_cart</mat-icon>
+        </div>
+      </div>
+      <div class="metric-value">{{ metrics.totalOrders | number }}</div>
+      <div class="metric-change positive">
+        <mat-icon>trending_up</mat-icon>
+        <span>+{{ metrics.ordersChange }}% from last month</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-header">
+        <span class="metric-label">Avg Order Value</span>
+        <div class="metric-icon warning">
+          <mat-icon>receipt</mat-icon>
+        </div>
+      </div>
+      <div class="metric-value">${{ metrics.avgOrderValue | number:'1.2-2' }}</div>
+      <div class="metric-change positive">
+        <mat-icon>trending_up</mat-icon>
+        <span>+{{ metrics.avgOrderValueChange }}% from last month</span>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-header">
+        <span class="metric-label">Profit Margin</span>
+        <div class="metric-icon success">
+          <mat-icon>account_balance</mat-icon>
+        </div>
+      </div>
+      <div class="metric-value positive">{{ metrics.profitMargin }}%</div>
+      <div class="metric-change positive">
+        <mat-icon>trending_up</mat-icon>
+        <span>+{{ metrics.profitMarginChange }}% from last month</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Grid -->
+  <div class="dashboard-grid">
+    <!-- Sales Overview - Large Chart -->
+    <div class="grid-col-8 dashboard-card chart-card-large">
+      <app-sales-overview></app-sales-overview>
+    </div>
+
+    <!-- AI Insights Widget -->
+    <div class="grid-col-4 dashboard-card">
+      <app-ai-insights-widget></app-ai-insights-widget>
+    </div>
+  </div>
+
+  <!-- Secondary Content Grid -->
+  <div class="dashboard-grid">
+    <!-- Yearly Breakup -->
+    <div class="grid-col-4 dashboard-card chart-card-medium">
+      <app-yearly-breakup></app-yearly-breakup>
+    </div>
+
+    <!-- Monthly Earnings -->
+    <div class="grid-col-4 dashboard-card chart-card-medium">
+      <app-monthly-earnings></app-monthly-earnings>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="grid-col-4 dashboard-card">
+      <app-recent-transactions></app-recent-transactions>
+    </div>
+  </div>
+
+  <!-- Bottom Content Grid -->
+  <div class="dashboard-grid">
+    <!-- Product Performance -->
+    <div class="grid-col-8 dashboard-card">
+      <app-product-performance></app-product-performance>
+    </div>
+
+    <!-- Blog Cards / News -->
+    <div class="grid-col-4 dashboard-card">
+      <app-blog-card></app-blog-card>
+    </div>
   </div>
 </div>

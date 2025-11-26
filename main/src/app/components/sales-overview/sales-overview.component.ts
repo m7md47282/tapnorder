@@ -45,6 +45,7 @@ export interface salesOverviewChart {
   selector: 'app-sales-overview',
   imports: [MaterialModule, TablerIconsModule, NgApexchartsModule, MatButtonModule],
   templateUrl: './sales-overview.component.html',
+  styleUrls: ['./sales-overview.component.scss']
 })
 export class AppSalesOverviewComponent {
 
@@ -90,7 +91,8 @@ export class AppSalesOverviewComponent {
       },
       chart: {
         type: 'bar',
-        height: 390,
+        height: 350,
+        width: '100%',
         offsetX: -15,
         toolbar: { show: false },
         foreColor: '#adb0bb',

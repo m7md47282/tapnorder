@@ -2,11 +2,20 @@ import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, BehaviorSubject, of, throwError } from 'rxjs';
 import { tap, catchError, map, delay } from 'rxjs/operators';
-import { User, LoginRequest, LoginResponse, RegisterRequest, UserRole } from '../models/user.model';
+import { 
+  User, 
+  LoginRequest, 
+  LoginResponse, 
+  RegisterRequest, 
+  UserRole, 
+  AuthSuccessResponse, 
+  UserProfile 
+} from '../models/user.model';
 import { ApiService } from './api.service';
 import { LocalStorageService } from './local-storage.service';
 import { NotificationService } from './notification.service';
 import { environment } from '../../environments/environment';
+import { getRoleFromId } from '../utils/role-ids.util';
 
 @Injectable({
   providedIn: 'root'
@@ -46,19 +55,67 @@ export class AuthService {
    * Login user
    */
   login(credentials: LoginRequest, rememberMe: boolean = false): Observable<LoginResponse> {
-    // Mock authentication for development/testing
-    if (environment.useMockAuth) {
-      return this.mockLogin(credentials, rememberMe);
-    }
+  
 
-    // Real API call
-    return this.api.post<LoginResponse>('/auth/login', credentials, false).pipe(
+    const loginRequest: LoginRequest = {
+      email: credentials.email,
+      password: credentials.password,
+    };
+
+    // Real API call to backend
+    return this.api.post<any>('/login', loginRequest, false).pipe(
+      map(response => {
+        // API service already unwraps response.data, so response should be the data object
+        // But handle both cases: wrapped and unwrapped
+        let authData: any;
+        
+        if (response && typeof response === 'object') {
+          // Check if it's still wrapped (has success and data properties)
+          if ('success' in response && 'data' in response && response.data) {
+            authData = response.data;
+          } 
+          // Check if it's the direct data structure (has user and token)
+          else if ('user' in response && 'token' in response) {
+            authData = response;
+          }
+          // Otherwise, assume response is the data object
+          else {
+            authData = response;
+          }
+        } else {
+          throw new Error('Invalid response format from server');
+        }
+
+        // Validate required fields
+        if (!authData.user) {
+          throw new Error('User data not found in response');
+        }
+        if (!authData.token) {
+          throw new Error('Token not found in response');
+        }
+
+        // Convert to AuthSuccessResponse format for processing
+        const authResponse: AuthSuccessResponse = {
+          success: true,
+          data: {
+            user: authData.user,
+            token: authData.token,
+            refreshToken: authData.refreshToken,
+            expiresAt: authData.expiresAt,
+            identityProfile: authData.identityProfile
+          }
+        };
+        
+        return this.convertAuthResponseToLoginResponse(authResponse);
+      }),
       tap(response => {
         this.setAuthData(response, rememberMe);
         this.notification.success('Login successful!');
       }),
       catchError(error => {
-        this.notification.error(error.message || 'Login failed');
+        // Error is already handled by error interceptor, just rethrow
+        // Extract message for logging/debugging
+        const errorMessage = error?.message || error?.error?.message || 'Login failed';
         return throwError(() => error);
       })
     );
@@ -72,29 +129,32 @@ export class AuthService {
     return of(null).pipe(
       delay(500),
       map(() => {
-        // Mock credentials - change these for testing
+        // Mock credentials - supports both email and username for backward compatibility
+        const emailOrUsername = credentials.email || (credentials as any).username || '';
+        const password = credentials.password;
+        
         const validCredentials = [
-          { username: 'admin', password: 'admin123', role: UserRole.SUPER_ADMIN },
-          { username: 'manager', password: 'manager123', role: UserRole.RESTAURANT_MANAGER },
-          { username: 'shiftmanager', password: 'shift123', role: UserRole.SHIFT_MANAGER },
-          { username: 'waiter', password: 'waiter123', role: UserRole.WAITER },
-          { username: 'cashier', password: 'cashier123', role: UserRole.CASHIER },
-          { username: 'host', password: 'host123', role: UserRole.HOST },
-          { username: 'chef', password: 'chef123', role: UserRole.CHEF },
-          { username: 'bartender', password: 'bar123', role: UserRole.BARTENDER },
-          { username: 'driver', password: 'driver123', role: UserRole.DELIVERY_DRIVER },
-          { username: 'inventory', password: 'inv123', role: UserRole.INVENTORY_MANAGER },
-          { username: 'accountant', password: 'acc123', role: UserRole.ACCOUNTANT },
-          // Legacy support
-          { username: 'storemanager', password: 'store123', role: UserRole.STORE_MANAGER },
+          { email: 'admin@example.com', username: 'admin', password: 'admin123', role: UserRole.SUPER_ADMIN },
+          { email: 'admin2@example.com', username: 'admin2', password: 'admin123', role: UserRole.ADMIN },
+          { email: 'manager@example.com', username: 'manager', password: 'manager123', role: UserRole.RESTAURANT_MANAGER },
+          { email: 'shiftmanager@example.com', username: 'shiftmanager', password: 'shift123', role: UserRole.SHIFT_MANAGER },
+          { email: 'waiter@example.com', username: 'waiter', password: 'waiter123', role: UserRole.WAITER },
+          { email: 'cashier@example.com', username: 'cashier', password: 'cashier123', role: UserRole.CASHIER },
+          { email: 'host@example.com', username: 'host', password: 'host123', role: UserRole.HOST },
+          { email: 'chef@example.com', username: 'chef', password: 'chef123', role: UserRole.CHEF },
+          { email: 'bartender@example.com', username: 'bartender', password: 'bar123', role: UserRole.BARTENDER },
+          { email: 'driver@example.com', username: 'driver', password: 'driver123', role: UserRole.DELIVERY_DRIVER },
+          { email: 'inventory@example.com', username: 'inventory', password: 'inv123', role: UserRole.INVENTORY_MANAGER },
+          { email: 'accountant@example.com', username: 'accountant', password: 'acc123', role: UserRole.ACCOUNTANT },
+          { email: 'storemanager@example.com', username: 'storemanager', password: 'store123', role: UserRole.STORE_MANAGER },
         ];
 
         const validUser = validCredentials.find(
-          c => c.username === credentials.username && c.password === credentials.password
+          c => (c.email === emailOrUsername || c.username === emailOrUsername) && c.password === password
         );
 
         if (!validUser) {
-          throw new Error('Invalid username or password');
+          throw new Error('Invalid email/username or password');
         }
 
         // Generate mock token
@@ -103,7 +163,7 @@ export class AuthService {
         const mockUser: User = {
           id: '1',
           username: validUser.username,
-          email: `${validUser.username}@example.com`,
+          email: validUser.email,
           firstName: validUser.username.charAt(0).toUpperCase() + validUser.username.slice(1),
           lastName: 'User',
           role: validUser.role,
@@ -133,13 +193,97 @@ export class AuthService {
   /**
    * Register new user
    */
-  register(data: RegisterRequest): Observable<any> {
-    return this.api.post('/auth/register', data, false).pipe(
+  register(data: RegisterRequest): Observable<LoginResponse> {
+    // Prepare signup request for backend
+    const signupRequest: any = {
+      email: data.email,
+      password: data.password,
+    };
+
+    // Add displayName (from firstName/lastName or username for compatibility)
+    if (data.displayName) {
+      signupRequest.displayName = data.displayName;
+    } else if (data.firstName || data.lastName) {
+      signupRequest.displayName = `${data.firstName || ''} ${data.lastName || ''}`.trim();
+    } else if (data.username) {
+      signupRequest.displayName = data.username;
+    }
+
+    // Add role information (prefer roleId, fallback to roleKey)
+    if (data.roleId) {
+      signupRequest.roleId = data.roleId;
+    } else if (data.roleKey) {
+      signupRequest.roleKey = data.roleKey;
+    }
+
+    // Add optional fields
+    if (data.preferences) {
+      signupRequest.preferences = data.preferences;
+    }
+    if (data.places && data.places.length > 0) {
+      signupRequest.places = data.places;
+    }
+    if (data.deviceInfo) {
+      signupRequest.deviceInfo = data.deviceInfo;
+    }
+    if (data.metadata) {
+      signupRequest.metadata = data.metadata;
+    }
+
+    // Real API call to backend
+    return this.api.post<any>('/signup', signupRequest, false).pipe(
+      map(response => {
+        // API service already unwraps response.data, so response should be the data object
+        // But handle both cases: wrapped and unwrapped
+        let authData: any;
+        
+        if (response && typeof response === 'object') {
+          // Check if it's still wrapped (has success and data properties)
+          if ('success' in response && 'data' in response && response.data) {
+            authData = response.data;
+          } 
+          // Check if it's the direct data structure (has user and token)
+          else if ('user' in response && 'token' in response) {
+            authData = response;
+          }
+          // Otherwise, assume response is the data object
+          else {
+            authData = response;
+          }
+        } else {
+          throw new Error('Invalid response format from server');
+        }
+
+        // Validate required fields
+        if (!authData.user) {
+          throw new Error('User data not found in response');
+        }
+        if (!authData.token) {
+          throw new Error('Token not found in response');
+        }
+
+        // Convert to AuthSuccessResponse format for processing
+        const authResponse: AuthSuccessResponse = {
+          success: true,
+          data: {
+            user: authData.user,
+            token: authData.token,
+            refreshToken: authData.refreshToken,
+            expiresAt: authData.expiresAt,
+            identityProfile: authData.identityProfile
+          }
+        };
+        
+        const loginResponse = this.convertAuthResponseToLoginResponse(authResponse);
+        // Auto-login after successful registration
+        this.setAuthData(loginResponse, false);
+        return loginResponse;
+      }),
       tap(() => {
-        this.notification.success('Registration successful! Please login.');
+        this.notification.success('Registration successful! You are now logged in.');
       }),
       catchError(error => {
-        this.notification.error(error.message || 'Registration failed');
+        // Error is already handled by error interceptor, just rethrow
         return throwError(() => error);
       })
     );
@@ -250,6 +394,7 @@ export class AuthService {
 
   /**
    * Refresh token
+   * Note: Backend may use Firebase token refresh - check your backend implementation
    */
   refreshToken(): Observable<LoginResponse> {
     const refreshToken = this.localStorage.getRefreshToken();
@@ -257,7 +402,9 @@ export class AuthService {
       return throwError(() => new Error('No refresh token available'));
     }
 
-    return this.api.post<LoginResponse>('/auth/refresh', { refreshToken }, false).pipe(
+    // Backend refresh endpoint (adjust if your backend uses a different endpoint)
+    return this.api.post<AuthSuccessResponse>('/auth/refresh', { refreshToken }, false).pipe(
+      map(response => this.convertAuthResponseToLoginResponse(response)),
       tap(response => {
         this.setAuthData(response, this.localStorage.getRememberMe());
       }),
@@ -288,6 +435,87 @@ export class AuthService {
     // For now, we'll assume token is valid if it exists
     // In production, decode JWT and check expiration
     return false;
+  }
+
+  /**
+   * Convert backend AuthSuccessResponse to frontend LoginResponse
+   */
+  private convertAuthResponseToLoginResponse(response: AuthSuccessResponse): LoginResponse {
+    // Ensure we have the data object
+    const data = response.data || response as any;
+    const userProfile = data.user;
+    
+    if (!userProfile) {
+      throw new Error('Invalid response: user profile not found');
+    }
+    
+    // Prioritize roleId over role - use nullish coalescing to only fallback if roleId is null/undefined
+    const roleId = userProfile.roleId ?? userProfile.role ?? 0;
+    const role = getRoleFromId(roleId) || UserRole.WAITER; // Default to WAITER if role not found
+
+    // Convert UserProfile to User model
+    const user: User = {
+      id: userProfile.id,
+      username: userProfile.displayName || userProfile.email?.split('@')[0] || 'user',
+      email: userProfile.email,
+      firstName: userProfile.displayName?.split(' ')[0],
+      lastName: userProfile.displayName?.split(' ').slice(1).join(' ') || '',
+      role: role,
+      permissions: userProfile.customClaims?.permissions || [],
+      isActive: userProfile.status === 'active' || userProfile.status === undefined,
+      createdAt: userProfile.createdAt,
+      updatedAt: userProfile.updatedAt,
+    };
+
+    // Calculate expiresIn from expiresAt if available
+    let expiresIn = 3600; // Default 1 hour
+    if (data.expiresAt) {
+      const expiresAt = new Date(data.expiresAt).getTime();
+      const now = Date.now();
+      expiresIn = Math.max(0, Math.floor((expiresAt - now) / 1000));
+    }
+
+    return {
+      accessToken: data.token || (data as any).accessToken,
+      refreshToken: data.refreshToken || undefined,
+      user: user,
+      expiresIn: expiresIn,
+    };
+  }
+
+  /**
+   * Get current user profile from backend
+   */
+  getCurrentUserProfile(): Observable<User> {
+    return this.api.get<UserProfile>('/login', {}, true).pipe(
+      map(userProfile => {
+        // Prioritize roleId over role - use nullish coalescing to only fallback if roleId is null/undefined
+        const roleId = userProfile.roleId ?? userProfile.role ?? 0;
+        const role = getRoleFromId(roleId) ?? UserRole.WAITER;
+
+        const user: User = {
+          id: userProfile.id,
+          username: userProfile.displayName || userProfile.email.split('@')[0],
+          email: userProfile.email,
+          firstName: userProfile.displayName?.split(' ')[0],
+          lastName: userProfile.displayName?.split(' ').slice(1).join(' '),
+          role: role,
+          permissions: userProfile.customClaims?.permissions || [],
+          isActive: userProfile.status === 'active' || userProfile.status === undefined,
+          createdAt: userProfile.createdAt,
+          updatedAt: userProfile.updatedAt,
+        };
+
+        // Update local user data
+        this.updateCurrentUser(user);
+        return user;
+      }),
+      catchError(error => {
+        // If getting profile fails, user might be logged out
+        this.clearAuth();
+        return throwError(() => error);
+      })
+    );
   }
 }
 

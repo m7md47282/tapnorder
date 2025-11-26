@@ -10,6 +10,11 @@ export const navItems: NavItem[] = [
     route: '/dashboard',
   },
   {
+    displayName: 'AI Business Advisor',
+    iconName: 'psychology',
+    route: '/dashboard/ai-advisor',
+  },
+  {
     navCap: 'POS System',
   },
   {

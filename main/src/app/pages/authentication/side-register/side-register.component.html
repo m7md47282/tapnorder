@@ -11,18 +11,18 @@
 
           <div class="row m-t-24 custom-row">
             <div class="col-12 col-sm-6">
-              <button mat-stroked-button class="w-100">
+              <button mat-stroked-button class="w-100" type="button" disabled>
                 <div class="d-flex align-items-center">
                   <img src="/assets/images/svgs/google-icon.svg" alt="google" width="16" class="m-r-8" />
-                  Sign in with Google
+                  Sign up with Google
                 </div>
               </button>
             </div>
             <div class="col-12 col-sm-6">
-              <button mat-stroked-button class="w-100 d-flex align-items-center">
+              <button mat-stroked-button class="w-100 d-flex align-items-center" type="button" disabled>
                 <div class="d-flex align-items-center">
                   <img src="/assets/images/svgs/facebook-icon.svg" alt="facebook" width="40" class="m-r-4" />
-                  Sign in with FB
+                  Sign up with FB
                 </div>
               </button>
             </div>
@@ -30,30 +30,105 @@
 
           <div class="or-border m-t-30">or sign up with</div>
 
-          <form class="m-t-30">
-            <mat-label class="f-s-14 f-w-600 m-b-12 d-block">Name</mat-label>
+          <form [formGroup]="form" (ngSubmit)="submit()" class="m-t-30">
+            <!-- First Name -->
+            <mat-label class="f-s-14 f-w-600 m-b-12 d-block">First Name</mat-label>
             <mat-form-field appearance="outline" class="w-100" color="primary">
-              <input matInput />
+              <input matInput formControlName="firstName" placeholder="Enter first name" />
+              <mat-error *ngIf="f['firstName']?.hasError('required')">
+                First name is required
+              </mat-error>
             </mat-form-field>
-            <mat-label class="f-s-14 f-w-600 m-b-12 d-block">Email Adddress</mat-label>
+
+            <!-- Last Name -->
+            <mat-label class="f-s-14 f-w-600 m-b-12 d-block">Last Name</mat-label>
             <mat-form-field appearance="outline" class="w-100" color="primary">
-              <input matInput type="email" />
+              <input matInput formControlName="lastName" placeholder="Enter last name" />
+              <mat-error *ngIf="f['lastName']?.hasError('required')">
+                Last name is required
+              </mat-error>
             </mat-form-field>
-            <!-- password -->
+
+            <!-- Username -->
+            <mat-label class="f-s-14 f-w-600 m-b-12 d-block">Username</mat-label>
+            <mat-form-field appearance="outline" class="w-100" color="primary">
+              <input matInput formControlName="username" placeholder="Enter username" />
+              <mat-error *ngIf="f['username']?.hasError('required')">
+                Username is required
+              </mat-error>
+              <mat-error *ngIf="f['username']?.hasError('minlength')">
+                Username must be at least 3 characters
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Email -->
+            <mat-label class="f-s-14 f-w-600 m-b-12 d-block">Email Address</mat-label>
+            <mat-form-field appearance="outline" class="w-100" color="primary">
+              <input matInput type="email" formControlName="email" placeholder="Enter email address" />
+              <mat-error *ngIf="f['email']?.hasError('required')">
+                Email is required
+              </mat-error>
+              <mat-error *ngIf="f['email']?.hasError('email')">
+                Please enter a valid email address
+              </mat-error>
+            </mat-form-field>
+
+            <!-- Role Selection -->
+            <mat-label class="f-s-14 f-w-600 m-b-12 d-block">Role (Optional)</mat-label>
+            <mat-form-field appearance="outline" class="w-100" color="primary">
+              <mat-select formControlName="roleId" placeholder="Select your role">
+                <mat-option [value]="null">-- Select Role (Optional) --</mat-option>
+                <mat-option *ngFor="let role of publicRoles" [value]="role.id">
+                  {{ getRoleDisplayName(role.role) }}
+                </mat-option>
+              </mat-select>
+              <mat-hint>If not selected, a default role will be assigned</mat-hint>
+            </mat-form-field>
+
+            <!-- Password -->
             <mat-label class="f-s-14 f-w-600 m-b-12 d-block">Password</mat-label>
             <mat-form-field appearance="outline" class="w-100" color="primary">
-              <input matInput type="password" />
+              <input matInput type="password" formControlName="password" placeholder="Enter password" />
+              <mat-error *ngIf="f['password']?.hasError('required')">
+                Password is required
+              </mat-error>
+              <mat-error *ngIf="f['password']?.hasError('minlength')">
+                Password must be at least 6 characters
+              </mat-error>
             </mat-form-field>
 
-            <a [routerLink]="['/']" mat-flat-button color="primary" class="w-100">
-              Sign Up
-            </a>
-            <!-- input -->
-          </form>
-          <span class="d-block f-w-500 text-center m-t-24">Already have an Account?
+            <!-- Confirm Password -->
+            <mat-label class="f-s-14 f-w-600 m-b-12 d-block">Confirm Password</mat-label>
+            <mat-form-field appearance="outline" class="w-100" color="primary">
+              <input matInput type="password" formControlName="confirmPassword" placeholder="Confirm password" />
+              <mat-error *ngIf="f['confirmPassword']?.hasError('required')">
+                Please confirm your password
+              </mat-error>
+              <mat-error *ngIf="form.errors?.['passwordMismatch'] && f['confirmPassword']?.touched">
+                Passwords do not match
+              </mat-error>
+            </mat-form-field>
 
+            <!-- Submit Button -->
+            <button 
+              mat-flat-button 
+              color="primary" 
+              class="w-100 m-t-16" 
+              type="submit"
+              [disabled]="isLoading || form.invalid">
+              <span *ngIf="!isLoading">Sign Up</span>
+              <span *ngIf="isLoading" class="d-flex align-items-center justify-content-center">
+                <mat-spinner diameter="20" class="d-inline-block m-r-8"></mat-spinner>
+                Signing up...
+              </span>
+            </button>
+          </form>
+
+          <span class="d-block f-w-500 text-center m-t-24">
+            Already have an Account?
             <a [routerLink]="['/authentication/login']" class="text-decoration-none text-primary f-w-500 f-s-14">
-              Sign In</a>
+              Sign In
+            </a>
           </span>
         </mat-card-content>
       </mat-card>

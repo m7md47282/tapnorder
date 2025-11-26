@@ -12,8 +12,12 @@
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Product Name *</mat-label>
           <input matInput formControlName="name" placeholder="Enter product name">
-          <mat-error *ngIf="f['name'].hasError('required')">Name is required</mat-error>
-          <mat-error *ngIf="f['name'].hasError('minlength')">Name must be at least 3 characters</mat-error>
+          @if (f['name'].hasError('required')) {
+            <mat-error>Name is required</mat-error>
+          }
+          @if (f['name'].hasError('minlength')) {
+            <mat-error>Name must be at least 3 characters</mat-error>
+          }
         </mat-form-field>
       </div>
 
@@ -28,7 +32,9 @@
         <mat-form-field appearance="outline" class="half-width">
           <mat-label>SKU *</mat-label>
           <input matInput formControlName="sku" placeholder="SKU">
-          <mat-error *ngIf="f['sku'].hasError('required')">SKU is required</mat-error>
+          @if (f['sku'].hasError('required')) {
+            <mat-error>SKU is required</mat-error>
+          }
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="half-width">
@@ -42,15 +48,21 @@
           <mat-label>Price *</mat-label>
           <input matInput type="number" formControlName="price" placeholder="0.00" step="0.01">
           <mat-icon matPrefix>attach_money</mat-icon>
-          <mat-error *ngIf="f['price'].hasError('required')">Price is required</mat-error>
-          <mat-error *ngIf="f['price'].hasError('min')">Price must be positive</mat-error>
+          @if (f['price'].hasError('required')) {
+            <mat-error>Price is required</mat-error>
+          }
+          @if (f['price'].hasError('min')) {
+            <mat-error>Price must be positive</mat-error>
+          }
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="half-width">
           <mat-label>Cost</mat-label>
           <input matInput type="number" formControlName="cost" placeholder="0.00" step="0.01">
           <mat-icon matPrefix>attach_money</mat-icon>
-          <mat-error *ngIf="f['cost'].hasError('min')">Cost must be positive</mat-error>
+          @if (f['cost'].hasError('min')) {
+            <mat-error>Cost must be positive</mat-error>
+          }
         </mat-form-field>
       </div>
 
@@ -58,8 +70,12 @@
         <mat-form-field appearance="outline" class="half-width">
           <mat-label>Stock *</mat-label>
           <input matInput type="number" formControlName="stock" placeholder="0" step="1">
-          <mat-error *ngIf="f['stock'].hasError('required')">Stock is required</mat-error>
-          <mat-error *ngIf="f['stock'].hasError('min')">Stock cannot be negative</mat-error>
+          @if (f['stock'].hasError('required')) {
+            <mat-error>Stock is required</mat-error>
+          }
+          @if (f['stock'].hasError('min')) {
+            <mat-error>Stock cannot be negative</mat-error>
+          }
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="half-width">
@@ -70,38 +86,163 @@
 
       <div class="form-row">
         <mat-form-field appearance="outline" class="half-width">
-          <mat-label>Category</mat-label>
-          <mat-select formControlName="category">
-            <mat-option value="">Select Category</mat-option>
-            <mat-option *ngFor="let category of categories" [value]="category">
-              {{ category }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
+        <mat-select formControlName="categoryId">
+          @for (category of categories; track category.id) {
+            <mat-option [value]="category.id">{{ category.name }}</mat-option>
+          }
+        </mat-select>
+        <mat-icon matPrefix>category</mat-icon>
+        @if (f['categoryId'].hasError('required')) {
+          <mat-error>Category is required</mat-error>
+        }
+      </mat-form-field>
 
         <mat-form-field appearance="outline" class="half-width">
           <mat-label>Tax Rate</mat-label>
           <input matInput type="number" formControlName="taxRate" placeholder="0.1" step="0.01" min="0" max="1">
-          <span matSuffix>decimal (0-1)</span>
-          <mat-hint>Enter as decimal (e.g., 0.1 for 10%)</mat-hint>
-          <mat-error *ngIf="f['taxRate'].hasError('min') || f['taxRate'].hasError('max')">
-            Tax rate must be between 0 and 1
-          </mat-error>
+          <mat-hint>Enter as decimal (0-1), e.g., 0.1 for 10%</mat-hint>
+          @if (f['taxRate'].hasError('min')) {
+            <mat-error>
+              Tax rate must be 0 or greater
+            </mat-error>
+          }
+          @if (f['taxRate'].hasError('max')) {
+            <mat-error>
+              Tax rate must be 1 or less
+            </mat-error>
+          }
         </mat-form-field>
       </div>
 
       <div class="form-row">
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Image URL</mat-label>
-          <input matInput formControlName="image" placeholder="https://example.com/image.png">
-          <mat-icon matPrefix>image</mat-icon>
-        </mat-form-field>
+        <div class="full-width">
+          <mat-label>Product Image</mat-label>
+          <div class="image-upload-section">
+            @if (imagePreview) {
+              <div class="image-preview">
+                <img [src]="imagePreview" alt="Product preview">
+                <button mat-icon-button type="button" (click)="removeImage()" class="remove-image-btn">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+            }
+            @if (!imagePreview) {
+              <div class="image-upload-placeholder">
+                <mat-icon>image</mat-icon>
+                <p>No image selected</p>
+              </div>
+            }
+            <input 
+              type="file" 
+              accept="image/*" 
+              (change)="onFileSelected($event)"
+              #fileInput
+              style="display: none;"
+            />
+            <button 
+              mat-stroked-button 
+              type="button" 
+              (click)="fileInput.click()"
+              [disabled]="isUploadingImage"
+            >
+              <mat-icon>upload</mat-icon>
+              {{ imagePreview ? 'Change Image' : 'Upload Image' }}
+            </button>
+            @if (f['imageFile']?.hasError('invalidType')) {
+              <mat-error>
+                Invalid file type. Please select an image (JPEG, PNG, GIF, or WebP).
+              </mat-error>
+            }
+            @if (f['imageFile']?.hasError('maxSize')) {
+              <mat-error>
+                File size exceeds 5MB limit.
+              </mat-error>
+            }
+            @if (isEditMode && !selectedImageFile) {
+              <mat-hint>
+                Current image will be kept if no new image is uploaded.
+              </mat-hint>
+            }
+          </div>
+        </div>
       </div>
 
       <div class="form-row">
         <mat-slide-toggle formControlName="isActive" color="primary">
           Active Product
         </mat-slide-toggle>
+      </div>
+
+      <!-- Recipe/Ingredients Section -->
+      <div class="form-section">
+        <div class="section-header">
+          <h3>Recipe / Ingredients</h3>
+          <p class="section-hint">Add products from inventory that are used to make this item (e.g., Spanish Latte needs milk, coffee, condensed milk)</p>
+        </div>
+
+        <div formArrayName="recipe" class="ingredients-list">
+          @for (ingredient of recipeFormArray.controls; track $index) {
+            <div [formGroupName]="$index" class="ingredient-row">
+              <mat-form-field appearance="outline" class="product-select">
+                <mat-label>Product</mat-label>
+                <mat-select formControlName="productId" [disabled]="isLoadingProducts">
+                  <mat-option value="">Select a product</mat-option>
+                  @for (product of availableProducts; track product.id) {
+                    <mat-option [value]="product.id">{{ product.name }}</mat-option>
+                  }
+                </mat-select>
+                <mat-icon matPrefix>inventory_2</mat-icon>
+                @if (recipeFormArray.at($index).get('productId')?.hasError('required')) {
+                  <mat-error>
+                    Product is required
+                  </mat-error>
+                }
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="quantity-input">
+                <mat-label>Quantity</mat-label>
+                <input matInput type="number" formControlName="quantity" placeholder="0.00" step="0.01" min="0.01">
+                <mat-icon matPrefix>scale</mat-icon>
+                @if (recipeFormArray.at($index).get('quantity')?.hasError('required')) {
+                  <mat-error>
+                    Quantity is required
+                  </mat-error>
+                }
+                @if (recipeFormArray.at($index).get('quantity')?.hasError('min')) {
+                  <mat-error>
+                    Quantity must be greater than 0
+                  </mat-error>
+                }
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="unit-select">
+                <mat-label>Unit</mat-label>
+                <mat-select formControlName="unit">
+                  @for (unit of units; track unit) {
+                    <mat-option [value]="unit">{{ unit }}</mat-option>
+                  }
+                </mat-select>
+                <mat-icon matPrefix>straighten</mat-icon>
+              </mat-form-field>
+
+              <button mat-icon-button type="button" (click)="removeIngredient($index)" color="warn" class="remove-btn">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          }
+
+          @if (recipeFormArray.length === 0) {
+            <div class="no-ingredients">
+              <mat-icon>restaurant_menu</mat-icon>
+              <p>No ingredients added yet</p>
+            </div>
+          }
+        </div>
+
+        <button mat-stroked-button type="button" (click)="addIngredient()" class="add-ingredient-btn">
+          <mat-icon>add</mat-icon>
+          Add Ingredient
+        </button>
       </div>
     </form>
   </mat-dialog-content>
