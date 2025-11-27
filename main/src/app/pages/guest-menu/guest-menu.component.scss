@@ -3115,6 +3115,9 @@
 
 // Shared Section Title
 .section-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   font-size: 18px;
   font-weight: 700;
   color: $color-neutral-text;
