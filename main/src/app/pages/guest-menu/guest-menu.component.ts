@@ -90,6 +90,13 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
   get receiptTotal(): number {
     return this.receiptItems.reduce((total, item) => total + item.subtotal, 0);
   }
+
+  cartDropAnimations: { id: number }[] = [];
+  cartBadgeAnimationActive: boolean = false;
+  private cartAnimationId: number = 0;
+  private animationTimers: ReturnType<typeof setTimeout>[] = [];
+  private previousCartItemCount: number = 0;
+  private hasCartInitialized: boolean = false;
   
   get isTakeaway(): boolean {
     return !this.tableId;
@@ -182,8 +189,14 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
     // Load cart data
     this.cartService.cart$.pipe(takeUntil(this.destroy$)).subscribe(cart => {
       this.cartItems = cart;
-      this.cartItemCount = this.cartService.getCartItemCount();
+      const nextCount = this.cartService.getCartItemCount();
+      if (this.hasCartInitialized && nextCount > this.previousCartItemCount) {
+        this.startCartAddAnimation();
+      }
+      this.cartItemCount = nextCount;
       this.cartTotal = this.cartService.getCartTotal();
+      this.previousCartItemCount = nextCount;
+      this.hasCartInitialized = true;
     });
 
     // Handle URL query parameters
@@ -212,6 +225,7 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
     this.orderTracking.stopAllTracking();
     this.destroy$.next();
     this.destroy$.complete();
+    this.clearAnimationTimers();
   }
 
   /**
@@ -815,5 +829,37 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
       }
     });
   }
+
+  private startCartAddAnimation(): void {
+    const animationId = ++this.cartAnimationId;
+    this.cartDropAnimations = [...this.cartDropAnimations, { id: animationId }];
+
+    const removalTimer = setTimeout(() => {
+      this.cartDropAnimations = this.cartDropAnimations.filter(animation => animation.id !== animationId);
+    }, 900);
+    this.animationTimers.push(removalTimer);
+
+    this.restartBadgeAnimation();
+  }
+
+  private restartBadgeAnimation(): void {
+    this.cartBadgeAnimationActive = false;
+
+    const startTimer = setTimeout(() => {
+      this.cartBadgeAnimationActive = true;
+      const stopTimer = setTimeout(() => {
+        this.cartBadgeAnimationActive = false;
+      }, 350);
+      this.animationTimers.push(stopTimer);
+    }, 0);
+
+    this.animationTimers.push(startTimer);
+  }
+
+  private clearAnimationTimers(): void {
+    this.animationTimers.forEach(timer => clearTimeout(timer));
+    this.animationTimers = [];
+  }
+
 }
 

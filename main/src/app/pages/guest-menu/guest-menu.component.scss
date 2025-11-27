@@ -2633,19 +2633,28 @@
 // ============================================
 // FLOATING CART BUTTON
 // ============================================
-.floating-cart-btn {
+.floating-cart-wrapper {
   position: fixed;
-  bottom: 24px;
-  left: 24px;
+  bottom: 20px;
+  left: 20px;
+  z-index: 1400;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+
+.floating-cart-btn {
+  position: relative;
   width: 64px;
   height: 64px;
   background: $color-primary;
   color: $color-white;
-  z-index: 1400;
   box-shadow: 
     0 8px 24px color-with-opacity($color-primary, 0.4),
     0 4px 12px color-with-opacity($color-black, 0.2);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto;
 
   mat-icon {
     font-size: 28px;
@@ -2672,6 +2681,10 @@
     justify-content: center;
     border: 2px solid $color-white;
     box-shadow: 0 2px 8px color-with-opacity($color-error, 0.4);
+
+    &.badge-bump {
+      animation: cartBadgePop 0.35s ease;
+    }
   }
 
   &:hover {
@@ -2690,6 +2703,32 @@
   }
 }
 
+.cart-drop-layer {
+  position: absolute;
+  bottom: 36px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 110px;
+  height: 80px;
+  pointer-events: none;
+}
+
+.cart-drop-number {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translate(-50%, 0);
+  background: lighten($color-error, 6%);
+  color: $color-white;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 999px;
+  box-shadow: 0 6px 16px color-with-opacity($color-error, 0.35);
+  animation: cartNumberDrop 0.7s cubic-bezier(0.33, 0, 0.2, 1) forwards;
+  opacity: 0;
+}
+
 @keyframes pulse {
   0%, 100% {
     box-shadow: 
@@ -2701,6 +2740,36 @@
       0 8px 24px color-with-opacity($color-primary, 0.6),
       0 4px 12px color-with-opacity($color-black, 0.3),
       0 0 0 8px color-with-opacity($color-primary, 0.1);
+  }
+}
+
+@keyframes cartNumberDrop {
+  0% {
+    transform: translate(-50%, -30px) scale(0.6);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  70% {
+    transform: translate(-50%, 2px) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, 12px) scale(0.4);
+    opacity: 0;
+  }
+}
+
+@keyframes cartBadgePop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.25);
+  }
+  100% {
+    transform: scale(1);
   }
 }
 
@@ -3367,8 +3436,8 @@
 // Responsive Cart
 @media (max-width: 480px) {
   .floating-cart-btn {
-    bottom: 20px;
-    left: 20px;
+    bottom: 0px;
+    left: 0px;
     width: 56px;
     height: 56px;
 
