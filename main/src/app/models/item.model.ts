@@ -1,3 +1,5 @@
+import { ItemAddonGroup } from './addon.model';
+
 /**
  * Item Model
  * Based on backend-swagger.json schema definitions
@@ -36,6 +38,8 @@ export interface Item {
   recipe?: ItemIngredient[]; // New: structured recipe with Product references, quantities, and units
   specs?: ItemSpecs;
   menuId: string;
+  addonGroups?: ItemAddonGroup[];
+  addonGroupIds?: string[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -52,6 +56,8 @@ export interface CreateItemCommand {
   ingredients?: string[]; // Legacy: simple string array
   recipe?: ItemIngredient[]; // New: structured recipe with Product references
   specs?: ItemSpecs;
+  addonGroups?: ItemAddonGroup[];
+  addonGroupIds?: string[];
   menuId?: string; // Optional - backend may require it depending on implementation
 }
 
@@ -68,6 +74,8 @@ export interface UpdateItemCommand {
   ingredients?: string[]; // Legacy: simple string array
   recipe?: ItemIngredient[]; // New: structured recipe with Product references
   specs?: ItemSpecs;
+  addonGroups?: ItemAddonGroup[];
+  addonGroupIds?: string[];
 }
 
 export interface ItemQuery {

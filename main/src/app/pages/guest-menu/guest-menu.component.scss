@@ -1893,6 +1893,187 @@
   }
 }
 
+.modal-quantity-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+
+  .quantity-label {
+    font-weight: 600;
+    color: $color-neutral-text;
+  }
+
+  .quantity-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    .qty-btn {
+      background: $color-neutral-bg-subtle;
+      color: $color-neutral-text;
+
+      mat-icon {
+        font-size: 18px;
+      }
+    }
+
+    .qty-value {
+      font-size: 20px;
+      font-weight: 700;
+      min-width: 24px;
+      text-align: center;
+    }
+  }
+}
+
+.addon-groups-section {
+  margin-bottom: 24px;
+
+  .addon-section-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+}
+
+.addon-group-card {
+  border: 1px solid color-with-opacity($color-neutral-border, 0.5);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background: $color-neutral-bg;
+}
+
+.addon-group-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+
+  .addon-group-name {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .addon-group-desc {
+    font-size: 13px;
+    color: $color-neutral-text-secondary;
+  }
+}
+
+.addon-group-meta {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.addon-chip {
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  height: fit-content;
+
+  &.required {
+    background: color-with-opacity($color-error, 0.1);
+    color: $color-error;
+  }
+
+  &.optional {
+    background: color-with-opacity($color-neutral-border, 0.3);
+    color: $color-neutral-text-secondary;
+  }
+}
+
+.addon-constraint {
+  font-size: 12px;
+  color: $color-neutral-text-secondary;
+  padding: 4px 0;
+}
+
+.addon-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.addon-option-chip {
+  width: 100%;
+  border: 1px solid color-with-opacity($color-neutral-border, 0.6);
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
+  background: $color-white;
+  transition: border-color 0.2s, background 0.2s;
+
+  .option-name {
+    font-weight: 600;
+    display: block;
+  }
+
+  .option-desc {
+    font-size: 12px;
+    color: $color-neutral-text-secondary;
+    display: block;
+  }
+
+  .option-price {
+    font-weight: 600;
+    color: $color-neutral-text;
+  }
+
+  &.selected {
+    border-color: $color-primary;
+    background: color-with-opacity($color-primary, 0.08);
+  }
+}
+
+.addon-quantity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.addon-quantity-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid color-with-opacity($color-neutral-border, 0.4);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.addon-summary {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 600;
+  padding: 12px 0 0;
+}
+
+.addon-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  color: $color-error;
+
+  mat-icon {
+    font-size: 18px;
+    height: 18px;
+    width: 18px;
+  }
+}
+
 .modal-price-section {
   padding: 20px;
   background: color-with-opacity($color-neutral-bg-subtle, 0.5);
@@ -3182,6 +3363,33 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+}
+
+.order-item-addons,
+.summary-addon-list,
+.receipt-addon-list {
+  padding-left: 0;
+  margin: 4px 0 0;
+  list-style: none;
+  font-size: 12px;
+  color: $color-neutral-text-secondary;
+
+  li {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .addon-qty {
+    margin-left: 4px;
+    color: $color-neutral-text;
+  }
+
+  .addon-price,
+  .receipt-addon-price {
+    font-weight: 600;
+    color: $color-primary;
+  }
 }
 
 .order-item-quantity {

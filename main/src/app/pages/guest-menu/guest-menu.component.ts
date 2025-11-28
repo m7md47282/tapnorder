@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MaterialModule } from '../../material.module';
-import { CartService, CartItem } from '../../services/cart.service';
+import { CartService, CartItem, CartAddonSelection } from '../../services/cart.service';
 import { IndexedDBService } from '../../services/indexeddb.service';
 import { OrderService } from '../../services/order.service';
 import { OrderTrackingService } from '../../services/order-tracking.service';
@@ -12,6 +12,8 @@ import { Order, OrderStatus } from '../../models/order.model';
 import { ItemsService } from '../../services/items.service';
 import { CategoriesService } from '../../services/categories.service';
 import { Item } from '../../models/item.model';
+import { AddonsService } from '../../services/addons.service';
+import { ItemAddonGroup } from '../../models/addon.model';
 import { Category } from '../../models/category.model';
 import { Subject, takeUntil } from 'rxjs';
 import html2canvas from 'html2canvas';
@@ -35,6 +37,9 @@ export interface MenuItem {
   badgeColor?: string;
   rating?: number;
   isTopRated?: boolean;
+  addonGroups?: ItemAddonGroup[];
+  hasRequiredAddons?: boolean;
+  hasOptionalAddons?: boolean;
 }
 
 import { OrderStatusComponent } from './components/order-status/order-status.component';
@@ -59,6 +64,9 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
   
   selectedCategory: string = 'picks-for-you';
   selectedItem: MenuItem | null = null;
+  selectedItemQuantity: number = 1;
+  selectedAddonState: Record<string, Record<string, number>> = {};
+  addonValidationError: string | null = null;
   
   cartItems: CartItem[] = [];
   cartItemCount: number = 0;
@@ -116,6 +124,11 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
 
   menuItems: MenuItem[] = [];
   filteredItems: MenuItem[] = [];
+
+  private rawItems: Item[] = [];
+  private addonGroupsMap: Map<string, ItemAddonGroup> = new Map();
+  private addonGroupsByItemId: Map<string, ItemAddonGroup[]> = new Map();
+  private addonGroupsByCategoryId: Map<string, ItemAddonGroup[]> = new Map();
   
   // Map category names to category IDs for items that only have category names
   private categoryNameToIdMap: Map<string, string> = new Map();
@@ -182,6 +195,7 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
     private aiService: AiAssistantService,
     private itemsService: ItemsService,
     private categoriesService: CategoriesService,
+    private addonsService: AddonsService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -208,6 +222,7 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
 
       // Load items from database
       this.loadItems();
+      this.loadAddonGroups();
 
       // Only initialize guest UUID if place_id and branch_id are present
       if (this.placeId && this.branchId) {
@@ -310,20 +325,69 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
     // }
   }
 
+  private buildMenuItems(): void {
+    if (!this.rawItems || this.rawItems.length === 0) {
+      this.menuItems = [];
+      this.filteredItems = [];
+      return;
+    }
+
+    this.menuItems = this.rawItems.map(item => this.itemToMenuItem(item));
+    this.updateFilteredItems();
+  }
+
   openItemModal(item: MenuItem): void {
     this.selectedItem = item;
+    this.selectedItemQuantity = 1;
+    this.addonValidationError = null;
+    this.initializeAddonSelectionState(item);
     // Prevent body scroll when modal is open
     document.body.style.overflow = 'hidden';
   }
 
   closeItemModal(): void {
     this.selectedItem = null;
+    this.selectedItemQuantity = 1;
+    this.selectedAddonState = {};
+    this.addonValidationError = null;
     // Restore body scroll
     document.body.style.overflow = '';
   }
 
-  addToCart(item: MenuItem): void {
-    this.cartService.addToCart(item, 1);
+  private addItemToCart(item: MenuItem, quantity: number = 1, selectedAddons: CartAddonSelection[] = [], notes?: string): void {
+    this.cartService.addToCart(item, quantity, notes, selectedAddons);
+    this.notification.success(`${item.name} added to cart!`);
+  }
+
+  onQuickAddItem(item: MenuItem, event?: MouseEvent): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    if (this.itemRequiresCustomization(item)) {
+      this.openItemModal(item);
+      return;
+    }
+    this.addItemToCart(item);
+  }
+
+  adjustSelectedItemQuantity(delta: number): void {
+    if (!this.selectedItem) {
+      return;
+    }
+    const nextQuantity = Math.max(1, this.selectedItemQuantity + delta);
+    this.selectedItemQuantity = nextQuantity;
+  }
+
+  confirmAddSelectedItem(): void {
+    if (!this.selectedItem) {
+      return;
+    }
+    if (!this.validateAddonSelections(this.selectedItem)) {
+      this.notification.warning(this.addonValidationError || 'Please review addon selections.');
+      return;
+    }
+    const selections = this.buildCartAddonSelections(this.selectedItem);
+    this.addItemToCart(this.selectedItem, this.selectedItemQuantity, selections);
     this.closeItemModal();
   }
 
@@ -610,6 +674,12 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
     this.receiptItems.forEach(item => {
       content += `${item.item.name}\n`;
       content += `  Qty: ${item.quantity} × ${this.currency} ${item.price.toFixed(2)} = ${this.currency} ${item.subtotal.toFixed(2)}\n`;
+      if (item.selectedAddons && item.selectedAddons.length > 0) {
+        item.selectedAddons.forEach(addon => {
+          const addonTotal = addon.price * addon.quantity * item.quantity;
+          content += `    + ${addon.optionName} × ${addon.quantity} = ${this.currency} ${addonTotal.toFixed(2)}\n`;
+        });
+      }
       if (item.notes) {
         content += `  Note: ${item.notes}\n`;
       }
@@ -652,12 +722,12 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
     const notes = notesParts.join(' | ');
     
     // Add base item to cart with notes
-    this.cartService.addToCart(customOrder.baseItem, 1, notes);
+    this.cartService.addToCart(customOrder.baseItem, 1, notes, []);
     
     // Add addons as separate items (if they have price > 0)
     customOrder.addons.forEach(addon => {
       if (addon.price > 0) {
-        this.cartService.addToCart(addon, 1);
+        this.cartService.addToCart(addon, 1, undefined, []);
       }
     });
 
@@ -666,8 +736,11 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
   }
 
   onAddItemFromAI(item: MenuItem): void {
-    this.addToCart(item);
-    this.notification.success(`${item.name} added to cart!`);
+    if (this.itemRequiresCustomization(item)) {
+      this.openItemModal(item);
+      return;
+    }
+    this.addItemToCart(item);
   }
 
   /**
@@ -693,12 +766,8 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
       next: (items) => {
         // Ensure items is an array
         const itemsArray = Array.isArray(items) ? items : [];
-        
-        // Convert Items to MenuItems
-        this.menuItems = itemsArray.map(item => this.itemToMenuItem(item));
-        
-        // Update filtered items after loading
-        this.updateFilteredItems();
+        this.rawItems = itemsArray;
+        this.buildMenuItems();
         
         this.isLoadingItems = false;
       },
@@ -750,6 +819,10 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
     // Generate rating (you can customize this logic or get from item.specs)
     const rating = item.specs?.calories ? 4.5 + (item.specs.calories % 10) / 10 : 4.5;
     
+    const addonGroups = this.resolveItemAddonGroups(item);
+    const hasRequiredAddons = addonGroups ? addonGroups.some(group => group.isRequired || (group.minSelect ?? 0) > 0) : false;
+    const hasOptionalAddons = addonGroups ? addonGroups.some(group => !group.isRequired && group.options?.length) : false;
+
     return {
       id: item.id,
       name: item.name,
@@ -758,8 +831,257 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
       image: item.imageUrl || defaultImage,
       category: categoryId, // Use category ID that matches category.id from API
       rating: Math.min(5, Math.max(4, rating)), // Keep rating between 4 and 5
-      isTopRated: isTopRated
+      isTopRated: isTopRated,
+      addonGroups,
+      hasRequiredAddons,
+      hasOptionalAddons
     };
+  }
+
+  private resolveItemAddonGroups(item: Item): ItemAddonGroup[] | undefined {
+    const collected: ItemAddonGroup[] = [];
+
+    if (item.addonGroups && item.addonGroups.length > 0) {
+      collected.push(...item.addonGroups.map(group => this.normalizeAddonGroup(group)));
+    }
+
+    if (item.addonGroupIds && item.addonGroupIds.length > 0) {
+      item.addonGroupIds.forEach(id => {
+        const group = this.addonGroupsMap.get(id);
+        if (group) {
+          collected.push(this.cloneAddonGroup(group));
+        }
+      });
+    }
+
+    const itemLinked = this.addonGroupsByItemId.get(item.id);
+    if (itemLinked && itemLinked.length) {
+      collected.push(...itemLinked.map(group => this.cloneAddonGroup(group)));
+    }
+
+    const categoryId = item.categoryId || this.categoryNameToIdMap.get(item.category || '') || item.category;
+    if (categoryId) {
+      const categoryLinked = this.addonGroupsByCategoryId.get(categoryId);
+      if (categoryLinked && categoryLinked.length) {
+        collected.push(...categoryLinked.map(group => this.cloneAddonGroup(group)));
+      }
+    }
+
+    if (collected.length === 0) {
+      return undefined;
+    }
+
+    const deduped = new Map<string, ItemAddonGroup>();
+    collected.forEach(group => {
+      if (group.groupId && !deduped.has(group.groupId)) {
+        deduped.set(group.groupId, group);
+      }
+    });
+
+    return Array.from(deduped.values());
+  }
+
+  private normalizeAddonGroup(group: any): ItemAddonGroup {
+    const groupId = group.groupId || group.id;
+    return {
+      ...group,
+      groupId,
+      options: (group.options || []).map((option: any) => ({
+        ...option
+      }))
+    };
+  }
+
+  private cloneAddonGroup(group: ItemAddonGroup): ItemAddonGroup {
+    return {
+      ...group,
+      options: group.options?.map(option => ({ ...option }))
+    };
+  }
+
+  /**
+   * Addon helpers
+   */
+  get selectedItemAddonTotal(): number {
+    if (!this.selectedItem) {
+      return 0;
+    }
+    return this.buildCartAddonSelections(this.selectedItem).reduce(
+      (sum, addon) => sum + addon.price * addon.quantity,
+      0
+    );
+  }
+
+  get selectedItemUnitPrice(): number {
+    if (!this.selectedItem) {
+      return 0;
+    }
+    return this.selectedItem.price + this.selectedItemAddonTotal;
+  }
+
+  get selectedItemTotalPrice(): number {
+    return this.selectedItemUnitPrice * this.selectedItemQuantity;
+  }
+
+  private initializeAddonSelectionState(item: MenuItem): void {
+    this.selectedAddonState = {};
+    item.addonGroups?.forEach(group => {
+      if (!group.groupId) {
+        return;
+      }
+      const groupState: Record<string, number> = {};
+      group.options?.forEach(option => {
+        if (option.isDefault) {
+          const defaultQuantity = option.defaultQuantity ?? (group.selectionType === 'quantity' ? 1 : 1);
+          groupState[option.id] = defaultQuantity;
+        }
+      });
+      this.selectedAddonState[group.groupId] = groupState;
+    });
+  }
+
+  private ensureGroupState(groupId: string): Record<string, number> {
+    if (!this.selectedAddonState[groupId]) {
+      this.selectedAddonState[groupId] = {};
+    }
+    return this.selectedAddonState[groupId];
+  }
+
+  getSelectedAddonQuantity(groupId: string, optionId: string): number {
+    return this.selectedAddonState[groupId]?.[optionId] || 0;
+  }
+
+  onSingleAddonSelected(group: ItemAddonGroup, optionId: string): void {
+    if (!group.groupId) {
+      return;
+    }
+    const currentState = this.ensureGroupState(group.groupId);
+    const alreadySelected = !!currentState[optionId];
+    const minRequired = group.isRequired || (group.minSelect && group.minSelect > 0);
+
+    if (alreadySelected && !minRequired) {
+      delete currentState[optionId];
+      this.selectedAddonState[group.groupId] = { ...currentState };
+      return;
+    }
+
+    this.selectedAddonState[group.groupId] = { [optionId]: 1 };
+  }
+
+  onMultipleAddonToggled(group: ItemAddonGroup, optionId: string): void {
+    if (!group.groupId) {
+      return;
+    }
+    const groupState = this.ensureGroupState(group.groupId);
+    const isSelected = !!groupState[optionId];
+
+    if (isSelected) {
+      delete groupState[optionId];
+      this.selectedAddonState[group.groupId] = { ...groupState };
+      return;
+    }
+
+    const currentCount = Object.keys(groupState).length;
+    if (group.maxSelect && currentCount >= group.maxSelect) {
+      this.notification.warning(`You can only select up to ${group.maxSelect} option(s) for ${group.name}.`);
+      return;
+    }
+
+    groupState[optionId] = 1;
+    this.selectedAddonState[group.groupId] = { ...groupState };
+  }
+
+  onAddonQuantityChanged(group: ItemAddonGroup, optionId: string, delta: number): void {
+    if (!group.groupId) {
+      return;
+    }
+    const groupState = this.ensureGroupState(group.groupId);
+    const current = groupState[optionId] || 0;
+    const option = group.options?.find(opt => opt.id === optionId);
+    const maxPerOption = option?.maxQuantity ?? group.maxSelect ?? 10;
+    const nextValue = Math.min(Math.max(current + delta, 0), maxPerOption);
+
+    if (nextValue === current) {
+      return;
+    }
+
+    const pendingCount = this.getGroupSelectionCount(group.groupId) - current + nextValue;
+    if (group.maxSelect && pendingCount > group.maxSelect) {
+      this.notification.warning(`You can only add up to ${group.maxSelect} portion(s) for ${group.name}.`);
+      return;
+    }
+
+    if (nextValue === 0) {
+      delete groupState[optionId];
+    } else {
+      groupState[optionId] = nextValue;
+    }
+    this.selectedAddonState[group.groupId] = { ...groupState };
+  }
+
+  private getGroupSelectionCount(groupId: string): number {
+    const state = this.selectedAddonState[groupId];
+    if (!state) {
+      return 0;
+    }
+    return Object.values(state).reduce((sum, value) => sum + value, 0);
+  }
+
+  private validateAddonSelections(item: MenuItem): boolean {
+    if (!item.addonGroups || item.addonGroups.length === 0) {
+      this.addonValidationError = null;
+      return true;
+    }
+
+    for (const group of item.addonGroups) {
+      if (!group.groupId) {
+        continue;
+      }
+      const selectedCount = this.getGroupSelectionCount(group.groupId);
+      const minRequired = group.minSelect ?? (group.isRequired ? 1 : 0);
+      if (minRequired && selectedCount < minRequired) {
+        this.addonValidationError = `Please select at least ${minRequired} option(s) for ${group.name}.`;
+        return false;
+      }
+    }
+
+    this.addonValidationError = null;
+    return true;
+  }
+
+  private buildCartAddonSelections(item: MenuItem): CartAddonSelection[] {
+    if (!item.addonGroups || item.addonGroups.length === 0) {
+      return [];
+    }
+
+    const selections: CartAddonSelection[] = [];
+
+    item.addonGroups.forEach(group => {
+      if (!group.groupId) {
+        return;
+      }
+      const groupId = group.groupId;
+      const groupState = this.selectedAddonState[groupId] || {};
+      group.options?.forEach(option => {
+        const quantity = groupState[option.id];
+        if (quantity && quantity > 0) {
+          selections.push({
+            groupId,
+            groupName: group.name,
+            optionId: option.id,
+            optionName: option.name,
+            price: option.price,
+            quantity
+          });
+        }
+      });
+    });
+
+    return selections;
+  }
+
+  private itemRequiresCustomization(item: MenuItem): boolean {
+    return !!item.addonGroups?.some(group => group.isRequired || (group.minSelect ?? 0) > 0);
   }
 
   /**
@@ -818,6 +1140,7 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
           { id: 'picks-for-you', name: 'Picks for you', icon: 'local_fire_department' },
           ...dynamicCategories
         ];
+        this.buildMenuItems();
       },
       error: (error) => {
         console.error('Error loading categories:', error);
@@ -826,6 +1149,47 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
           { id: 'picks-for-you', name: 'Picks for you', icon: 'local_fire_department' }
         ];
         this.categoryNameToIdMap.clear();
+      }
+    });
+  }
+
+  /**
+   * Load addon groups to build configurators for menu items.
+   */
+  private loadAddonGroups(): void {
+    const query: any = {};
+    if (this.placeId) {
+      query.placeId = this.placeId;
+    }
+    if (this.menuId) {
+      query.menuId = this.menuId;
+    }
+
+    this.addonsService.getAddonGroups(query).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (groups) => {
+        this.addonGroupsMap.clear();
+        this.addonGroupsByItemId.clear();
+        this.addonGroupsByCategoryId.clear();
+        groups.forEach(group => {
+          const normalizedGroup = this.normalizeAddonGroup(group);
+          if (normalizedGroup.groupId) {
+            this.addonGroupsMap.set(normalizedGroup.groupId, normalizedGroup);
+          }
+          (group.appliesToItemIds || []).forEach(itemId => {
+            const list = this.addonGroupsByItemId.get(itemId) || [];
+            list.push(this.cloneAddonGroup(normalizedGroup));
+            this.addonGroupsByItemId.set(itemId, list);
+          });
+          (group.appliesToCategoryIds || []).forEach(categoryId => {
+            const list = this.addonGroupsByCategoryId.get(categoryId) || [];
+            list.push(this.cloneAddonGroup(normalizedGroup));
+            this.addonGroupsByCategoryId.set(categoryId, list);
+          });
+        });
+        this.buildMenuItems();
+      },
+      error: (error) => {
+        console.warn('Error loading addon groups:', error);
       }
     });
   }

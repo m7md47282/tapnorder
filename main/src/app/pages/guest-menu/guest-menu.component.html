@@ -186,7 +186,7 @@
                   <img [src]="item.image" [alt]="item.name" />
                 }
               </div>
-              <button class="item-nav-btn" (click)="addToCart(item); $event.stopPropagation()">
+              <button class="item-nav-btn" (click)="onQuickAddItem(item, $event)">
                 <mat-icon>add</mat-icon>
               </button>
               @if (item.badge) {
@@ -247,7 +247,7 @@
                       }
                     </div>
                   </div>
-                  <button class="add-btn-right" (click)="addToCart(item); $event.stopPropagation()">
+                  <button class="add-btn-right" (click)="onQuickAddItem(item, $event)">
                     <mat-icon>add</mat-icon>
                   </button>
                 </div>
@@ -293,21 +293,132 @@
             </div>
           }
 
-        
+          <div class="modal-quantity-control">
+            <span class="quantity-label">Quantity</span>
+            <div class="quantity-actions">
+              <button mat-mini-fab class="qty-btn" (click)="adjustSelectedItemQuantity(-1)">
+                <mat-icon>remove</mat-icon>
+              </button>
+              <span class="qty-value">{{ selectedItemQuantity }}</span>
+              <button mat-mini-fab class="qty-btn" (click)="adjustSelectedItemQuantity(1)">
+                <mat-icon>add</mat-icon>
+              </button>
+            </div>
+          </div>
+
+          @if (selectedItem.addonGroups?.length) {
+            <div class="addon-groups-section">
+              <h3 class="addon-section-title">Customize</h3>
+              @for (group of selectedItem.addonGroups; track group.groupId) {
+                <div class="addon-group-card">
+                  <div class="addon-group-header">
+                    <div>
+                      <p class="addon-group-name">{{ group.name }}</p>
+                      @if (group.description) {
+                        <span class="addon-group-desc">{{ group.description }}</span>
+                      }
+                    </div>
+                    <div class="addon-group-meta">
+                      @if (group.isRequired || (group.minSelect && group.minSelect > 0)) {
+                        <span class="addon-chip required">Required</span>
+                      } @else {
+                        <span class="addon-chip optional">Optional</span>
+                      }
+                      @if (group.maxSelect) {
+                        <span class="addon-constraint">Up to {{ group.maxSelect }}</span>
+                      }
+                      @if (group.minSelect && !group.isRequired) {
+                        <span class="addon-constraint">Min {{ group.minSelect }}</span>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="addon-options">
+                    @if (group.selectionType === 'single' || !group.selectionType) {
+                      @for (option of group.options; track option.id) {
+                        <button
+                          type="button"
+                          class="addon-option-chip"
+                          [class.selected]="getSelectedAddonQuantity(group.groupId!, option.id) > 0"
+                          (click)="onSingleAddonSelected(group, option.id)">
+                          <div>
+                            <span class="option-name">{{ option.name }}</span>
+                            @if (option.description) {
+                              <span class="option-desc">{{ option.description }}</span>
+                            }
+                          </div>
+                          <span class="option-price">+{{ currency }} {{ option.price | number:'1.2-2' }}</span>
+                        </button>
+                      }
+                    } @else if (group.selectionType === 'multiple') {
+                      @for (option of group.options; track option.id) {
+                        <button
+                          type="button"
+                          class="addon-option-chip"
+                          [class.selected]="getSelectedAddonQuantity(group.groupId!, option.id) > 0"
+                          (click)="onMultipleAddonToggled(group, option.id)">
+                          <div>
+                            <span class="option-name">{{ option.name }}</span>
+                            @if (option.description) {
+                              <span class="option-desc">{{ option.description }}</span>
+                            }
+                          </div>
+                          <span class="option-price">+{{ currency }} {{ option.price | number:'1.2-2' }}</span>
+                        </button>
+                      }
+                    } @else {
+                      <div class="addon-quantity-list">
+                        @for (option of group.options; track option.id) {
+                          <div class="addon-quantity-row">
+                            <div>
+                              <span class="option-name">{{ option.name }}</span>
+                              @if (option.description) {
+                                <span class="option-desc">{{ option.description }}</span>
+                              }
+                              <span class="option-price">+{{ currency }} {{ option.price | number:'1.2-2' }}</span>
+                            </div>
+                            <div class="quantity-actions">
+                              <button mat-mini-fab class="qty-btn" (click)="onAddonQuantityChanged(group, option.id, -1)">
+                                <mat-icon>remove</mat-icon>
+                              </button>
+                              <span class="qty-value">{{ getSelectedAddonQuantity(group.groupId!, option.id) }}</span>
+                              <button mat-mini-fab class="qty-btn" (click)="onAddonQuantityChanged(group, option.id, 1)">
+                                <mat-icon>add</mat-icon>
+                              </button>
+                            </div>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
+              <div class="addon-summary">
+                <span>Extras total</span>
+                <strong>{{ currency }} {{ selectedItemAddonTotal | number:'1.2-2' }}</strong>
+              </div>
+
+              @if (addonValidationError) {
+                <div class="addon-error">
+                  <mat-icon>error</mat-icon>
+                  <span>{{ addonValidationError }}</span>
+                </div>
+              }
+            </div>
+          }
 
           <div class="modal-actions">
-            <button mat-raised-button class="add-to-cart-btn" (click)="addToCart(selectedItem)">
+            <button mat-raised-button class="add-to-cart-btn" (click)="confirmAddSelectedItem()">
               <div class="btn-content">
                 <div class="flex align-items-center gap-2">
                   <mat-icon>add</mat-icon>
-                  <span>Add</span>
+                  <span>Add {{ selectedItemQuantity }} {{ selectedItemQuantity === 1 ? 'item' : 'items' }}</span>
                 </div>
                 <div class="">
                   <div class="price">
-                    <span class="">{{ currency }} {{ selectedItem.price | number:'1.2-2' }}</span>
-                    @if (selectedItem.originalPrice) {
-                      <span class="">{{ currency }} {{ selectedItem.originalPrice | number:'1.2-2' }}</span>
-                    }
+                    <span class="current-price">{{ currency }} {{ selectedItemTotalPrice | number:'1.2-2' }}</span>
+                    <!-- <span class="unit-price">({{ currency }} {{ selectedItemUnitPrice | number:'1.2-2' }} each)</span> -->
                   </div>
                 </div>
               </div>
@@ -388,6 +499,17 @@
                         <span class="order-item-quantity">Qty: {{ item.quantity }}</span>
                         <span class="order-item-price">{{ currency }} {{ item.subtotal | number:'1.2-2' }}</span>
                       </div>
+                    @if (item.selectedAddons.length > 0) {
+                      <ul class="order-item-addons">
+                        @for (addon of item.selectedAddons; track addon.optionId) {
+                          <li>
+                            {{ addon.optionName }}
+                            <span class="addon-qty">× {{ addon.quantity }}</span>
+                            <span class="addon-price">+{{ currency }} {{ (addon.price * addon.quantity * item.quantity) | number:'1.2-2' }}</span>
+                          </li>
+                        }
+                      </ul>
+                    }
                     </div>
                     <button mat-icon-button class="remove-item-btn" (click)="removeFromCart(item.id)">
                       <mat-icon>close</mat-icon>
@@ -406,6 +528,16 @@
                     <span class="summary-label">{{ item.item.name }} × {{ item.quantity }}</span>
                     <span class="summary-value">{{ currency }} {{ item.subtotal | number:'1.2-2' }}</span>
                   </div>
+                  @if (item.selectedAddons.length > 0) {
+                    <ul class="summary-addon-list">
+                      @for (addon of item.selectedAddons; track addon.optionId) {
+                        <li>
+                          {{ addon.optionName }} × {{ addon.quantity }}
+                          <span class="summary-value">+{{ currency }} {{ (addon.price * addon.quantity * item.quantity) | number:'1.2-2' }}</span>
+                        </li>
+                      }
+                    </ul>
+                  }
                 }
                 <div class="summary-divider"></div>
                 <div class="summary-row total-row">
@@ -523,6 +655,16 @@
                   <span class="receipt-item-name">{{ item.item.name }}</span>
                   <span class="receipt-item-quantity">× {{ item.quantity }}</span>
                 </div>
+                @if (item.selectedAddons.length > 0) {
+                  <ul class="receipt-addon-list">
+                    @for (addon of item.selectedAddons; track addon.optionId) {
+                      <li>
+                        {{ addon.optionName }} × {{ addon.quantity }}
+                        <span class="receipt-addon-price">+{{ currency }} {{ (addon.price * addon.quantity * item.quantity) | number:'1.2-2' }}</span>
+                      </li>
+                    }
+                  </ul>
+                }
                 @if (item.notes) {
                   <div class="receipt-item-note">
                     <mat-icon class="note-icon">note</mat-icon>

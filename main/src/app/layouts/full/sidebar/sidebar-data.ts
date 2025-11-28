@@ -48,6 +48,11 @@ export const navItems: NavItem[] = [
     route: '/inventory',
   },
   {
+    displayName: 'Addon Groups',
+    iconName: 'widgets',
+    route: '/addons',
+  },
+  {
     displayName: 'Reports',
     iconName: 'chart-bar',
     route: '/reports',

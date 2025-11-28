@@ -678,6 +678,194 @@
           }
         }
       },
+      "/addonGroups": {
+        "get": {
+          "tags": ["Addons"],
+          "summary": "Get addon groups",
+          "description": "Retrieves addon groups with optional filters",
+          "parameters": [
+            {
+              "name": "placeId",
+              "in": "query",
+              "schema": { "type": "string" },
+              "description": "Filter by place ID"
+            },
+            {
+              "name": "menuId",
+              "in": "query",
+              "schema": { "type": "string" },
+              "description": "Filter by menu ID"
+            },
+            {
+              "name": "categoryId",
+              "in": "query",
+              "schema": { "type": "string" },
+              "description": "Filter by category ID"
+            },
+            {
+              "name": "itemId",
+              "in": "query",
+              "schema": { "type": "string" },
+              "description": "Filter by item ID"
+            },
+            {
+              "name": "isActive",
+              "in": "query",
+              "schema": { "type": "boolean" }
+            },
+            {
+              "name": "search",
+              "in": "query",
+              "schema": { "type": "string" }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Addon groups retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/AddonGroup" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "post": {
+          "tags": ["Addons"],
+          "summary": "Create addon group",
+          "description": "Creates a reusable addon group definition",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateAddonGroupCommand"
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Addon group created successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/AddonGroup"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/addonGroups/{id}": {
+        "get": {
+          "tags": ["Addons"],
+          "summary": "Get addon group by ID",
+          "description": "Retrieves a specific addon group",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": { "type": "string" }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Addon group retrieved successfully",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/AddonGroup" }
+                }
+              }
+            },
+            "404": {
+              "description": "Addon group not found",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                }
+              }
+            }
+          }
+        },
+        "put": {
+          "tags": ["Addons"],
+          "summary": "Update addon group",
+          "description": "Updates an existing addon group",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": { "type": "string" }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateAddonGroupCommand"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Addon group updated successfully",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/AddonGroup" }
+                }
+              }
+            },
+            "404": {
+              "description": "Addon group not found",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                }
+              }
+            }
+          }
+        },
+        "delete": {
+          "tags": ["Addons"],
+          "summary": "Delete addon group",
+          "description": "Deletes an addon group",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": { "type": "string" }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Addon group deleted successfully",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/ApiResponse" }
+                }
+              }
+            },
+            "404": {
+              "description": "Addon group not found",
+              "content": {
+                "application/json": {
+                  "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+                }
+              }
+            }
+          }
+        }
+      },
       "/itemDetail": {
         "get": {
           "tags": ["Items"],
@@ -3472,6 +3660,20 @@
             "menuId": {
               "type": "string"
             },
+            "addonGroups": {
+              "type": "array",
+              "description": "Inline addon group definitions that can be selected with this item",
+              "items": {
+                "$ref": "#/components/schemas/ItemAddonGroup"
+              }
+            },
+            "addonGroupIds": {
+              "type": "array",
+              "description": "References to reusable addon groups",
+              "items": {
+                "type": "string"
+              }
+            },
             "createdAt": {
               "type": "string",
               "format": "date-time"
@@ -3507,6 +3709,183 @@
               "type": "number"
             }
           }
+        },
+        "AddonOption": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "price": {
+              "type": "number",
+              "format": "double",
+              "description": "Price delta to apply when selected"
+            },
+            "isAvailable": {
+              "type": "boolean",
+              "default": true
+            },
+            "imageUrl": {
+              "type": "string",
+              "format": "uri"
+            },
+            "maxQuantity": {
+              "type": "integer",
+              "description": "Maximum quantity allowed for quantity-based selections"
+            },
+            "defaultQuantity": {
+              "type": "integer",
+              "description": "Default quantity when item is opened"
+            },
+            "isDefault": {
+              "type": "boolean",
+              "description": "Indicates if the option should be pre-selected"
+            }
+          },
+          "required": ["id", "name", "price"]
+        },
+        "ItemAddonGroup": {
+          "type": "object",
+          "properties": {
+            "groupId": {
+              "type": "string",
+              "description": "Reference ID of the addon group"
+            },
+            "name": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "selectionType": {
+              "type": "string",
+              "enum": ["single", "multiple", "quantity"],
+              "default": "multiple"
+            },
+            "minSelect": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "maxSelect": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "isRequired": {
+              "type": "boolean",
+              "default": false
+            },
+            "options": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/AddonOption"
+              }
+            }
+          },
+          "required": ["name", "selectionType", "options"]
+        },
+        "CartAddonSelection": {
+          "type": "object",
+          "properties": {
+            "groupId": { "type": "string" },
+            "groupName": { "type": "string" },
+            "optionId": { "type": "string" },
+            "optionName": { "type": "string" },
+            "price": { "type": "number", "format": "double" },
+            "quantity": { "type": "integer", "minimum": 1 }
+          },
+          "required": ["groupId", "optionId", "price", "quantity"]
+        },
+        "AddonGroup": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "name": { "type": "string" },
+            "description": { "type": "string" },
+            "selectionType": {
+              "type": "string",
+              "enum": ["single", "multiple", "quantity"]
+            },
+            "minSelect": { "type": "integer" },
+            "maxSelect": { "type": "integer" },
+            "isRequired": { "type": "boolean" },
+            "isActive": { "type": "boolean" },
+            "menuId": { "type": "string" },
+            "placeId": { "type": "string" },
+            "appliesToCategoryIds": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "appliesToItemIds": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "options": {
+              "type": "array",
+              "items": { "$ref": "#/components/schemas/AddonOption" }
+            },
+            "createdAt": { "type": "string", "format": "date-time" },
+            "updatedAt": { "type": "string", "format": "date-time" }
+          },
+          "required": ["id", "name", "selectionType", "options"]
+        },
+        "AddonGroupQuery": {
+          "type": "object",
+          "properties": {
+            "placeId": { "type": "string" },
+            "menuId": { "type": "string" },
+            "categoryId": { "type": "string" },
+            "itemId": { "type": "string" },
+            "isActive": { "type": "boolean" },
+            "search": { "type": "string" }
+          }
+        },
+        "CreateAddonGroupCommand": {
+          "type": "object",
+          "required": ["name", "selectionType", "options"],
+          "properties": {
+            "name": { "type": "string" },
+            "description": { "type": "string" },
+            "selectionType": {
+              "type": "string",
+              "enum": ["single", "multiple", "quantity"]
+            },
+            "minSelect": { "type": "integer" },
+            "maxSelect": { "type": "integer" },
+            "isRequired": { "type": "boolean" },
+            "menuId": { "type": "string" },
+            "placeId": { "type": "string" },
+            "appliesToCategoryIds": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "appliesToItemIds": {
+              "type": "array",
+              "items": { "type": "string" }
+            },
+            "options": {
+              "type": "array",
+              "items": { "$ref": "#/components/schemas/AddonOption" }
+            }
+          }
+        },
+        "UpdateAddonGroupCommand": {
+          "type": "object",
+          "required": ["id"],
+          "allOf": [
+            { "$ref": "#/components/schemas/CreateAddonGroupCommand" },
+            {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string" }
+              }
+            }
+          ]
         },
         "Order": {
           "type": "object",
@@ -3602,6 +3981,12 @@
             },
             "totalPrice": {
               "type": "number"
+            },
+            "selectedAddons": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CartAddonSelection"
+              }
             },
             "status": {
               "type": "string",
@@ -3751,6 +4136,16 @@
             },
             "totalPrice": {
               "type": "number"
+            },
+            "selectedAddons": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CartAddonSelection"
+              }
+            },
+            "addonUnitTotal": {
+              "type": "number",
+              "description": "Sum of addon price deltas per unit"
             },
             "addedAt": {
               "type": "string",
@@ -4198,6 +4593,13 @@
             "specialInstructions": {
               "type": "string",
               "description": "Special instructions for the item"
+            },
+            "selectedAddons": {
+              "type": "array",
+              "description": "List of addon selections applied to the item",
+              "items": {
+                "$ref": "#/components/schemas/CartAddonSelection"
+              }
             }
           }
         },
@@ -4220,6 +4622,12 @@
             "specialInstructions": {
               "type": "string",
               "description": "Special instructions for the item"
+            },
+            "selectedAddons": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/CartAddonSelection"
+              }
             }
           }
         },
@@ -4328,6 +4736,20 @@
             "menuId": {
               "type": "string",
               "description": "ID of the menu this item belongs to"
+            },
+            "addonGroups": {
+              "type": "array",
+              "description": "Inline addon groups available for this item",
+              "items": {
+                "$ref": "#/components/schemas/ItemAddonGroup"
+              }
+            },
+            "addonGroupIds": {
+              "type": "array",
+              "description": "References to reusable addon groups associated with this item",
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
@@ -4382,6 +4804,18 @@
             },
             "specs": {
               "$ref": "#/components/schemas/ItemSpecs"
+            },
+            "addonGroups": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/ItemAddonGroup"
+              }
+            },
+            "addonGroupIds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             }
           }
         },
@@ -4504,6 +4938,12 @@
                   "specialInstructions": {
                     "type": "string",
                     "description": "Special instructions for the item"
+                    },
+                    "selectedAddons": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CartAddonSelection"
+                      }
                   }
                 },
                 "required": ["itemId", "itemName", "itemPrice", "quantity"]
@@ -4824,6 +5264,10 @@
       {
         "name": "Categories",
         "description": "Menu category management operations"
+      },
+      {
+        "name": "Addons",
+        "description": "Addon group management operations"
       }
     ]
   }

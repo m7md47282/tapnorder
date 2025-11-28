@@ -17,6 +17,18 @@ export const routes: Routes = [
         pathMatch: 'full',
       },
       {
+        path: 'addons',
+        canActivate: [roleGuard([
+          UserRole.SUPER_ADMIN,
+          UserRole.RESTAURANT_MANAGER,
+          UserRole.SHIFT_MANAGER,
+          UserRole.INVENTORY_MANAGER,
+          UserRole.STORE_MANAGER
+        ])],
+        loadComponent: () =>
+          import('./pages/addons/addon-groups/addon-groups.component').then(m => m.AddonGroupsComponent)
+      },
+      {
         path: 'dashboard',
         canActivate: [roleGuard([
           UserRole.SUPER_ADMIN,

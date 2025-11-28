@@ -185,6 +185,14 @@ export class FullComponent implements OnInit, OnDestroy {
           route: '/inventory'
         });
       }
+
+      if (roleNav.some(n => n.route === '/addons')) {
+        items.push({
+          displayName: 'Addon Groups',
+          iconName: 'widgets',
+          route: '/addons'
+        });
+      }
       
       if (roleNav.some(n => n.route === '/tables')) {
         items.push({

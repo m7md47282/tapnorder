@@ -79,6 +79,15 @@ export class PermissionService {
       UserRole.STORE_MANAGER
     ]],
 
+    // Addon Groups - menu administrators
+    ['/addons', [
+      UserRole.SUPER_ADMIN,
+      UserRole.RESTAURANT_MANAGER,
+      UserRole.SHIFT_MANAGER,
+      UserRole.INVENTORY_MANAGER,
+      UserRole.STORE_MANAGER
+    ]],
+
     // Reports - Management and accounting
     ['/reports', [
       UserRole.SUPER_ADMIN,
@@ -236,6 +245,7 @@ export class PermissionService {
       { route: '/sales', displayName: 'Sales', iconName: 'receipt' },
       { route: '/customers', displayName: 'Customers', iconName: 'users' },
       { route: '/inventory', displayName: 'Inventory', iconName: 'database' },
+      { route: '/addons', displayName: 'Addon Groups', iconName: 'widgets' },
       { route: '/reports', displayName: 'Reports', iconName: 'chart-bar' },
       { route: '/settings', displayName: 'Settings', iconName: 'settings' },
       { route: '/accounting', displayName: 'Accounting', iconName: 'calculator' },

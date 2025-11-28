@@ -1,0 +1,180 @@
+<div class="addons-page" [class.is-loading]="isLoading()">
+  <div class="groups-column">
+    <mat-card class="groups-card">
+      <div class="card-header">
+        <div>
+          <h2>Addon Groups</h2>
+          <p>{{ filteredGroups().length }} group{{ filteredGroups().length === 1 ? '' : 's' }}</p>
+        </div>
+        <button mat-stroked-button color="primary" (click)="resetForm()">New Group</button>
+      </div>
+
+      <mat-form-field appearance="outline" class="w-100 search-field">
+        <mat-icon matPrefix>search</mat-icon>
+        <mat-label>Search groups</mat-label>
+        <input matInput [formControl]="search" placeholder="e.g. Flavor, Toppings">
+        <button mat-icon-button matSuffix *ngIf="search.value" (click)="search.reset('')">
+          <mat-icon>close</mat-icon>
+        </button>
+      </mat-form-field>
+
+      <div class="groups-list">
+        @if (filteredGroups().length === 0) {
+          <div class="empty-state">
+            <mat-icon>widgets</mat-icon>
+            <p>No addon groups yet.</p>
+          </div>
+        } @else {
+          @for (group of filteredGroups(); track group.id) {
+            <mat-card class="group-item" [class.selected]="editingGroup?.id === group.id">
+              <div class="group-item-main" (click)="editGroup(group)">
+                <div>
+                  <h3>{{ group.name }}</h3>
+                  <p>{{ group.description || '—' }}</p>
+                </div>
+                <div class="group-meta">
+                  <span class="chip">{{ group.selectionType }}</span>
+                  <span class="chip" *ngIf="group.isRequired">Required</span>
+                  <span class="chip" *ngIf="group.appliesToCategoryIds?.length">
+                    {{ group.appliesToCategoryIds?.length }} categories
+                  </span>
+                  <span class="chip" *ngIf="group.appliesToItemIds?.length">
+                    {{ group.appliesToItemIds?.length }} items
+                  </span>
+                </div>
+              </div>
+              <div class="group-actions">
+                <button mat-icon-button color="primary" (click)="editGroup(group)">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button color="warn" (click)="deleteGroup(group)">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </div>
+            </mat-card>
+          }
+        }
+      </div>
+    </mat-card>
+  </div>
+
+  <div class="form-column">
+    <mat-card class="form-card">
+      <h2>{{ editingGroup ? 'Edit Addon Group' : 'Create Addon Group' }}</h2>
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="addons-form">
+        <div class="form-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Name</mat-label>
+            <input matInput formControlName="name" required>
+            <mat-error>Name is required.</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Description</mat-label>
+            <textarea matInput formControlName="description" rows="2"></textarea>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Selection Type</mat-label>
+            <mat-select formControlName="selectionType" required>
+              @for (option of selectionTypeOptions; track option.value) {
+                <mat-option [value]="option.value">{{ option.label }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <div class="numeric-pair">
+            <mat-form-field appearance="outline">
+              <mat-label>Min selections</mat-label>
+              <input matInput type="number" formControlName="minSelect" min="0">
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Max selections</mat-label>
+              <input matInput type="number" formControlName="maxSelect" min="0">
+            </mat-form-field>
+          </div>
+
+          <div class="switch-row">
+            <mat-slide-toggle formControlName="isRequired">Required group</mat-slide-toggle>
+            <mat-slide-toggle formControlName="isActive">Active</mat-slide-toggle>
+          </div>
+        </div>
+
+        <div class="linking-section">
+          <mat-form-field appearance="outline">
+            <mat-label>Categories</mat-label>
+            <mat-select formControlName="appliesToCategoryIds" multiple>
+              @for (category of categories; track category.id) {
+                <mat-option [value]="category.id">{{ category.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Items</mat-label>
+            <mat-select formControlName="appliesToItemIds" multiple>
+              @for (item of items; track item.id) {
+                <mat-option [value]="item.id">{{ item.name }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <section class="options-section">
+          <div class="section-header">
+            <h3>Options</h3>
+            <button mat-stroked-button color="primary" type="button" (click)="addOption()">Add option</button>
+          </div>
+
+          @for (option of optionsArray.controls; let i = $index; track option.value.id) {
+            <div class="option-card" [formGroup]="option">
+              <div class="option-row">
+                <mat-form-field appearance="outline">
+                  <mat-label>Option name</mat-label>
+                  <input matInput formControlName="name" required>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Price delta</mat-label>
+                  <input matInput type="number" min="0" step=".1" formControlName="price" required>
+                  <span matSuffix>{{ currency || 'JOD' }}</span>
+                </mat-form-field>
+              </div>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Description</mat-label>
+                <textarea matInput rows="2" formControlName="description"></textarea>
+              </mat-form-field>
+
+              <div class="option-flags">
+                <mat-slide-toggle formControlName="isDefault">Default</mat-slide-toggle>
+                <mat-form-field appearance="outline">
+                  <mat-label>Max quantity</mat-label>
+                  <input matInput type="number" min="1" formControlName="maxQuantity">
+                </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Default quantity</mat-label>
+                  <input matInput type="number" min="0" formControlName="defaultQuantity">
+                </mat-form-field>
+              </div>
+
+              <div class="option-actions">
+                <button mat-stroked-button color="warn" type="button" (click)="removeOption(i)" [disabled]="optionsArray.length === 1">
+                  Remove
+                </button>
+              </div>
+            </div>
+          }
+        </section>
+
+        <div class="form-actions">
+          <button mat-button type="button" (click)="resetForm()">Reset</button>
+          <button mat-raised-button color="primary" type="submit">
+            {{ editingGroup ? 'Update group' : 'Create group' }}
+          </button>
+        </div>
+      </form>
+    </mat-card>
+  </div>
+</div>
+
