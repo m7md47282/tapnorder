@@ -1,8 +1,7 @@
 import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, NgIf } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { MaterialModule } from '../../../material.module';
-import { ApiService } from '../../../services/api.service';
 import { NotificationService } from '../../../services/notification.service';
 import { 
   KitchenOrder, 
@@ -12,14 +11,15 @@ import {
   KitchenMessage,
   Recipe
 } from '../../../models/product.model';
+import { OrderService } from '../../../services/order.service';
+import { Order, OrderStatus } from '../../../models/order.model';
 import { Subject, interval, takeUntil } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
-import { MatMenuTrigger } from '@angular/material/menu';
 
 @Component({
   selector: 'app-kitchen-display',
   standalone: true,
-  imports: [CommonModule, MaterialModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, NgIf, MaterialModule, FormsModule, ReactiveFormsModule],
   templateUrl: './kitchen-display.component.html',
   styleUrls: ['./kitchen-display.component.scss']
 })
@@ -61,287 +61,8 @@ export class KitchenDisplayComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private refreshInterval$ = interval(5000); // Refresh every 5 seconds
 
-  // Mock data for development
-  private mockOrders: KitchenOrder[] = [
-    {
-      id: '1',
-      orderNumber: 'ORD-001',
-      saleId: 'sale-1',
-      tableNumber: '5',
-      orderType: 'DINE_IN',
-      items: [
-        {
-          id: 'item-1',
-          productId: '1',
-          productName: 'Grilled Chicken',
-          quantity: 2,
-          modifiers: ['Extra sauce', 'No onions'],
-          specialInstructions: 'Well done',
-          status: KitchenOrderStatus.NEW,
-          station: 'Grill',
-          cookingTime: 12,
-          prepTime: 5,
-          temperature: '375°F',
-          allergens: ['None'],
-          dietaryInfo: ['Gluten Free'],
-          recipe: {
-            id: 'r1',
-            productId: '1',
-            name: 'Grilled Chicken',
-            instructions: ['Season chicken with salt and pepper', 'Grill at 375°F for 12 minutes', 'Check internal temperature reaches 165°F'],
-            cookingTime: 12,
-            prepTime: 5,
-            temperature: '375°F',
-            ingredients: [
-              { name: 'Chicken Breast', quantity: '8', unit: 'oz' },
-              { name: 'Olive Oil', quantity: '2', unit: 'tbsp' },
-              { name: 'Salt', quantity: '1', unit: 'tsp' }
-            ]
-          },
-          isLowStock: false
-        },
-        {
-          id: 'item-2',
-          productId: '2',
-          productName: 'Caesar Salad',
-          quantity: 1,
-          status: KitchenOrderStatus.NEW,
-          station: 'Salad',
-          prepTime: 3,
-          allergens: ['Dairy', 'Eggs'],
-          dietaryInfo: ['Contains Nuts'],
-          isLowStock: true,
-          stockAlert: 'Low on croutons'
-        }
-      ],
-      status: KitchenOrderStatus.NEW,
-      specialInstructions: 'Customer has allergy to nuts',
-      createdAt: new Date(Date.now() - 300000).toISOString(), // 5 minutes ago
-      estimatedTime: 15,
-      priority: 'NORMAL',
-      serverName: 'John',
-      customerName: 'Table 5'
-    },
-    {
-      id: '2',
-      orderNumber: 'ORD-002',
-      saleId: 'sale-2',
-      orderType: 'TAKEOUT',
-      items: [
-        {
-          id: 'item-3',
-          productId: '3',
-          productName: 'Margherita Pizza',
-          quantity: 1,
-          modifiers: ['Extra cheese'],
-          status: KitchenOrderStatus.IN_PROGRESS,
-          station: 'Pizza',
-          cookingTime: 8,
-          prepTime: 5,
-          temperature: '450°F',
-          allergens: ['Dairy', 'Gluten'],
-          recipe: {
-            id: 'r3',
-            productId: '3',
-            name: 'Margherita Pizza',
-            instructions: ['Preheat oven to 450°F', 'Spread sauce on dough', 'Add mozzarella and basil', 'Bake for 8 minutes'],
-            cookingTime: 8,
-            prepTime: 5,
-            temperature: '450°F',
-            ingredients: [
-              { name: 'Pizza Dough', quantity: '1', unit: 'ball' },
-              { name: 'Tomato Sauce', quantity: '4', unit: 'oz' },
-              { name: 'Mozzarella', quantity: '6', unit: 'oz' }
-            ]
-          }
-        }
-      ],
-      status: KitchenOrderStatus.IN_PROGRESS,
-      createdAt: new Date(Date.now() - 600000).toISOString(), // 10 minutes ago
-      startedAt: new Date(Date.now() - 300000).toISOString(), // 5 minutes ago
-      estimatedTime: 12,
-      priority: 'URGENT',
-      customerName: 'Takeout - Jane'
-    },
-    {
-      id: '3',
-      orderNumber: 'ORD-003',
-      saleId: 'sale-3',
-      tableNumber: '12',
-      orderType: 'DINE_IN',
-      items: [
-        {
-          id: 'item-4',
-          productId: '4',
-          productName: 'Chocolate Cake',
-          quantity: 1,
-          status: KitchenOrderStatus.READY,
-          station: 'Dessert'
-        }
-      ],
-      status: KitchenOrderStatus.READY,
-      createdAt: new Date(Date.now() - 900000).toISOString(), // 15 minutes ago
-      startedAt: new Date(Date.now() - 840000).toISOString(),
-      readyAt: new Date(Date.now() - 60000).toISOString(), // 1 minute ago
-      estimatedTime: 5,
-      priority: 'NORMAL',
-      serverName: 'Sarah',
-      customerName: 'Table 12'
-    },
-    {
-      id: '4',
-      orderNumber: 'ORD-004',
-      saleId: 'sale-4',
-      tableNumber: '13',
-      orderType: 'DINE_IN',
-      items: [
-        {
-          id: 'item-5',
-          productId: '5',
-          productName: 'Ice Cream',
-          quantity: 1,
-          status: KitchenOrderStatus.READY,
-          station: 'Dessert'
-        }
-      ],
-      status: KitchenOrderStatus.READY,
-      createdAt: new Date(Date.now() - 900000).toISOString(), // 15 minutes ago
-      startedAt: new Date(Date.now() - 840000).toISOString(),
-      readyAt: new Date(Date.now() - 60000).toISOString(), // 1 minute ago
-      estimatedTime: 5,
-      priority: 'NORMAL',
-      serverName: 'Sarah',
-      customerName: 'Table 13'
-    },
-    {
-      id: '5',
-      orderNumber: 'ORD-005',
-      saleId: 'sale-5',
-      tableNumber: '14',
-      orderType: 'DINE_IN',
-      items: [
-        {
-          id: 'item-6',
-          productId: '6',
-          productName: 'Ice Cream',
-          quantity: 1,
-          status: KitchenOrderStatus.READY,
-          station: 'Dessert'
-        }
-      ],
-      status: KitchenOrderStatus.READY,
-      createdAt: new Date(Date.now() - 900000).toISOString(), // 15 minutes ago
-      startedAt: new Date(Date.now() - 840000).toISOString(),
-      readyAt: new Date(Date.now() - 60000).toISOString(), // 1 minute ago
-      estimatedTime: 5,
-      priority: 'NORMAL',
-      serverName: 'Sarah',
-      customerName: 'Table 14'
-    },
-    {
-      id: '6',
-      orderNumber: 'ORD-006',
-      saleId: 'sale-6',
-      tableNumber: '15',
-      orderType: 'DINE_IN',
-      items: [
-        {
-          id: 'item-7',
-          productId: '7',
-          productName: 'Ice Cream',
-          quantity: 1,
-          status: KitchenOrderStatus.READY,
-          station: 'Dessert'
-        }
-      ],
-      status: KitchenOrderStatus.READY,
-      createdAt: new Date(Date.now() - 900000).toISOString(), // 15 minutes ago
-      startedAt: new Date(Date.now() - 840000).toISOString(),
-      readyAt: new Date(Date.now() - 60000).toISOString(), // 1 minute ago
-      estimatedTime: 5,
-      priority: 'NORMAL',
-      serverName: 'Sarah',
-      customerName: 'Table 15'
-    },
-    {
-      id: '7',
-      orderNumber: 'ORD-007',
-      saleId: 'sale-7',
-      tableNumber: '16',
-      orderType: 'DINE_IN',
-      items: [
-        {
-          id: 'item-8',
-          productId: '8',
-          productName: 'Ice Cream',
-          quantity: 1,
-          status: KitchenOrderStatus.READY,
-          station: 'Dessert'
-        }
-      ],
-      status: KitchenOrderStatus.READY,
-      createdAt: new Date(Date.now() - 900000).toISOString(), // 15 minutes ago
-      startedAt: new Date(Date.now() - 840000).toISOString(),
-      readyAt: new Date(Date.now() - 60000).toISOString(), // 1 minute ago
-      estimatedTime: 5,
-      priority: 'NORMAL',
-      serverName: 'Sarah',
-      customerName: 'Table 16'  
-    },
-    {
-      id: '8',
-      orderNumber: 'ORD-008',
-      saleId: 'sale-8',
-      tableNumber: '17',
-      orderType: 'DINE_IN',
-      items: [
-        {
-          id: 'item-9',
-          productId: '9',
-          productName: 'Ice Cream',
-          quantity: 1,
-          status: KitchenOrderStatus.READY,
-          station: 'Dessert'
-        }
-      ],
-      status: KitchenOrderStatus.READY,
-      createdAt: new Date(Date.now() - 900000).toISOString(), // 15 minutes ago
-      startedAt: new Date(Date.now() - 840000).toISOString(),
-      readyAt: new Date(Date.now() - 60000).toISOString(), // 1 minute ago
-      estimatedTime: 5,
-      priority: 'NORMAL',
-      serverName: 'Sarah',
-      customerName: 'Table 17'
-    },
-    {
-      id: '9',
-      orderNumber: 'ORD-009',
-      saleId: 'sale-9',
-      tableNumber: '18',
-      orderType: 'DINE_IN',
-      items: [
-        {
-          id: 'item-10',
-          productId: '10',
-          productName: 'Ice Cream',
-          quantity: 1,
-          status: KitchenOrderStatus.READY,
-          station: 'Dessert'
-        }
-      ],
-      status: KitchenOrderStatus.READY,
-      createdAt: new Date(Date.now() - 900000).toISOString(), // 15 minutes ago
-      startedAt: new Date(Date.now() - 840000).toISOString(),
-      readyAt: new Date(Date.now() - 60000).toISOString(), // 1 minute ago
-      estimatedTime: 5,
-      priority: 'NORMAL',
-      serverName: 'Sarah',
-      customerName: 'Table 18'
-    }
-  ];
-
   constructor(
-    private api: ApiService,
+    private orderService: OrderService,
     private notification: NotificationService,
     private dialog: MatDialog
   ) {}
@@ -373,29 +94,128 @@ export class KitchenDisplayComponent implements OnInit, OnDestroy {
 
   loadOrders(): void {
     this.isLoading = true;
+    const query = {
+      status: ['pending', 'confirmed', 'preparing', 'ready'] as string[]
+    };
 
-    // Mock API call
-    setTimeout(() => {
-      this.orders = this.mockOrders;
-      this.applyFilters();
-      if (this.viewMode.value === 'batch') {
-        this.updateBatchCookingView();
+    this.orderService.fetchOrders(query)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+      next: (orders) => {
+        this.orders = orders.length
+          ? orders.map(order => this.mapOrderToKitchenOrder(order))
+          : [];
+        if (!orders.length) {
+          this.notification.info('No active kitchen orders at the moment.');
+        }
+        this.applyFilters();
+        if (this.viewMode.value === 'batch') {
+          this.updateBatchCookingView();
+        }
+        this.isLoading = false;
+      },
+      error: () => {
+        this.orders = [];
+        this.applyFilters();
+        this.isLoading = false;
+        this.notification.error('Failed to load orders from server.');
       }
-      this.isLoading = false;
-    }, 500);
+    });
+  }
 
-    // Real API call (uncomment when backend is ready)
-    // this.api.get<KitchenOrder[]>('/kitchen/orders').subscribe({
-    //   next: (orders) => {
-    //     this.orders = orders;
-    //     this.applyFilters();
-    //     this.isLoading = false;
-    //   },
-    //   error: (error) => {
-    //     this.notification.error('Failed to load orders');
-    //     this.isLoading = false;
-    //   }
-    // });
+  private mapOrderToKitchenOrder(order: Order): KitchenOrder {
+    const kitchenStatus = this.mapOrderStatusToKitchenStatus(order.status);
+    const estimatedMinutes = order.estimatedReadyTime
+      ? Math.max(1, Math.round((order.estimatedReadyTime.getTime() - order.createdAt.getTime()) / 60000))
+      : 15;
+
+    const items: KitchenOrderItem[] = order.items.map(item => ({
+      id: item.id,
+      productId: item.item.id,
+      productName: item.item.name,
+      quantity: item.quantity,
+      modifiers: item.selectedAddons?.map(addon => addon.optionName),
+      specialInstructions: item.notes,
+      status: kitchenStatus
+    }));
+
+    return {
+      id: order.id,
+      orderNumber: order.orderNumber,
+      saleId: order.id,
+      tableNumber: order.tableId || undefined,
+      orderType: this.getKitchenOrderType(order.type, order.tableId),
+      items,
+      status: kitchenStatus,
+      specialInstructions: order.notes,
+      createdAt: order.createdAt.toISOString(),
+      estimatedTime: estimatedMinutes,
+      priority: 'NORMAL',
+      serverName: order.customer?.name,
+      customerName: order.customer?.name || (order.tableId ? `Table ${order.tableId}` : 'Guest'),
+      paymentStatus: this.mapPaymentStatus(order.payment?.status)
+    };
+  }
+
+  private getKitchenOrderType(type?: Order['type'], tableId?: string | null): KitchenOrder['orderType'] {
+    switch (type) {
+      case 'dine_in':
+        return 'DINE_IN';
+      case 'delivery':
+        return 'DELIVERY';
+      case 'pickup':
+      case 'takeout':
+        return 'TAKEOUT';
+      default:
+        return tableId ? 'DINE_IN' : 'TAKEOUT';
+    }
+  }
+
+  private mapOrderStatusToKitchenStatus(status: OrderStatus): KitchenOrderStatus {
+    switch (status) {
+      case OrderStatus.PREPARING:
+        return KitchenOrderStatus.IN_PROGRESS;
+      case OrderStatus.READY:
+        return KitchenOrderStatus.READY;
+      case OrderStatus.SERVED:
+        return KitchenOrderStatus.COMPLETED;
+      case OrderStatus.CANCELLED:
+        return KitchenOrderStatus.CANCELLED;
+      case OrderStatus.CONFIRMED:
+      case OrderStatus.PENDING:
+      default:
+        return KitchenOrderStatus.NEW;
+    }
+  }
+
+  private mapKitchenStatusToOrderStatus(status: KitchenOrderStatus): OrderStatus {
+    switch (status) {
+      case KitchenOrderStatus.IN_PROGRESS:
+        return OrderStatus.PREPARING;
+      case KitchenOrderStatus.READY:
+        return OrderStatus.READY;
+      case KitchenOrderStatus.COMPLETED:
+        return OrderStatus.SERVED;
+      case KitchenOrderStatus.CANCELLED:
+        return OrderStatus.CANCELLED;
+      case KitchenOrderStatus.NEW:
+      default:
+        return OrderStatus.PENDING;
+    }
+  }
+
+  private mapPaymentStatus(status?: string): 'PENDING' | 'PAID' | 'PARTIAL' {
+    const normalized = status?.toLowerCase();
+    switch (normalized) {
+      case 'completed':
+      case 'paid':
+        return 'PAID';
+      case 'partial':
+      case 'refunded':
+        return 'PARTIAL';
+      default:
+        return 'PENDING';
+    }
   }
 
   setupFilters(): void {
@@ -445,7 +265,7 @@ export class KitchenDisplayComponent implements OnInit, OnDestroy {
     const oldStatus = order.status;
     order.status = status;
     
-    // Update timestamps
+    // Update timestamps optimistically
     if (status === KitchenOrderStatus.IN_PROGRESS && !order.startedAt) {
       order.startedAt = new Date().toISOString();
     } else if (status === KitchenOrderStatus.READY && !order.readyAt) {
@@ -454,9 +274,8 @@ export class KitchenDisplayComponent implements OnInit, OnDestroy {
       order.completedAt = new Date().toISOString();
     }
 
-    // Update item statuses
     order.items.forEach(item => {
-      if (item.status === KitchenOrderStatus.NEW && status === KitchenOrderStatus.IN_PROGRESS) {
+      if (status === KitchenOrderStatus.IN_PROGRESS) {
         item.status = KitchenOrderStatus.IN_PROGRESS;
       } else if (status === KitchenOrderStatus.READY) {
         item.status = KitchenOrderStatus.READY;
@@ -465,20 +284,15 @@ export class KitchenDisplayComponent implements OnInit, OnDestroy {
       }
     });
 
-    // Mock API call
-    this.notification.success(`Order ${order.orderNumber} status updated to ${status}`);
-
-    // Real API call (uncomment when backend is ready)
-    // this.api.patch(`/kitchen/orders/${order.id}/status`, { status }).subscribe({
-    //   next: () => {
-    //     this.notification.success(`Order ${order.orderNumber} status updated`);
-    //     this.loadOrders();
-    //   },
-    //   error: (error) => {
-    //     order.status = oldStatus; // Revert on error
-    //     this.notification.error('Failed to update order status');
-    //   }
-    // });
+    const nextStatus = this.mapKitchenStatusToOrderStatus(status);
+    this.orderService.updateOrderStatus(order.id, nextStatus).then(() => {
+      this.notification.success(`Order ${order.orderNumber} status updated`);
+      this.loadOrders();
+    }).catch(() => {
+      order.status = oldStatus;
+      this.notification.error('Failed to update order status');
+      this.loadOrders();
+    });
   }
 
   updateItemStatus(order: KitchenOrder, item: KitchenOrderItem, status: KitchenOrderStatus): void {

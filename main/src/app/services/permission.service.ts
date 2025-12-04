@@ -88,6 +88,11 @@ export class PermissionService {
       UserRole.STORE_MANAGER
     ]],
 
+    // Places - Super admin only
+    ['/places', [
+      UserRole.SUPER_ADMIN
+    ]],
+
     // Reports - Management and accounting
     ['/reports', [
       UserRole.SUPER_ADMIN,
@@ -246,6 +251,7 @@ export class PermissionService {
       { route: '/customers', displayName: 'Customers', iconName: 'users' },
       { route: '/inventory', displayName: 'Inventory', iconName: 'database' },
       { route: '/addons', displayName: 'Addon Groups', iconName: 'widgets' },
+      { route: '/places', displayName: 'Place Management', iconName: 'building-store' },
       { route: '/reports', displayName: 'Reports', iconName: 'chart-bar' },
       { route: '/settings', displayName: 'Settings', iconName: 'settings' },
       { route: '/accounting', displayName: 'Accounting', iconName: 'calculator' },

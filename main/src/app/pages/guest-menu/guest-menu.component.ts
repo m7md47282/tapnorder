@@ -270,7 +270,7 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
           
           // Start tracking if there's an active order
           if (order) {
-            this.orderTracking.startTracking(order.id);
+            this.orderTracking.startTracking(order.id, this.guestUuid || undefined);
             
             // Subscribe to order status changes
             this.orderTracking.getOrderStatus$(order.id)
@@ -287,7 +287,7 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
       this.orderService.getActiveOrder(this.guestUuid).subscribe(order => {
         this.activeOrder = order;
         if (order) {
-          this.orderTracking.startTracking(order.id);
+          this.orderTracking.startTracking(order.id, this.guestUuid || undefined);
         }
       });
 
@@ -464,7 +464,7 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
       this.orderTableNumber = order.tableId || '';
 
       // Start tracking the order
-      this.orderTracking.startTracking(order.id);
+      this.orderTracking.startTracking(order.id, this.guestUuid || undefined);
 
       // Subscribe to order status changes
       this.orderTracking.getOrderStatus$(order.id)

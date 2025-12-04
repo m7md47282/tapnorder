@@ -5,6 +5,8 @@ import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 import { LocalStorageService } from './local-storage.service';
 import { NotificationService } from './notification.service';
+import { TenantContextService } from './tenant-context.service';
+import { User, UserRole } from '../models/user.model';
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -31,7 +33,8 @@ export class ApiService {
   constructor(
     private http: HttpClient,
     private localStorage: LocalStorageService,
-    private notification: NotificationService
+    private notification: NotificationService,
+    private tenantContext: TenantContextService
   ) {
     // Set base URL from environment or use default
     this.baseUrl = environment?.apiUrl || 'http://localhost:3000/api';
@@ -96,10 +99,24 @@ export class ApiService {
     
     if (params) {
       Object.keys(params).forEach(key => {
-        if (params[key] !== null && params[key] !== undefined) {
-          httpParams = httpParams.set(key, params[key].toString());
+        const value = params[key];
+        if (value === null || value === undefined) {
+          return;
+        }
+        if (Array.isArray(value)) {
+          httpParams = httpParams.set(key, value.join(','));
+        } else {
+          httpParams = httpParams.set(key, value.toString());
         }
       });
+    }
+
+    const scopedPlaceId = this.resolveScopedPlaceId(includeAuth);
+    if (scopedPlaceId) {
+      const placeParamName = this.getPlaceParamName(endpoint);
+      if (!this.httpParamsHasKey(httpParams, placeParamName)) {
+        httpParams = httpParams.set(placeParamName, scopedPlaceId);
+      }
     }
 
     return this.http.get<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, {
@@ -126,7 +143,9 @@ export class ApiService {
    * POST request
    */
   post<T>(endpoint: string, body: any, includeAuth: boolean = true): Observable<T> {
-    return this.http.post<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, body, {
+    const scopedPlaceId = this.resolveScopedPlaceId(includeAuth);
+    const nextBody = this.maybeAttachPlaceToBody(endpoint, body, scopedPlaceId);
+    return this.http.post<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, nextBody, {
       headers: this.getHeaders(includeAuth)
     }).pipe(
       map(response => {
@@ -149,7 +168,9 @@ export class ApiService {
    * PUT request
    */
   put<T>(endpoint: string, body: any, includeAuth: boolean = true): Observable<T> {
-    return this.http.put<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, body, {
+    const scopedPlaceId = this.resolveScopedPlaceId(includeAuth);
+    const nextBody = this.maybeAttachPlaceToBody(endpoint, body, scopedPlaceId);
+    return this.http.put<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, nextBody, {
       headers: this.getHeaders(includeAuth)
     }).pipe(
       map(response => {
@@ -170,7 +191,9 @@ export class ApiService {
    * PATCH request
    */
   patch<T>(endpoint: string, body: any, includeAuth: boolean = true): Observable<T> {
-    return this.http.patch<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, body, {
+    const scopedPlaceId = this.resolveScopedPlaceId(includeAuth);
+    const nextBody = this.maybeAttachPlaceToBody(endpoint, body, scopedPlaceId);
+    return this.http.patch<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, nextBody, {
       headers: this.getHeaders(includeAuth)
     }).pipe(
       map(response => {
@@ -191,7 +214,11 @@ export class ApiService {
    * DELETE request
    */
   delete<T>(endpoint: string, includeAuth: boolean = true): Observable<T> {
-    return this.http.delete<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, {
+    const scopedPlaceId = this.resolveScopedPlaceId(includeAuth);
+    const placeParamName = this.getPlaceParamName(endpoint);
+    const endpointWithTenant = this.appendTenantToEndpoint(endpoint, placeParamName, scopedPlaceId);
+
+    return this.http.delete<ApiResponse<T>>(`${this.baseUrl}${endpointWithTenant}`, {
       headers: this.getHeaders(includeAuth)
     }).pipe(
       map(response => {
@@ -225,6 +252,11 @@ export class ApiService {
     const token = this.localStorage.getToken();
     if (token) {
       headers.set('Authorization', `Bearer ${token}`);
+    }
+
+    const scopedPlaceId = this.resolveScopedPlaceId(true);
+    if (scopedPlaceId) {
+      formData.append('placeId', scopedPlaceId);
     }
 
     return this.http.post<ApiResponse<T>>(`${this.baseUrl}${endpoint}`, formData, {
@@ -262,6 +294,73 @@ export class ApiService {
     metadata?: Record<string, any>;
   }): Observable<any> {
     return this.post<any>('/attachments', request);
+  }
+
+  private resolveScopedPlaceId(includeAuth: boolean): string | null {
+    if (!includeAuth) {
+      return null;
+    }
+    const user = this.localStorage.getUser<User>();
+    if (!user) {
+      return null;
+    }
+
+    const contextPlaceId = this.tenantContext.getCurrentPlaceId();
+    const effectivePlaceId = contextPlaceId || user.placeId || null;
+
+    if (!effectivePlaceId) {
+      return null;
+    }
+
+    if (user.role === UserRole.SUPER_ADMIN && !contextPlaceId) {
+      // Super admins can operate across places unless they explicitly select one
+      return null;
+    }
+
+    return effectivePlaceId;
+  }
+
+  private getPlaceParamName(endpoint: string): string {
+    if (/\/orders/i.test(endpoint) || /orderDetail/i.test(endpoint)) {
+      return 'place_id';
+    }
+    return 'placeId';
+  }
+
+  private httpParamsHasKey(params: HttpParams, key: string): boolean {
+    return params.keys().includes(key);
+  }
+
+  private maybeAttachPlaceToBody(endpoint: string, body: any, placeId: string | null) {
+    if (!placeId || !body || typeof body !== 'object' || Array.isArray(body) || body instanceof FormData) {
+      return body;
+    }
+
+    const hasPlaceId = Object.prototype.hasOwnProperty.call(body, 'placeId');
+    const hasSnakeCase = Object.prototype.hasOwnProperty.call(body, 'place_id');
+
+    if (hasPlaceId || hasSnakeCase) {
+      return body;
+    }
+
+    return {
+      ...body,
+      placeId
+    };
+  }
+
+  private appendTenantToEndpoint(endpoint: string, paramName: string, placeId: string | null): string {
+    if (!placeId) {
+      return endpoint;
+    }
+
+    const regex = new RegExp(`[?&]${paramName}=`);
+    if (regex.test(endpoint)) {
+      return endpoint;
+    }
+
+    const separator = endpoint.includes('?') ? '&' : '?';
+    return `${endpoint}${separator}${paramName}=${encodeURIComponent(placeId)}`;
   }
 }
 

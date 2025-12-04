@@ -29,6 +29,29 @@ export const routes: Routes = [
           import('./pages/addons/addon-groups/addon-groups.component').then(m => m.AddonGroupsComponent)
       },
       {
+        path: 'places',
+        canActivate: [roleGuard([
+          UserRole.SUPER_ADMIN
+        ])],
+        children: [
+          {
+            path: '',
+            pathMatch: 'full',
+            redirectTo: 'list'
+          },
+          {
+            path: 'list',
+            loadComponent: () =>
+              import('./pages/places/place-directory/place-directory.component').then(m => m.PlaceDirectoryComponent)
+          },
+          {
+            path: 'create',
+            loadComponent: () =>
+              import('./pages/places/place-management/place-management.component').then(m => m.PlaceManagementComponent)
+          }
+        ]
+      },
+      {
         path: 'dashboard',
         canActivate: [roleGuard([
           UserRole.SUPER_ADMIN,

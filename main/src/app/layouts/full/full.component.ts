@@ -290,6 +290,16 @@ export class FullComponent implements OnInit, OnDestroy {
       });
     }
 
+    // Super admin section
+    if (roleNav.some(n => n.route === '/places')) {
+      items.push({ navCap: 'Super Admin' });
+      items.push({
+        displayName: 'Place Management',
+        iconName: 'building-store',
+        route: '/places'
+      });
+    }
+
     this.navItems = items;
   }
 

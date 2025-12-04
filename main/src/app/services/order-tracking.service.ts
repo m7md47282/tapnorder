@@ -43,7 +43,7 @@ export class OrderTrackingService {
   /**
    * Start tracking an order
    */
-  startTracking(orderId: string): void {
+  startTracking(orderId: string, guestUuid?: string): void {
     // Stop existing tracking if any
     this.stopTracking(orderId);
 
@@ -54,7 +54,7 @@ export class OrderTrackingService {
 
     // Start polling for order status updates
     const subscription = interval(this.POLLING_INTERVAL).pipe(
-      switchMap(() => this.orderService.getOrderById(orderId)),
+      switchMap(() => this.orderService.getOrderById(orderId, { guestUuid })),
       map(order => order?.status || OrderStatus.PENDING),
       takeWhile(status => {
         // Stop tracking when order is SERVED or CANCELLED
@@ -85,7 +85,7 @@ export class OrderTrackingService {
     this.trackingSubscriptions.set(orderId, subscription);
 
     // Immediately check status once
-    this.orderService.getOrderById(orderId).subscribe(order => {
+    this.orderService.getOrderById(orderId, { guestUuid }).subscribe(order => {
       if (order) {
         const subject = this.orderStatusSubjects.get(orderId);
         if (subject) {

@@ -16,6 +16,7 @@ import { LocalStorageService } from './local-storage.service';
 import { NotificationService } from './notification.service';
 import { environment } from '../../environments/environment';
 import { getRoleFromId } from '../utils/role-ids.util';
+import { TenantContextService } from './tenant-context.service';
 
 @Injectable({
   providedIn: 'root'
@@ -30,7 +31,8 @@ export class AuthService {
     private api: ApiService,
     private localStorage: LocalStorageService,
     private router: Router,
-    private notification: NotificationService
+    private notification: NotificationService,
+    private tenantContext: TenantContextService
   ) {
     this.initializeAuth();
   }
@@ -46,6 +48,7 @@ export class AuthService {
       // Verify token is still valid (you might want to add token expiration check)
       this.currentUserSubject.next(user);
       this.isAuthenticatedSubject.next(true);
+      this.tenantContext.initializeFromUser(user);
     } else {
       this.clearAuth();
     }
@@ -325,6 +328,7 @@ export class AuthService {
 
     this.currentUserSubject.next(response.user);
     this.isAuthenticatedSubject.next(true);
+    this.tenantContext.initializeFromUser(response.user);
   }
 
   /**
@@ -334,6 +338,7 @@ export class AuthService {
     this.localStorage.clearAuthData();
     this.currentUserSubject.next(null);
     this.isAuthenticatedSubject.next(false);
+    this.tenantContext.reset();
   }
 
   /**
@@ -422,6 +427,7 @@ export class AuthService {
   updateCurrentUser(user: User): void {
     this.localStorage.setUser(user);
     this.currentUserSubject.next(user);
+    this.tenantContext.initializeFromUser(user);
   }
 
   /**
@@ -454,6 +460,8 @@ export class AuthService {
     const role = getRoleFromId(roleId) || UserRole.WAITER; // Default to WAITER if role not found
 
     // Convert UserProfile to User model
+    const placeContext = this.extractPlaceContext(userProfile);
+
     const user: User = {
       id: userProfile.id,
       username: userProfile.displayName || userProfile.email?.split('@')[0] || 'user',
@@ -465,6 +473,8 @@ export class AuthService {
       isActive: userProfile.status === 'active' || userProfile.status === undefined,
       createdAt: userProfile.createdAt,
       updatedAt: userProfile.updatedAt,
+      placeId: placeContext.placeId,
+      accessiblePlaceIds: placeContext.accessiblePlaceIds,
     };
 
     // Calculate expiresIn from expiresAt if available
@@ -493,6 +503,8 @@ export class AuthService {
         const roleId = userProfile.roleId ?? userProfile.role ?? 0;
         const role = getRoleFromId(roleId) ?? UserRole.WAITER;
 
+        const placeContext = this.extractPlaceContext(userProfile);
+
         const user: User = {
           id: userProfile.id,
           username: userProfile.displayName || userProfile.email.split('@')[0],
@@ -504,6 +516,8 @@ export class AuthService {
           isActive: userProfile.status === 'active' || userProfile.status === undefined,
           createdAt: userProfile.createdAt,
           updatedAt: userProfile.updatedAt,
+          placeId: placeContext.placeId,
+          accessiblePlaceIds: placeContext.accessiblePlaceIds,
         };
 
         // Update local user data
@@ -516,6 +530,42 @@ export class AuthService {
         return throwError(() => error);
       })
     );
+  }
+
+  /**
+   * Extract place context (primary + accessible place IDs) from backend profile
+   */
+  private extractPlaceContext(profile: UserProfile): { placeId: string | null; accessiblePlaceIds: string[] } {
+    const metadata = profile.metadata || {};
+    const customClaims = profile.customClaims || {};
+
+    const accessibleSources = [
+      (profile as any).placeIds,
+      metadata.placeIds,
+      metadata.accessiblePlaceIds,
+      metadata.places,
+      profile.preferences?.placeIds,
+      profile.preferences?.places,
+      metadata.allowedPlaceIds,
+      customClaims.placeIds
+    ];
+
+    const accessiblePlaceIds = accessibleSources
+      .flat()
+      .filter((value: any): value is string => typeof value === 'string' && value.length > 0);
+
+    const directPlace =
+      (profile as any).placeId ||
+      metadata.placeId ||
+      metadata.place_id ||
+      metadata.place?.id ||
+      customClaims.placeId ||
+      (accessiblePlaceIds.length === 1 ? accessiblePlaceIds[0] : null);
+
+    return {
+      placeId: directPlace ?? null,
+      accessiblePlaceIds
+    };
   }
 }
 

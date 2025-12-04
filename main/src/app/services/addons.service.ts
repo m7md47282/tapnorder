@@ -8,6 +8,7 @@ import {
   CreateAddonGroupCommand,
   UpdateAddonGroupCommand
 } from '../models/addon.model';
+import { AuthService } from './auth.service';
 
 @Injectable({
   providedIn: 'root'
@@ -46,10 +47,14 @@ export class AddonsService {
     }
   ];
 
-  constructor(private api: ApiService) {}
+  constructor(
+    private api: ApiService,
+    private auth: AuthService
+  ) {}
 
   getAddonGroups(query: AddonGroupQuery = {}): Observable<AddonGroup[]> {
-    return this.api.get<AddonGroup[]>('/addonGroups', query, false).pipe(
+    const includeAuth = this.auth.isAuthenticated();
+    return this.api.get<AddonGroup[]>('/addonGroups', query, includeAuth).pipe(
       tap(groups => {
         if (Array.isArray(groups)) {
           groups.forEach(group => this.addonGroupCache.set(group.id, group));
@@ -67,7 +72,8 @@ export class AddonsService {
     if (this.addonGroupCache.has(id)) {
       return of(this.cloneGroup(this.addonGroupCache.get(id)!));
     }
-    return this.api.get<AddonGroup>(`/addonGroups/${id}`, undefined, false).pipe(
+    const includeAuth = this.auth.isAuthenticated();
+    return this.api.get<AddonGroup>(`/addonGroups/${id}`, undefined, includeAuth).pipe(
       tap(group => {
         if (group) {
           this.addonGroupCache.set(group.id, group);

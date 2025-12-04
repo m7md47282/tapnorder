@@ -9,6 +9,8 @@ export interface User {
   isActive: boolean;
   createdAt?: string;
   updatedAt?: string;
+  placeId?: string | null;
+  accessiblePlaceIds?: string[];
 }
 
 export enum UserRole {
@@ -82,6 +84,8 @@ export interface UserProfile {
   metadata?: any;
   createdAt?: string;
   updatedAt?: string;
+  placeId?: string;
+  placeIds?: string[];
 }
 
 // Frontend LoginResponse (converted from backend response)
@@ -101,9 +105,12 @@ export interface RegisterRequest {
   firstName?: string; // For compatibility
   lastName?: string; // For compatibility
   username?: string; // For compatibility - maps to displayName
+  phoneNumber?: string; // Optional contact number captured at signup
   preferences?: any; // Custom user preferences
   places?: string[]; // Optional list of place IDs to associate with the user
   deviceInfo?: any; // Optional metadata about the device
   metadata?: any; // Additional metadata
 }
+
+export type AdminCreateUserPayload = RegisterRequest;
 
