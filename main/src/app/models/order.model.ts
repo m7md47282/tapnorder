@@ -75,6 +75,31 @@ export type BackendOrderStatus =
   | 'completed'
   | 'cancelled';
 
+export const BACKEND_ORDER_STATUS = {
+  PENDING: 'pending' as const,
+  CONFIRMED: 'confirmed' as const,
+  PREPARING: 'preparing' as const,
+  READY: 'ready' as const,
+  COMPLETED: 'completed' as const,
+  CANCELLED: 'cancelled' as const
+} as const;
+
+export const ACTIVE_ORDER_STATUSES: BackendOrderStatus[] = [
+  BACKEND_ORDER_STATUS.PENDING,
+  BACKEND_ORDER_STATUS.CONFIRMED,
+  BACKEND_ORDER_STATUS.PREPARING,
+  BACKEND_ORDER_STATUS.READY
+];
+
+export const ALL_ORDER_STATUSES: BackendOrderStatus[] = [
+  BACKEND_ORDER_STATUS.PENDING,
+  BACKEND_ORDER_STATUS.CONFIRMED,
+  BACKEND_ORDER_STATUS.PREPARING,
+  BACKEND_ORDER_STATUS.READY,
+  BACKEND_ORDER_STATUS.COMPLETED,
+  BACKEND_ORDER_STATUS.CANCELLED
+];
+
 export type OrderType = 'dine_in' | 'takeout' | 'delivery' | 'pickup';
 
 export type OrderSource = 'pos' | 'online' | 'mobile_app' | 'phone';
@@ -114,6 +139,13 @@ export interface OrderItemResponse extends OrderItemPayload {
   status?: BackendOrderStatus;
 }
 
+export interface FirestoreTimestamp {
+  _seconds?: number;
+  _nanoseconds?: number;
+  seconds?: number;
+  nanoseconds?: number;
+}
+
 export interface OrderApiModel {
   id: string;
   orderNumber: string;
@@ -130,9 +162,10 @@ export interface OrderApiModel {
   source?: OrderSource;
   tableId?: string | null;
   metadata?: Record<string, any>;
-  createdAt: string;
-  updatedAt: string;
-  estimatedReadyTime?: string;
+  createdAt: string | FirestoreTimestamp;
+  updatedAt: string | FirestoreTimestamp;
+  estimatedReadyTime?: string | FirestoreTimestamp;
+  lastUpdatedAt?: string | FirestoreTimestamp;
 }
 
 export interface CreateOrderCommand {
@@ -158,5 +191,20 @@ export interface OrderQuery {
   orderNumber?: string;
   source?: OrderSource | OrderSource[];
   search?: string;
+}
+
+export interface UpdateOrderStatusCommand {
+  id: string;
+  status: BackendOrderStatus;
+  lastUpdatedBy: string;
+}
+
+export interface RealtimeOrderResponse {
+  type: 'connection' | 'orders_update' | 'order_update' | 'heartbeat';
+  data?: OrderApiModel[];
+  count?: number;
+  timestamp?: string;
+  message?: string;
+  orderId?: string;
 }
 

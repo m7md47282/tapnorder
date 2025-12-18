@@ -77,12 +77,13 @@
           <div class="product-image">
             <img [src]="product.image || '/assets/images/products/product-1.png'" [alt]="product.name" 
                  onerror="this.src='/assets/images/products/product-1.png'">
-            <div class="price-badge">${{ product.price | number:'1.2-2' }}</div>
+            <div class="price-badge">{{ currency }} {{ product.price | number:'1.2-2' }}</div>
             <div class="stock-badge" *ngIf="product.stock <= 0">Out of Stock</div>
           </div>
           <mat-card-content>
             <h3 class="product-name">{{ product.name }}</h3>
             <p class="product-sku">{{ product.sku }}</p>
+            <p class="product-brief" *ngIf="product.description">{{ product.description }}</p>
             <div class="product-footer" *ngIf="product.stock > 0">
               <span class="product-stock">Stock: {{ product.stock }}</span>
             </div>
@@ -167,8 +168,8 @@
               </button>
             </div>
             <div class="item-price-row">
-              <span>${{ item.price | number:'1.2-2' }} × {{ item.quantity }}</span>
-              <span class="item-total">${{ item.total | number:'1.2-2' }}</span>
+              <span>{{ currency }} {{ item.price | number:'1.2-2' }} × {{ item.quantity }}</span>
+              <span class="item-total">{{ currency }} {{ item.total | number:'1.2-2' }}</span>
             </div>
           </div>
           <div class="item-actions">
@@ -194,22 +195,22 @@
         <div class="cart-totals">
           <div class="total-row">
             <span>Subtotal:</span>
-          <span>${{ subtotal | number:'1.2-2' }}</span>
+          <span>{{ currency }} {{ subtotal | number:'1.2-2' }}</span>
         </div>
         <div class="total-row">
           <span>Tax:</span>
-          <span>${{ tax | number:'1.2-2' }}</span>
+          <span>{{ currency }} {{ tax | number:'1.2-2' }}</span>
         </div>
           @if (discount > 0) {
             <div class="total-row discount">
               <span>Discount:</span>
-              <span>-${{ discount | number:'1.2-2' }}</span>
+              <span>-{{ currency }} {{ discount | number:'1.2-2' }}</span>
             </div>
           }
 
           <div class="total-row grand-total">
             <span>Total:</span>
-            <span>${{ total | number:'1.2-2' }}</span>
+            <span>{{ currency }} {{ total | number:'1.2-2' }}</span>
           </div>
         </div>
       }
@@ -223,7 +224,7 @@
           (click)="openPaymentDialog()"
           [disabled]="cart.length === 0 || isProcessing">
           <mat-icon>payment</mat-icon>
-          Checkout (${{ total | number:'1.2-2' }})
+          Checkout ({{ currency }} {{ total | number:'1.2-2' }})
         </button>
       </div>
     </div>
@@ -243,7 +244,7 @@
     <div class="dialog-content">
       <div class="total-display">
         <h3>Total Amount</h3>
-        <h1>${{ total | number:'1.2-2' }}</h1>
+        <h1>{{ currency }} {{ total | number:'1.2-2' }}</h1>
       </div>
 
       <mat-form-field appearance="outline" class="w-100">
@@ -264,7 +265,7 @@
 
       <div class="change-display" *ngIf="paymentMethod === PaymentMethod.CASH && change >= 0">
         <span>Change:</span>
-        <span class="change-amount">${{ change | number:'1.2-2' }}</span>
+        <span class="change-amount">{{ currency }} {{ change | number:'1.2-2' }}</span>
       </div>
 
       <mat-form-field appearance="outline" class="w-100">
@@ -382,7 +383,7 @@
         <img [src]="selectedProductForDetails.image || '/assets/images/products/product-1.png'" 
              [alt]="selectedProductForDetails.name"
              onerror="this.src='/assets/images/products/product-1.png'">
-        <div class="price-badge-large">${{ selectedProductForDetails.price | number:'1.2-2' }}</div>
+        <div class="price-badge-large">{{ currency }} {{ selectedProductForDetails.price | number:'1.2-2' }}</div>
         <div class="stock-badge-large" *ngIf="selectedProductForDetails.stock <= 0">Out of Stock</div>
       </div>
 
@@ -411,7 +412,7 @@
           </div>
           <div class="detail-item" *ngIf="selectedProductForDetails.cost">
             <mat-icon>attach_money</mat-icon>
-            <span><strong>Cost:</strong> ${{ selectedProductForDetails.cost | number:'1.2-2' }}</span>
+            <span><strong>Cost:</strong> {{ currency }} {{ selectedProductForDetails.cost | number:'1.2-2' }}</span>
           </div>
         </div>
 

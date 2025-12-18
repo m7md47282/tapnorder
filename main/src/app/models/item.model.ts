@@ -15,13 +15,13 @@ export interface ItemSpecs {
 }
 
 /**
- * Item Ingredient - References a Product (from inventory) used in this Item
+ * Item Recipe Ingredient - References an Inventory Item
  */
-export interface ItemIngredient {
-  productId: string; // ID of the Product (inventory item) used as ingredient
-  productName?: string; // Name for display purposes
+export interface ItemRecipeIngredient {
+  inventoryId: string; // Reference to Inventory ID
+  ingredientName: string; // Name for display purposes
   quantity: number; // Quantity needed
-  unit: 'ml' | 'g' | 'kg' | 'l' | 'piece' | 'cup' | 'tbsp' | 'tsp' | 'oz' | 'lb'; // Unit of measurement
+  unit: 'kilogram' | 'gram' | 'liter' | 'milliliter' | 'piece' | 'cup'; // Unit of measurement
 }
 
 export interface Item {
@@ -29,15 +29,22 @@ export interface Item {
   name: string;
   description?: string;
   price: number;
-  category?: string; // Legacy: category name (deprecated, use categoryId instead)
-  categoryId?: string; // Preferred: Category ID from the categories entity
+  category?: string; // Legacy: category name
+  categoryId?: string; // Preferred: Category ID
   imageUrl?: string;
   isAvailable: boolean;
   preparationTime?: number;
+  
+  // Recipe & Costing (Backend Calculated)
+  recipe?: ItemRecipeIngredient[];
+  calculatedCost?: number; // Read-only from backend
+  availableUnits?: number; // Read-only from backend
+  
   ingredients?: string[]; // Legacy: simple string array for display
-  recipe?: ItemIngredient[]; // New: structured recipe with Product references, quantities, and units
   specs?: ItemSpecs;
-  menuId: string;
+  menuId?: string; // Optional - menu can be derived from placeId
+  placeId: string; // Required - items are linked to place
+  branchId?: string | null; // Optional - if provided, item is branch-specific; if null, shared across all branches
   addonGroups?: ItemAddonGroup[];
   addonGroupIds?: string[];
   createdAt?: string;
@@ -47,18 +54,23 @@ export interface Item {
 export interface CreateItemCommand {
   name: string;
   description?: string;
-  price: number;
-  category?: string; // Legacy: category name (deprecated, use categoryId instead)
-  categoryId?: string; // Preferred: Category ID from the categories entity
+  price?: number; // Optional if calculated from recipe
+  category?: string;
+  categoryId?: string;
   imageUrl?: string;
   isAvailable?: boolean;
   preparationTime?: number;
-  ingredients?: string[]; // Legacy: simple string array
-  recipe?: ItemIngredient[]; // New: structured recipe with Product references
+  ingredients?: string[]; // Legacy
+  
+  // Recipe Payload
+  recipe?: ItemRecipeIngredient[];
+  
   specs?: ItemSpecs;
   addonGroups?: ItemAddonGroup[];
   addonGroupIds?: string[];
-  menuId?: string; // Optional - backend may require it depending on implementation
+  menuId?: string; // Optional - menu can be derived from placeId
+  placeId: string; // Required - items are linked to place
+  branchId?: string | null; // Optional - if provided, item is branch-specific; if null/undefined, shared across all branches
 }
 
 export interface UpdateItemCommand {
@@ -66,22 +78,28 @@ export interface UpdateItemCommand {
   name?: string;
   description?: string;
   price?: number;
-  category?: string; // Legacy: category name (deprecated, use categoryId instead)
-  categoryId?: string; // Preferred: Category ID from the categories entity
+  category?: string;
+  categoryId?: string;
   imageUrl?: string;
   isAvailable?: boolean;
   preparationTime?: number;
-  ingredients?: string[]; // Legacy: simple string array
-  recipe?: ItemIngredient[]; // New: structured recipe with Product references
+  ingredients?: string[];
+  
+  // Recipe Payload
+  recipe?: ItemRecipeIngredient[];
+  
   specs?: ItemSpecs;
   addonGroups?: ItemAddonGroup[];
   addonGroupIds?: string[];
+  placeId?: string; // Optional on update, but should be provided if changing place
+  branchId?: string | null; // Optional - if provided, item is branch-specific; if null, shared across all branches
 }
 
 export interface ItemQuery {
   menuId?: string;
+  placeId?: string;
+  branchId?: string;
   category?: string;
   isAvailable?: boolean;
   search?: string;
 }
-

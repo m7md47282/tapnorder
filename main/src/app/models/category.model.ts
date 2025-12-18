@@ -10,7 +10,9 @@ export interface Category {
   imageUrl?: string; // format: uri
   displayOrder?: number; // integer, minimum: 0
   isActive?: boolean; // Required
-  menuId?: string; // Required - Reference to the menu this category belongs to
+  menuId?: string; // Optional - menu can be derived from placeId
+  placeId: string; // Required - categories are linked to place
+  branchId?: string | null; // Optional - if provided, category is branch-specific; if null, shared across all branches
   itemCount?: number; // Client-side only - Number of items in this category (not from API)
   icon?: string; // Client-side only - Material icon name (not from API)
   createdAt?: string; // Required - format: date-time
@@ -23,7 +25,9 @@ export interface CreateCategoryCommand {
   imageUrl?: string; // format: uri
   displayOrder?: number; // integer, minimum: 0
   isActive?: boolean; // Default: true
-  menuId?: string; // Optional - ID of the menu this category belongs to
+  menuId?: string; // Optional - menu can be derived from placeId
+  placeId: string; // Required - categories are linked to place
+  branchId?: string | null; // Optional - if provided, category is branch-specific; if null/undefined, shared across all branches
 }
 
 export interface UpdateCategoryCommand {
@@ -33,10 +37,14 @@ export interface UpdateCategoryCommand {
   imageUrl?: string; // format: uri
   displayOrder?: number; // integer, minimum: 0
   isActive?: boolean;
+  placeId?: string; // Optional on update, but should be provided if changing place
+  branchId?: string | null; // Optional - if provided, category is branch-specific; if null, shared across all branches
 }
 
 export interface CategoryQuery {
   menuId?: string;
+  placeId?: string;
+  branchId?: string;
   isActive?: boolean;
   search?: string;
 }

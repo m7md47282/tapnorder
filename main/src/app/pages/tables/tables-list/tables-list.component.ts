@@ -6,6 +6,10 @@ import { ApiService } from '../../../services/api.service';
 import { NotificationService } from '../../../services/notification.service';
 import { Router } from '@angular/router';
 import { Subject, interval, takeUntil } from 'rxjs';
+import { RealtimeOrdersService } from '../../../services/realtime-orders.service';
+import { TenantContextService } from '../../../services/tenant-context.service';
+import { OrderService } from '../../../services/order.service';
+import { Order } from '../../../models/order.model';
 
 @Component({
   selector: 'app-tables-list',
@@ -29,9 +33,11 @@ export class TablesListComponent implements OnInit, OnDestroy {
   TableStatus = TableStatus;
   
   private destroy$ = new Subject<void>();
-  private refreshInterval$ = interval(5000); // Refresh every 5 seconds
+  private refreshInterval$ = interval(5000);
+  private currentPlaceId: string | null = null;
+  private realtimeSubscription: any = null;
+  private ordersMap: Map<string, Order> = new Map();
 
-  // Mock data for development
   private mockTables: Table[] = [
     {
       id: '1',
@@ -148,50 +154,174 @@ export class TablesListComponent implements OnInit, OnDestroy {
   constructor(
     private api: ApiService,
     private notification: NotificationService,
-    private router: Router
+    private router: Router,
+    private realtimeOrders: RealtimeOrdersService,
+    private tenantContext: TenantContextService,
+    private orderService: OrderService
   ) {}
 
   ngOnInit(): void {
-    this.loadTables();
-    this.setupAutoRefresh();
+    this.getPlaceId();
   }
 
   ngOnDestroy(): void {
+    if (this.realtimeSubscription) {
+      this.realtimeSubscription.unsubscribe();
+    }
+    this.realtimeOrders.disconnectAll();
     this.destroy$.next();
     this.destroy$.complete();
   }
 
-  setupAutoRefresh(): void {
-    if (this.autoRefresh) {
-      this.refreshInterval$
-        .pipe(takeUntil(this.destroy$))
-        .subscribe(() => {
+  private getPlaceId(): void {
+    this.tenantContext.currentPlaceId$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(placeId => {
+        if (placeId && placeId !== this.currentPlaceId) {
+          this.currentPlaceId = placeId;
           this.loadTables();
-        });
+          this.connectRealtimeOrders();
+        } else if (!placeId) {
+          this.loadTables();
+        }
+      });
+  }
+
+  private connectRealtimeOrders(): void {
+    if (!this.currentPlaceId) {
+      return;
+    }
+
+    if (this.realtimeSubscription) {
+      this.realtimeSubscription.unsubscribe();
+    }
+
+    const statuses = ['pending', 'confirmed', 'preparing', 'ready', 'completed'];
+    
+    this.realtimeSubscription = this.realtimeOrders
+      .connectRealtimeOrders(this.currentPlaceId, statuses)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (orders) => {
+          orders.forEach(order => {
+            this.ordersMap.set(order.id, order);
+          });
+          this.updateTablesWithOrders(orders);
+        },
+        error: (error) => {
+          console.error('Real-time connection error:', error);
+        }
+      });
+
+    this.realtimeOrders.getOrderUpdate$()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(order => {
+        this.ordersMap.set(order.id, order);
+        this.updateTablesWithOrders([order]);
+      });
+  }
+
+  private updateTablesWithOrders(orders: Order[]): void {
+    orders.forEach(order => {
+      if (order.tableId) {
+        const table = this.tables.find(t => t.tableNumber === order.tableId);
+        if (table) {
+          if (order.status === 'PENDING' || order.status === 'CONFIRMED' || 
+              order.status === 'PREPARING' || order.status === 'READY') {
+            table.status = TableStatus.OCCUPIED;
+            table.currentOrderId = order.id;
+            
+            table.currentOrder = {
+              saleNumber: order.orderNumber,
+              items: order.items.map(item => ({
+                product: item.item as any,
+                quantity: item.quantity,
+                price: item.price,
+                subtotal: item.subtotal,
+                total: item.subtotal,
+                tax: 0,
+                discount: 0
+              })),
+              subtotal: order.subtotal || 0,
+              tax: order.tax || 0,
+              discount: order.discount || 0,
+              total: order.total,
+              paymentMethod: this.mapPaymentMethod(order.paymentMethod),
+              status: this.mapOrderStatusToSaleStatus(order.status),
+              cashierId: order.userId || '',
+              cashierName: order.customer?.name || 'Guest'
+            };
+          } else if (order.status === 'SERVED' || order.status === 'CANCELLED') {
+            if (table.status === TableStatus.OCCUPIED) {
+              table.status = TableStatus.CLEANING;
+              table.currentOrderId = undefined;
+              table.currentOrder = undefined;
+            }
+          }
+        }
+      }
+    });
+    
+    this.filterTables();
+  }
+
+  private mapPaymentMethod(method?: string): any {
+    switch (method?.toLowerCase()) {
+      case 'cash': return 'CASH';
+      case 'card': return 'CARD';
+      case 'digital_wallet': return 'MOBILE_PAYMENT';
+      default: return 'CASH';
+    }
+  }
+
+  private mapOrderStatusToSaleStatus(status: string): any {
+    switch (status) {
+      case 'PENDING': return 'PENDING';
+      case 'CONFIRMED': return 'PENDING';
+      case 'PREPARING': return 'PENDING';
+      case 'READY': return 'PENDING';
+      case 'SERVED': return 'COMPLETED';
+      case 'CANCELLED': return 'CANCELLED';
+      default: return 'PENDING';
     }
   }
 
   loadTables(): void {
     this.isLoading = true;
     
-    // Mock API call - replace with real API
     setTimeout(() => {
       this.tables = this.mockTables;
+      
+      if (this.currentPlaceId) {
+        this.loadOrdersForTables();
+      }
+      
       this.filterTables();
       this.isLoading = false;
     }, 500);
+  }
 
-    // Real API call (uncomment when backend is ready):
-    // this.api.get<Table[]>('/tables').subscribe({
-    //   next: (tables) => {
-    //     this.tables = tables;
-    //     this.filterTables();
-    //     this.isLoading = false;
-    //   },
-    //   error: () => {
-    //     this.isLoading = false;
-    //   }
-    // });
+  private loadOrdersForTables(): void {
+    if (!this.currentPlaceId) return;
+
+    const query = {
+      placeId: this.currentPlaceId,
+      status: ['pending', 'confirmed', 'preparing', 'ready'] as string[]
+    };
+
+    this.orderService.fetchOrders(query)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (orders) => {
+          orders.forEach(order => {
+            this.ordersMap.set(order.id, order);
+          });
+          this.updateTablesWithOrders(orders);
+        },
+        error: (error) => {
+          console.error('Error loading orders for tables:', error);
+        }
+      });
   }
 
   filterTables(): void {

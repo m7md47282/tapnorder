@@ -18,15 +18,41 @@
   }
 
   .employee-avatar {
-    @extend .table-avatar;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.05);
+    color: rgba(0, 0, 0, 0.54);
+    
+    mat-icon {
+      font-size: 24px;
+      width: 24px;
+      height: 24px;
+    }
   }
 
   .employee-info {
-    @extend .name-cell;
+    display: flex;
+    flex-direction: column;
+    
+    strong {
+      font-weight: 500;
+      color: rgba(0, 0, 0, 0.87);
+    }
+    
+    .employee-username {
+      font-size: 12px;
+      color: rgba(0, 0, 0, 0.54);
+      margin-top: 2px;
+    }
   }
 
-  .id-badge {
-    @extend .info-badge;
+  .email-text {
+    color: rgba(0, 0, 0, 0.87);
+    font-size: 14px;
   }
 
   .delete-action {

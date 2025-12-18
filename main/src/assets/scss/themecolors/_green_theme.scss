@@ -1,0 +1,13 @@
+@use "../colors" as *;
+
+html.green_theme,
+html .green_theme {
+  --mat-sys-primary: #92AB8C;
+  --mat-sys-primary-fixed-dim: rgba(146, 171, 140, 0.3);
+  --mat-sys-primary-rgb: 146, 171, 140; // RGB values for rgba() usage
+  --mat-sys-primary-bg-light: rgba(146, 171, 140, 0.05); // Background tint 5%
+  --mat-sys-primary-bg-subtle: rgba(146, 171, 140, 0.08); // Background tint 8%
+  --mat-sys-secondary: #{$color-secondary};
+  --mat-sys-secondary-fixed-dim: #{$color-secondary-light};
+}
+

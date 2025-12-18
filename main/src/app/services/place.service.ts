@@ -18,6 +18,10 @@ export class PlaceService {
     return this.api.get<Place[]>('/places', params);
   }
 
+  getPlaceById(placeId: string): Observable<Place> {
+    return this.api.get<Place>('/place', { id: placeId });
+  }
+
   createAdminUser(request: AdminCreateUserPayload): Observable<AuthSuccessResponse['data']> {
     return this.api.post<AuthSuccessResponse['data']>('/users', request);
   }
@@ -33,6 +37,10 @@ export class PlaceService {
 
   updatePlaceStatus(placeId: string, status: PlaceStatus): Observable<Place> {
     return this.api.put<Place>('/place', { id: placeId, status });
+  }
+
+  updatePlace(placeId: string, updates: Partial<Place>): Observable<Place> {
+    return this.api.put<Place>('/place', { id: placeId, ...updates });
   }
 
   getBranches(params?: Record<string, any>): Observable<PlaceBranch[]> {

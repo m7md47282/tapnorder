@@ -2,7 +2,7 @@ import { Component, OnInit, ViewChild, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { MaterialModule } from '../../../material.module';
-import { Category } from '../../../models/category.model';
+import { Category, UpdateCategoryCommand } from '../../../models/category.model';
 import { CategoriesService } from '../../../services/categories.service';
 import { ItemsService } from '../../../services/items.service';
 import { NotificationService } from '../../../services/notification.service';
@@ -16,6 +16,7 @@ import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { CategoryFormDialogComponent } from '../category-form-dialog/category-form-dialog.component';
 import { ConfirmDialogComponent } from '../../../components/confirm-dialog/confirm-dialog.component';
 import { Item } from '../../../models/item.model';
+import { TenantContextService } from '../../../services/tenant-context.service';
 
 @Component({
   selector: 'app-categories-list',
@@ -36,6 +37,9 @@ export class CategoriesListComponent implements OnInit, OnDestroy {
   
   isLoading: boolean = false;
   menuId: string | null = null; // Menu ID for categories API
+  placeId: string | null = null;
+  branchId: string | null = null;
+  private readonly BRANCH_STORAGE_KEY = 'branchId';
   
   private destroy$ = new Subject<void>();
 
@@ -45,18 +49,57 @@ export class CategoriesListComponent implements OnInit, OnDestroy {
     private notification: NotificationService,
     private localStorage: LocalStorageService,
     private route: ActivatedRoute,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private tenantContext: TenantContextService
   ) {}
 
   ngOnInit(): void {
-    // Get menuId from route params or localStorage
+    // Initialize placeId from tenant context with fallback to localStorage
+    this.placeId = this.tenantContext.getCurrentPlaceId();
+    if (!this.placeId) {
+      const user = this.localStorage.getUser<any>();
+      if (user?.placeId) {
+        this.placeId = user.placeId;
+      }
+    }
+    
+    this.tenantContext.currentPlaceId$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((placeId) => {
+        if (placeId !== this.placeId) {
+          this.placeId = placeId || (this.localStorage.getUser<any>()?.placeId);
+          this.loadCategories();
+        }
+      });
+
+    // Get menuId/branchId from route params or localStorage
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
+      let shouldReload = false;
       const newMenuId = params['menuId'] || this.localStorage.getItem<string>('menuId') || null;
       if (newMenuId !== this.menuId) {
         this.menuId = newMenuId;
         if (this.menuId) {
           this.localStorage.setItem('menuId', this.menuId);
         }
+        shouldReload = true;
+      }
+
+      const newBranchId = params['branchId'] || params['branch_id'] || null;
+      if (newBranchId) {
+        if (newBranchId !== this.branchId) {
+          this.branchId = newBranchId;
+          this.localStorage.setItem(this.BRANCH_STORAGE_KEY, newBranchId);
+          shouldReload = true;
+        }
+      } else if (!this.branchId) {
+        const storedBranch = this.localStorage.getItem<string>(this.BRANCH_STORAGE_KEY);
+        if (storedBranch && storedBranch !== this.branchId) {
+          this.branchId = storedBranch;
+          shouldReload = true;
+        }
+      }
+
+      if (shouldReload) {
         this.loadCategories();
       }
     });
@@ -64,6 +107,10 @@ export class CategoriesListComponent implements OnInit, OnDestroy {
     // If no menuId in route, try localStorage
     if (!this.menuId) {
       this.menuId = this.localStorage.getItem<string>('menuId');
+    }
+
+    if (!this.branchId) {
+      this.branchId = this.localStorage.getItem<string>(this.BRANCH_STORAGE_KEY);
     }
     
     this.loadCategories();
@@ -105,12 +152,22 @@ export class CategoriesListComponent implements OnInit, OnDestroy {
       query.menuId = this.menuId;
     }
 
+    if (this.placeId) {
+      query.placeId = this.placeId;
+    }
+
+    if (this.branchId) {
+      query.branchId = this.branchId;
+    }
+
     // Get categories from API
     this.categoriesService.getCategories(query).subscribe({
       next: (categories) => {
         // Get item counts if menuId is available
         if (this.menuId) {
-          this.categoriesService.getCategoriesWithCounts(this.menuId).subscribe({
+          this.categoriesService
+            .getCategoriesWithCounts(this.menuId, this.placeId, this.branchId)
+            .subscribe({
             next: (categoriesWithCounts) => {
               this.dataSource.data = categoriesWithCounts;
               this.setupTable();
@@ -195,9 +252,16 @@ export class CategoriesListComponent implements OnInit, OnDestroy {
     });
   }
 
-  createCategory(categoryData: Partial<Category>): void {
+  createCategory(categoryData: Partial<Category> & { placeId?: string; branchId?: string | null }): void {
     if (!categoryData.name) {
       this.notification.error('Category name is required');
+      return;
+    }
+
+    // Use placeId from form data if provided, otherwise fall back to component's placeId
+    const placeId = categoryData.placeId || this.placeId;
+    if (!placeId) {
+      this.notification.error('Place ID is required to create category');
       return;
     }
 
@@ -208,18 +272,23 @@ export class CategoriesListComponent implements OnInit, OnDestroy {
       description: categoryData.description,
       imageUrl: categoryData.imageUrl,
       displayOrder: categoryData.displayOrder,
-      isActive: categoryData.isActive !== undefined ? categoryData.isActive : true
+      isActive: categoryData.isActive !== undefined ? categoryData.isActive : true,
+      placeId: placeId // Required - categories are linked to place
     };
 
-    // Only include menuId if it's available
+    // Only include menuId if it's available (optional)
     if (this.menuId) {
       command.menuId = this.menuId;
     }
+
+    // branchId: use from form data if provided, otherwise use component's branchId or null
+    command.branchId = categoryData.branchId !== undefined ? categoryData.branchId : (this.branchId ?? null);
 
     this.categoriesService.createCategory(command).subscribe({
       next: () => {
         this.notification.success('Category created successfully');
         this.loadCategories();
+        this.isLoading = false;
       },
       error: (error) => {
         console.error('Error creating category:', error);
@@ -229,22 +298,41 @@ export class CategoriesListComponent implements OnInit, OnDestroy {
     });
   }
 
-  updateCategory(oldCategory: Category, newCategoryData: Partial<Category>): void {
+  updateCategory(oldCategory: Category, newCategoryData: Partial<Category> & { placeId?: string; branchId?: string | null }): void {
     if (!oldCategory.id) {
       this.notification.error('Category ID is required');
       return;
     }
 
+    // Use placeId from form data if provided, otherwise fall back to component's placeId or category's placeId
+    const resolvedPlaceId = newCategoryData.placeId || this.placeId || oldCategory.placeId;
+    if (!resolvedPlaceId) {
+      this.notification.error('Place ID is required to update category');
+      return;
+    }
+
     this.isLoading = true;
 
-    const command = {
+    const command: UpdateCategoryCommand = {
       id: oldCategory.id,
       name: newCategoryData.name,
       description: newCategoryData.description,
       imageUrl: newCategoryData.imageUrl,
       displayOrder: newCategoryData.displayOrder,
-      isActive: newCategoryData.isActive
+      isActive: newCategoryData.isActive,
+      placeId: resolvedPlaceId // Required - always include placeId
     };
+
+    // branchId: use from form data if provided, otherwise use category's branchId or component's branchId
+    if (newCategoryData.branchId !== undefined) {
+      command.branchId = newCategoryData.branchId;
+    } else if (typeof oldCategory.branchId !== 'undefined') {
+      command.branchId = oldCategory.branchId;
+    } else if (this.branchId !== null && this.branchId !== undefined) {
+      command.branchId = this.branchId;
+    } else {
+      command.branchId = null;
+    }
 
     this.categoriesService.updateCategory(command).subscribe({
       next: () => {

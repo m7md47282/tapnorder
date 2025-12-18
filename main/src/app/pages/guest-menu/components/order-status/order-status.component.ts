@@ -22,8 +22,6 @@ export class OrderStatusComponent implements OnInit, OnDestroy {
   OrderStatus = OrderStatus;
   showItems: boolean = false;
   private destroy$ = new Subject<void>();
-  private demoTimerStarted: boolean = false;
-
   constructor(
     private orderTracking: OrderTrackingService,
     private orderService: OrderService,
@@ -34,45 +32,16 @@ export class OrderStatusComponent implements OnInit, OnDestroy {
     if (this.order) {
       this.currentStatus = this.order.status;
 
-      // Subscribe to status changes
+      // Subscribe to status changes from the tracking service
+      // The tracking service polls the API for status updates
       this.orderTracking.getOrderStatus$(this.order.id)
         .pipe(takeUntil(this.destroy$))
         .subscribe(status => {
           this.currentStatus = status;
+          // Update the order object to keep it in sync
+          this.order.status = status;
         });
-
-      // Demo mode: Auto-progress order status after 3 seconds
-      if (!this.demoTimerStarted && this.order.status === OrderStatus.PENDING) {
-        this.startDemoMode();
-      }
     }
-  }
-
-  /**
-   * Demo mode: Automatically progress order status for demonstration
-   */
-  private startDemoMode(): void {
-    this.demoTimerStarted = true;
-    
-    // After 3 seconds, update status to READY
-    timer(3000)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(async () => {
-        try {
-          // Update order status to READY
-          await this.orderService.updateOrderStatus(this.order.id, OrderStatus.READY);
-          
-          // Update local status immediately
-          this.currentStatus = OrderStatus.READY;
-          this.order.status = OrderStatus.READY;
-          
-          // Update the tracking service status subject directly for immediate UI update
-          // This will also trigger notifications automatically
-          this.orderTracking.updateOrderStatusDirectly(this.order.id, OrderStatus.READY);
-        } catch (error) {
-          console.error('Error updating order status:', error);
-        }
-      });
   }
 
   ngOnDestroy(): void {

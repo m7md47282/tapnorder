@@ -204,6 +204,151 @@
       }
     },
     "/users": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get users with optional filters",
+        "description": "Retrieves users with optional filtering using query parameters. Super admins can query users from any place. Place admins can only query users from places they manage. Requires authentication via Bearer token.",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "schema": {
+              "type": "string",
+              "example": "Bearer <id_token>"
+            },
+            "description": "Bearer token containing the authenticated admin user session"
+          },
+          {
+            "name": "placeId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by place ID (also accepts place_id for backward compatibility). Super admins can query any place; place admins can only query their own place.",
+            "example": "place123"
+          },
+          {
+            "name": "place_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Alternative parameter name for placeId (backward compatibility)"
+          },
+          {
+            "name": "branchId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by branch ID (also accepts branch_id for backward compatibility)",
+            "example": "branch123"
+          },
+          {
+            "name": "branch_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Alternative parameter name for branchId (backward compatibility)"
+          },
+          {
+            "name": "roleId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filter by role ID (also accepts role_id for backward compatibility)",
+            "example": 5
+          },
+          {
+            "name": "role_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Alternative parameter name for roleId (backward compatibility)"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["active", "invited", "suspended", "disabled"]
+            },
+            "description": "Filter by user status",
+            "example": "active"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Users retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/ApiResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/UserProfile"
+                          }
+                        },
+                        "count": {
+                          "type": "integer",
+                          "description": "Number of users returned"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid query parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid admin credentials",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden - admin does not have permission to query users from this place",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "tags": ["Users"],
         "summary": "Create user as admin (super admin or place admin)",
@@ -373,8 +518,26 @@
       "get": {
         "tags": ["Items"],
         "summary": "Get items with optional filters",
-        "description": "Retrieves items with optional filtering using query parameters. Supports filtering by menuId, categoryId, isAvailable, and search.",
+        "description": "Retrieves items with optional filtering using query parameters. Supports filtering by placeId, branchId, menuId, categoryId, isAvailable, and search. When both placeId and branchId are provided, returns both branch-specific items (items with branchId) and shared items (items without branchId) for that place's menu. The menu is shared across all branches of a place, but items can be branch-specific or shared.",
         "parameters": [
+          {
+            "name": "placeId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by place ID. Gets the menu for this place, then returns items for that menu. When combined with branchId, returns both branch-specific items and shared items (items without branchId) (also accepts place_id for backward compatibility)",
+            "example": "place123"
+          },
+          {
+            "name": "branchId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by branch ID. When combined with placeId, returns branch-specific items (items with this branchId) plus shared items (items without branchId) from the place's menu. Each branch can have its own items, but items without branchId are shared across all branches (also accepts branch_id for backward compatibility)",
+            "example": "branch123"
+          },
           {
             "name": "menuId",
             "in": "query",
@@ -438,7 +601,7 @@
       "post": {
         "tags": ["Items"],
         "summary": "Create new item",
-        "description": "Creates a new menu item. Supports both 'category' and 'categoryId' fields. Use 'categoryId' to reference a category from the categories entity (see /categories endpoint), or use 'category' to store a category name as a string directly in the item.",
+        "description": "Creates a new menu item. Supports both 'category' and 'categoryId' fields. Use 'categoryId' to reference a category from the categories entity (see /categories endpoint), or use 'category' to store a category name as a string directly in the item. Items can be created using placeId (which will get the menu automatically) and branchId (to make items branch-specific). Items without branchId are shared across all branches of the place. The menu is shared at the place level, but items can be branch-specific or shared.",
         "requestBody": {
           "required": true,
           "content": {
@@ -1612,6 +1775,219 @@
         }
       }
     },
+    "/inventory": {
+      "get": {
+        "tags": ["Inventory"],
+        "summary": "Get inventory with optional filters",
+        "description": "Retrieves inventory items with optional filtering. Supports filtering by placeId, branchId, ingredientName, unit, lowStock, and search.",
+        "parameters": [
+          {
+            "name": "placeId",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Filter by place ID (also accepts place_id)",
+            "example": "place123"
+          },
+          {
+            "name": "branchId",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Filter by branch ID (also accepts branch_id)",
+            "example": "branch123"
+          },
+          {
+            "name": "ingredientName",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Filter by ingredient name (also accepts ingredient_name)",
+            "example": "Milk"
+          },
+          {
+            "name": "unit",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["kilogram", "gram", "liter", "milliliter", "piece", "cup"]
+            },
+            "description": "Filter by unit type"
+          },
+          {
+            "name": "lowStock",
+            "in": "query",
+            "schema": { "type": "boolean" },
+            "description": "Filter for items below minimum stock level (also accepts low_stock)",
+            "example": true
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Search term for ingredient name (also accepts q)",
+            "example": "coffee"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inventory retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Inventory"],
+        "summary": "Create new inventory item",
+        "description": "Creates a new inventory item with ingredient name, unit, quantity, and cost per unit.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInventoryCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Inventory created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid inventory data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Inventory"],
+        "summary": "Update inventory item",
+        "description": "Updates an existing inventory item. ID can be provided in URL path or request body.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateInventoryCommand"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Inventory updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - missing ID or invalid data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Inventory"],
+        "summary": "Delete inventory item",
+        "description": "Deletes an inventory item. ID should be provided in URL path or query parameter.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "Inventory ID to delete"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inventory deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - missing inventory ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/inventory/adjust": {
+      "post": {
+        "tags": ["Inventory"],
+        "summary": "Adjust inventory quantity",
+        "description": "Adds or reduces inventory quantity. Use positive quantity to add, negative to reduce.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InventoryAdjustment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Inventory adjusted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - invalid adjustment data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/orders": {
       "get": {
         "tags": ["Orders"],
@@ -1838,7 +2214,7 @@
       "get": {
         "tags": ["Orders", "Real-time"],
         "summary": "Get real-time orders by status",
-        "description": "Establishes a Server-Sent Events (SSE) connection for real-time order updates filtered by status",
+        "description": "Establishes a Server-Sent Events (SSE) connection for real-time order updates filtered by status. Filters orders by place, branch (optional), status (required), and time window. Only returns orders from the last N hours (default: 6 hours).",
         "parameters": [
           {
             "name": "placeId",
@@ -1847,7 +2223,16 @@
             "schema": {
               "type": "string"
             },
-            "description": "Place ID"
+            "description": "Filter by place ID (required)"
+          },
+          {
+            "name": "branchId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by branch ID (optional). If provided, only returns orders for this specific branch. If not provided, returns orders for all branches of the place."
           },
           {
             "name": "status",
@@ -1856,7 +2241,18 @@
             "schema": {
               "type": "string"
             },
-            "description": "Comma-separated list of statuses (e.g., pending,confirmed,preparing)"
+            "description": "Comma-separated list of statuses to filter (e.g., 'pending,confirmed,preparing'). Valid values: pending, confirmed, preparing, ready, completed, cancelled"
+          },
+          {
+            "name": "hoursBack",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 6
+            },
+            "description": "Number of hours to look back for orders (default: 6). Only returns orders created within this time window."
           }
         ],
         "responses": {
@@ -1866,13 +2262,13 @@
               "text/event-stream": {
                 "schema": {
                   "type": "string",
-                  "description": "Server-Sent Events stream with filtered order updates"
+                  "description": "Server-Sent Events stream with filtered order updates. Event types: 'connection' (initial), 'orders_update' (order changes), 'heartbeat' (every 30 seconds)"
                 }
               }
             }
           },
           "400": {
-            "description": "Bad request - missing placeId or status",
+            "description": "Bad request - missing placeId or status, or invalid parameters",
             "content": {
               "application/json": {
                 "schema": {
@@ -2101,24 +2497,65 @@
       "get": {
         "tags": ["Orders", "Real-time"],
         "summary": "Get real-time orders",
-        "description": "Retrieves real-time order updates",
+        "description": "Establishes a Server-Sent Events (SSE) connection for real-time order updates. Filters orders by place, branch (optional), status (optional), and time window. Only returns orders from the last N hours (default: 6 hours).",
         "parameters": [
           {
             "name": "placeId",
             "in": "query",
+            "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "Filter by place ID"
+            "description": "Filter by place ID (required)"
+          },
+          {
+            "name": "branchId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by branch ID (optional). If provided, only returns orders for this specific branch. If not provided, returns orders for all branches of the place."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Comma-separated list of statuses to filter (e.g., 'pending,confirmed,preparing'). Valid values: pending, confirmed, preparing, ready, completed, cancelled"
+          },
+          {
+            "name": "hoursBack",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 6
+            },
+            "description": "Number of hours to look back for orders (default: 6). Only returns orders created within this time window."
           }
         ],
         "responses": {
           "200": {
-            "description": "Real-time orders retrieved successfully",
+            "description": "Real-time orders stream established",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "description": "Server-Sent Events stream with order updates. Event types: 'connection' (initial), 'orders_update' (order changes), 'heartbeat' (every 30 seconds)"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - missing placeId or invalid parameters",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -2130,7 +2567,7 @@
       "get": {
         "tags": ["Orders", "Real-time"],
         "summary": "Get real-time orders by status",
-        "description": "Retrieves real-time orders filtered by status",
+        "description": "Establishes a Server-Sent Events (SSE) connection for real-time order updates filtered by status. Filters orders by place, branch (optional), status (required), and time window. Only returns orders from the last N hours (default: 6 hours).",
         "parameters": [
           {
             "name": "placeId",
@@ -2139,26 +2576,56 @@
             "schema": {
               "type": "string"
             },
-            "description": "Place ID"
+            "description": "Filter by place ID (required)"
+          },
+          {
+            "name": "branchId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter by branch ID (optional). If provided, only returns orders for this specific branch. If not provided, returns orders for all branches of the place."
           },
           {
             "name": "status",
             "in": "query",
             "required": true,
             "schema": {
-              "type": "string",
-              "enum": ["pending", "confirmed", "preparing", "ready", "completed", "cancelled"]
+              "type": "string"
             },
-            "description": "Order status to filter by"
+            "description": "Comma-separated list of statuses to filter (e.g., 'pending,confirmed,preparing'). Valid values: pending, confirmed, preparing, ready, completed, cancelled"
+          },
+          {
+            "name": "hoursBack",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 6
+            },
+            "description": "Number of hours to look back for orders (default: 6). Only returns orders created within this time window."
           }
         ],
         "responses": {
           "200": {
-            "description": "Real-time orders by status retrieved successfully",
+            "description": "Real-time orders by status stream established",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "description": "Server-Sent Events stream with filtered order updates. Event types: 'connection' (initial), 'orders_update' (order changes), 'heartbeat' (every 30 seconds)"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - missing placeId or status, or invalid parameters",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -2166,29 +2633,41 @@
         }
       }
     },
-    "/orderRealtimeSingle": {
+    "/orderRealtimeSingle/{id}": {
       "get": {
         "tags": ["Orders", "Real-time"],
         "summary": "Get single real-time order",
-        "description": "Retrieves a single order with real-time updates",
+        "description": "Establishes a Server-Sent Events (SSE) connection for real-time updates of a specific order. Returns instant updates whenever the order status or details change.",
         "parameters": [
           {
             "name": "id",
-            "in": "query",
+            "in": "path",
             "required": true,
             "schema": {
               "type": "string"
             },
-            "description": "Order ID"
+            "description": "Order ID",
+            "example": "order123"
           }
         ],
         "responses": {
           "200": {
-            "description": "Real-time order retrieved successfully",
+            "description": "Real-time single order stream established",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "description": "Server-Sent Events stream with single order updates. Event types: 'connection' (initial), 'order_update' (order changes), 'heartbeat' (every 30 seconds)"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request - missing order ID",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ApiResponse"
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -4285,17 +4764,39 @@
           "preparationTime": {
             "type": "number"
           },
+          "calculatedCost": {
+            "type": "number",
+            "format": "double",
+            "description": "Auto-calculated cost from ingredients (backend only, read-only)"
+          },
+          "availableUnits": {
+            "type": "integer",
+            "description": "Auto-calculated: how many units can be made with current inventory (backend only, read-only)"
+          },
+          "recipe": {
+            "type": "array",
+            "description": "Structured recipe with ingredient quantities for cost calculation",
+            "items": {
+              "$ref": "#/components/schemas/ItemRecipeIngredient"
+            }
+          },
           "ingredients": {
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "Legacy: kept for backward compatibility (display only)"
           },
           "specs": {
             "$ref": "#/components/schemas/ItemSpecs"
           },
           "menuId": {
-            "type": "string"
+            "type": "string",
+            "description": "Reference to the menu this item belongs to"
+          },
+          "branchId": {
+            "type": "string",
+            "description": "Reference to the branch this item belongs to. If null or undefined, the item is shared across all branches of the place. If provided, the item is branch-specific."
           },
           "addonGroups": {
             "type": "array",
@@ -4535,6 +5036,10 @@
           },
           "placeId": {
             "type": "string"
+          },
+          "branchId": {
+            "type": "string",
+            "description": "Branch ID for filtering orders by branch (optional)"
           },
           "customer": {
             "$ref": "#/components/schemas/OrderCustomer"
@@ -5317,9 +5822,33 @@
           }
         }
       },
+      "ItemRecipeIngredient": {
+        "type": "object",
+        "required": ["inventoryId", "ingredientName", "quantity", "unit"],
+        "properties": {
+          "inventoryId": {
+            "type": "string",
+            "description": "Reference to inventory item"
+          },
+          "ingredientName": {
+            "type": "string",
+            "description": "Name of the ingredient (e.g., 'Coffee', 'Milk')"
+          },
+          "quantity": {
+            "type": "number",
+            "format": "double",
+            "description": "Quantity needed (e.g., 9 for 9 grams, 0.2 for 0.2 liters)"
+          },
+          "unit": {
+            "type": "string",
+            "enum": ["kilogram", "gram", "liter", "milliliter", "piece", "cup"],
+            "description": "Unit of measurement"
+          }
+        }
+      },
       "CreateItemCommand": {
         "type": "object",
-        "required": ["name", "price", "menuId"],
+        "required": ["name"],
         "anyOf": [
           { "required": ["categoryId"] },
           { "required": ["category"] }
@@ -5336,7 +5865,14 @@
           "price": {
             "type": "number",
             "format": "double",
-            "description": "Price of the item"
+            "description": "Optional: Selling price. If not provided and recipe exists, will use calculatedCost * 2 (default markup)"
+          },
+          "recipe": {
+            "type": "array",
+            "description": "Recipe with ingredient quantities for automatic cost calculation. If provided, cost and available units will be calculated automatically.",
+            "items": {
+              "$ref": "#/components/schemas/ItemRecipeIngredient"
+            }
           },
           "categoryId": {
             "type": "string",
@@ -5365,14 +5901,22 @@
             "items": {
               "type": "string"
             },
-            "description": "List of ingredients"
+            "description": "Legacy: kept for backward compatibility (display only)"
           },
           "specs": {
             "$ref": "#/components/schemas/ItemSpecs"
           },
           "menuId": {
             "type": "string",
-            "description": "ID of the menu this item belongs to"
+            "description": "ID of the menu this item belongs to. Optional if placeId is provided (menu will be retrieved from placeId)."
+          },
+          "placeId": {
+            "type": "string",
+            "description": "ID of the place. If provided without menuId, the menu will be retrieved from this place. Items are created for the place's menu. Each branch can have its own items by providing branchId."
+          },
+          "branchId": {
+            "type": "string",
+            "description": "ID of the branch this item belongs to. Optional - if provided, the item is branch-specific. If not provided, the item is shared across all branches of the place. Each branch can have its own items while still sharing a common menu."
           },
           "addonGroups": {
             "type": "array",
@@ -5442,6 +5986,10 @@
           "specs": {
             "$ref": "#/components/schemas/ItemSpecs"
           },
+          "branchId": {
+            "type": "string",
+            "description": "ID of the branch this item belongs to. Optional - if provided, the item becomes branch-specific. If set to null or removed, the item becomes shared across all branches. Each branch can have its own items while still sharing a common menu."
+          },
           "addonGroups": {
             "type": "array",
             "items": {
@@ -5462,6 +6010,14 @@
           "menuId": {
             "type": "string",
             "description": "Filter by menu ID"
+          },
+          "placeId": {
+            "type": "string",
+            "description": "Filter by place ID. Gets the menu for this place, then returns items for that menu. When combined with branchId, returns both branch-specific items and shared items (items without branchId)."
+          },
+          "branchId": {
+            "type": "string",
+            "description": "Filter by branch ID. When combined with placeId, returns branch-specific items (items with this branchId) plus shared items (items without branchId) from the place's menu. Each branch can have its own items, but items without branchId are shared across all branches."
           },
           "categoryId": {
             "type": "string",
@@ -5547,6 +6103,10 @@
             "type": "string",
             "description": "ID of the place this order belongs to"
           },
+          "branchId": {
+            "type": "string",
+            "description": "ID of the branch this order belongs to (optional). If provided, the order is associated with a specific branch."
+          },
           "customer": {
             "$ref": "#/components/schemas/OrderCustomer"
           },
@@ -5628,6 +6188,10 @@
           "placeId": {
             "type": "string",
             "description": "Filter by place ID"
+          },
+          "branchId": {
+            "type": "string",
+            "description": "Filter by branch ID (optional)"
           },
           "status": {
             "type": "string",
@@ -5858,6 +6422,85 @@
             }
           }
         }
+      },
+      "Inventory": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "placeId": { "type": "string", "description": "Place this inventory belongs to" },
+          "branchId": { "type": "string", "description": "Optional: branch-specific inventory" },
+          "ingredientName": { "type": "string", "description": "Name of the ingredient (e.g., 'Milk', 'Coffee')" },
+          "unit": {
+            "type": "string",
+            "enum": ["kilogram", "gram", "liter", "milliliter", "piece", "cup"],
+            "description": "Unit of measurement"
+          },
+          "currentQuantity": { "type": "number", "format": "double", "description": "Current stock quantity" },
+          "costPerUnit": { "type": "number", "format": "double", "description": "Cost per unit (e.g., cost per liter, cost per kilo)" },
+          "minStockLevel": { "type": "number", "format": "double", "description": "Alert when below this level" },
+          "supplier": { "type": "string", "description": "Supplier information" },
+          "lastRestocked": { "type": "string", "format": "date-time", "description": "Last restock date" },
+          "notes": { "type": "string", "description": "Additional notes" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["id", "placeId", "ingredientName", "unit", "currentQuantity", "costPerUnit", "createdAt", "updatedAt"]
+      },
+      "CreateInventoryCommand": {
+        "type": "object",
+        "required": ["placeId", "ingredientName", "unit", "currentQuantity", "costPerUnit"],
+        "properties": {
+          "placeId": { "type": "string", "description": "Place this inventory belongs to" },
+          "branchId": { "type": "string", "description": "Optional: branch-specific inventory" },
+          "ingredientName": { "type": "string", "description": "Name of the ingredient" },
+          "unit": {
+            "type": "string",
+            "enum": ["kilogram", "gram", "liter", "milliliter", "piece", "cup"],
+            "description": "Unit of measurement"
+          },
+          "currentQuantity": { "type": "number", "format": "double", "description": "Current stock quantity" },
+          "costPerUnit": { "type": "number", "format": "double", "description": "Cost per unit" },
+          "minStockLevel": { "type": "number", "format": "double", "description": "Alert when below this level" },
+          "supplier": { "type": "string", "description": "Supplier information" },
+          "notes": { "type": "string", "description": "Additional notes" }
+        }
+      },
+      "UpdateInventoryCommand": {
+        "type": "object",
+        "required": ["id"],
+        "properties": {
+          "id": { "type": "string", "description": "Inventory ID" },
+          "ingredientName": { "type": "string" },
+          "unit": {
+            "type": "string",
+            "enum": ["kilogram", "gram", "liter", "milliliter", "piece", "cup"]
+          },
+          "currentQuantity": { "type": "number", "format": "double" },
+          "costPerUnit": { "type": "number", "format": "double" },
+          "minStockLevel": { "type": "number", "format": "double" },
+          "supplier": { "type": "string" },
+          "lastRestocked": { "type": "string", "format": "date-time" },
+          "notes": { "type": "string" }
+        }
+      },
+      "InventoryAdjustment": {
+        "type": "object",
+        "required": ["inventoryId", "quantity", "reason"],
+        "properties": {
+          "inventoryId": { "type": "string", "description": "Inventory item ID" },
+          "quantity": {
+            "type": "number",
+            "format": "double",
+            "description": "Quantity to adjust. Positive for adding, negative for reducing."
+          },
+          "reason": {
+            "type": "string",
+            "enum": ["restock", "adjustment", "waste", "damage", "other"],
+            "description": "Reason for adjustment"
+          },
+          "notes": { "type": "string", "description": "Additional notes" },
+          "adjustedBy": { "type": "string", "description": "User ID who made the adjustment" }
+        }
       }
     }
   },
@@ -5895,6 +6538,10 @@
       "description": "User authentication operations"
     },
     {
+      "name": "Users",
+      "description": "User management operations. Administrative endpoints for creating and querying users. Super admins can manage users across all places; place admins can only manage users for their own places."
+    },
+    {
       "name": "Attachments",
       "description": "File attachment management operations"
     },
@@ -5909,6 +6556,10 @@
     {
       "name": "Branches",
       "description": "Branch management operations. Branches belong to places and act like independent places with their own workers and items."
+    },
+    {
+      "name": "Inventory",
+      "description": "Inventory management operations. Track ingredients with units, costs, and quantities. Automatically calculates item costs and available units based on inventory."
     }
   ]
 }

@@ -20,10 +20,31 @@
       </button>
     </div>
 
-    <!-- Step 2: Upload File -->
+    <!-- Step 2: Branch Selection (Optional) -->
     <div class="step-section">
       <div class="step-header">
         <span class="step-number">2</span>
+        <span class="step-title">Select Branch (Optional)</span>
+      </div>
+      <p class="step-description">Select a branch to make items branch-specific, or leave empty to share across all branches</p>
+      <mat-form-field appearance="outline" class="branch-select">
+        <mat-label>Branch</mat-label>
+        <mat-select [(value)]="selectedBranchId" [disabled]="isProcessing || isLoadingBranches">
+          <mat-option [value]="null">Shared (All Branches)</mat-option>
+          @for (branch of availableBranches; track branch.id) {
+            <mat-option [value]="branch.id">{{ branch.name }}</mat-option>
+          }
+        </mat-select>
+        @if (isLoadingBranches) {
+          <mat-spinner matSuffix diameter="20"></mat-spinner>
+        }
+      </mat-form-field>
+    </div>
+
+    <!-- Step 3: Upload File -->
+    <div class="step-section">
+      <div class="step-header">
+        <span class="step-number">3</span>
         <span class="step-title">Upload Excel File</span>
       </div>
       <div class="upload-area">
@@ -46,11 +67,11 @@
       </div>
     </div>
 
-    <!-- Step 3: Preview -->
+    <!-- Step 4: Preview -->
     @if (showPreview && previewData.length > 0) {
       <div class="step-section">
       <div class="step-header">
-        <span class="step-number">3</span>
+        <span class="step-number">4</span>
         <span class="step-title">Preview</span>
         <span class="step-count">{{ parsedData.length }} products</span>
       </div>

@@ -20,13 +20,20 @@ export class CategoriesService {
 
   /**
    * Get all categories with optional filters
-   * GET /categories?menuId={menuId}&isActive={isActive}&search={search}
+   * GET /categories?placeId={placeId}&menuId={menuId}&isActive={isActive}&search={search}
    * 
-   * @param query - Query parameters (menuId, isActive, search)
+   * @param query - Query parameters (placeId is required, menuId, isActive, search are optional)
    * @returns Observable<Category[]>
    */
   getCategories(query?: CategoryQuery): Observable<Category[]> {
     const params: any = {};
+    
+    // placeId is required
+    if (query?.placeId) {
+      params.placeId = query.placeId;
+    } else {
+      console.warn('getCategories: placeId is recommended for filtering categories by place');
+    }
     
     if (query?.menuId) {
       params.menuId = query.menuId;
@@ -40,28 +47,48 @@ export class CategoriesService {
       params.search = query.search;
     }
 
-    return this.api.get<Category[]>('/categories', params);
+    return this.api.get<Category[]>('/categories', params).pipe(
+      map(categories => {
+        if (!query) {
+          return categories;
+        }
+
+        return categories.filter(category => {
+          const matchesPlace = query.placeId ? category.placeId === query.placeId : true;
+          if (!query.branchId) {
+            return matchesPlace;
+          }
+
+          return matchesPlace && (!category.branchId || category.branchId === query.branchId);
+        });
+      })
+    );
   }
 
   /**
    * Get category by ID
-   * GET /categories/{id}
+   * GET /categories/{id}?placeId={placeId}
    * 
    * @param categoryId - Category ID
+   * @param placeId - Place ID (required)
    * @returns Observable<Category>
    */
-  getCategoryById(categoryId: string): Observable<Category> {
-    return this.api.get<Category>(`/categories/${categoryId}`);
+  getCategoryById(categoryId: string, placeId: string): Observable<Category> {
+    const params: any = { placeId };
+    return this.api.get<Category>(`/categories/${categoryId}`, params);
   }
 
   /**
    * Create new category
    * POST /categories
    * 
-   * @param command - Create category command
+   * @param command - Create category command (must include placeId)
    * @returns Observable<Category>
    */
   createCategory(command: CreateCategoryCommand): Observable<Category> {
+    if (!command.placeId) {
+      throw new Error('placeId is required to create a category');
+    }
     return this.api.post<Category>('/categories', command);
   }
 
@@ -69,10 +96,13 @@ export class CategoriesService {
    * Update category
    * PUT /categories
    * 
-   * @param command - Update category command (must include id)
+   * @param command - Update category command (must include id and placeId)
    * @returns Observable<Category>
    */
   updateCategory(command: UpdateCategoryCommand): Observable<Category> {
+    if (!command.placeId) {
+      throw new Error('placeId is required to update a category');
+    }
     return this.api.put<Category>('/categories', command);
   }
 
@@ -81,10 +111,13 @@ export class CategoriesService {
    * PUT /categories/{id}
    * 
    * @param id - Category ID
-   * @param command - Update category command (without id)
+   * @param command - Update category command (without id, must include placeId)
    * @returns Observable<Category>
    */
   updateCategoryById(id: string, command: Omit<UpdateCategoryCommand, 'id'>): Observable<Category> {
+    if (!command.placeId) {
+      throw new Error('placeId is required to update a category');
+    }
     return this.api.put<Category>(`/categories/${id}`, command);
   }
 
@@ -106,20 +139,38 @@ export class CategoriesService {
    * @param menuId - Menu ID
    * @returns Observable<Category[]>
    */
-  getCategoriesWithCounts(menuId: string): Observable<Category[]> {
+  getCategoriesWithCounts(
+    menuId: string,
+    placeId?: string | null,
+    branchId?: string | null
+  ): Observable<Category[]> {
+    const categoryQuery: CategoryQuery = { menuId };
+    if (placeId) {
+      categoryQuery.placeId = placeId;
+    }
+    if (branchId) {
+      categoryQuery.branchId = branchId;
+    }
+
     return combineLatest([
-      this.getCategories({ menuId }),
-      this.itemsService.getItemsByMenuId(menuId)
+      this.getCategories(categoryQuery),
+      this.itemsService.getItems({
+        menuId,
+        placeId: placeId ?? undefined,
+        branchId: branchId ?? undefined
+      })
     ]).pipe(
       map(([categories, items]) => {
         const categoryCountMap = new Map<string, number>();
         
         // Count items per category (by categoryId or category name)
         items.forEach(item => {
-          if (item.category) {
-            const count = categoryCountMap.get(item.category) || 0;
-            categoryCountMap.set(item.category, count + 1);
+          const categoryKey = item.categoryId || item.category;
+          if (!categoryKey) {
+            return;
           }
+          const count = categoryCountMap.get(categoryKey) || 0;
+          categoryCountMap.set(categoryKey, count + 1);
         });
 
         // Add counts to categories
@@ -159,12 +210,14 @@ export class CategoriesService {
    * 
    * @param items - Array of items
    * @param menuId - Menu ID
+   * @param placeId - Place ID (required)
    * @param includeInactive - Whether to include categories with no active items
    * @returns Category[]
    */
   extractCategoriesFromItems(
     items: Item[], 
-    menuId: string, 
+    menuId: string,
+    placeId: string,
     includeInactive: boolean = false
   ): Category[] {
     const categoryMap = new Map<string, { items: Item[] }>();
@@ -185,10 +238,13 @@ export class CategoriesService {
     // Convert to Category array
     const categories: Category[] = Array.from(categoryMap.entries()).map(([categoryName, data], index) => {
       const activeItems = data.items.filter(item => item.isAvailable);
+      // Get placeId from first item (all items should have same placeId)
+      const itemPlaceId = data.items[0]?.placeId || placeId;
       return {
         id: this.generateCategoryId(categoryName),
         name: categoryName,
         menuId,
+        placeId: itemPlaceId, // Required - categories are linked to place
         itemCount: data.items.length,
         displayOrder: index,
         isActive: activeItems.length > 0
@@ -303,15 +359,29 @@ export class CategoriesService {
 
   /**
    * Get default categories (for new menus)
+   * Note: This method returns categories without placeId. Use with caution.
+   * Consider using getDefaultCategoriesForPlace(placeId) instead.
    * 
    * @returns Category[]
    */
   getDefaultCategories(): Category[] {
+    // Return empty array since placeId is required
+    // Use getDefaultCategoriesForPlace(placeId) instead
+    return [];
+  }
+
+  /**
+   * Get default categories for a specific place
+   * 
+   * @param placeId - Place ID (required)
+   * @returns Category[]
+   */
+  getDefaultCategoriesForPlace(placeId: string): Category[] {
     return [
-      { id: 'appetizers', name: 'Appetizers', icon: 'restaurant_menu', displayOrder: 1, isActive: true },
-      { id: 'mains', name: 'Main Dishes', icon: 'dinner_dining', displayOrder: 2, isActive: true },
-      { id: 'desserts', name: 'Desserts', icon: 'cake', displayOrder: 3, isActive: true },
-      { id: 'beverages', name: 'Beverages', icon: 'local_drink', displayOrder: 4, isActive: true }
+      { id: 'appetizers', name: 'Appetizers', icon: 'restaurant_menu', displayOrder: 1, isActive: true, placeId },
+      { id: 'mains', name: 'Main Dishes', icon: 'dinner_dining', displayOrder: 2, isActive: true, placeId },
+      { id: 'desserts', name: 'Desserts', icon: 'cake', displayOrder: 3, isActive: true, placeId },
+      { id: 'beverages', name: 'Beverages', icon: 'local_drink', displayOrder: 4, isActive: true, placeId }
     ];
   }
 }

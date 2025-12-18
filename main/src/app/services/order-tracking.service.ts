@@ -117,7 +117,9 @@ export class OrderTrackingService {
   }
 
   /**
-   * Update order status directly (for demo/testing purposes)
+   * Update order status directly (for local UI updates only)
+   * Note: This should only be used for immediate UI feedback after API calls.
+   * The actual status updates should come from the API via polling.
    */
   updateOrderStatusDirectly(orderId: string, status: OrderStatus): void {
     if (!this.orderStatusSubjects.has(orderId)) {

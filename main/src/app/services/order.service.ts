@@ -31,7 +31,6 @@ interface CreateOrderContext {
 import { IndexedDBService } from './indexeddb.service';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
-import { InventoryDeductionService } from './inventory-deduction.service';
 import { environment } from '../../environments/environment';
 
 /**
@@ -69,8 +68,8 @@ export class OrderService {
   constructor(
     private indexedDB: IndexedDBService,
     private api: ApiService,
-    private auth: AuthService,
-    private inventoryDeduction: InventoryDeductionService
+    private auth: AuthService
+    // InventoryDeductionService removed
   ) {
     this.loadOrders();
   }
@@ -137,69 +136,78 @@ export class OrderService {
           total,
           subtotal
         });
+        
+        // Try with auth if available, otherwise try without (for guest orders)
         const includeAuth = this.auth.isAuthenticated();
+        
         const response = await firstValueFrom(
           this.api.post<OrderApiModel>('/orders', payload, includeAuth)
         );
+        
         if (response) {
           createdOrder = this.mapOrderDtoToOrder(response, {
             fallbackCurrency: currency,
             fallbackGuestUuid: guestUuid,
             fallbackBranchId: branchId
           });
+          
+          // Save to IndexedDB for offline access
+          await this.indexedDB.saveOrder(createdOrder);
+          
+          // Update observables
+          await this.refreshOrders(guestUuid);
+          
+          return createdOrder;
         }
       } catch (error) {
-        console.warn('Failed to create order via API:', error);
+        console.error('Failed to create order via API:', error);
+        // Don't fall through to local creation - throw error so UI can handle it
+        throw new Error(`Failed to create order: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
 
+    // If API is not available or order creation failed, create local order as fallback
+    // This should only happen in offline scenarios or when API is disabled
     if (!createdOrder) {
-      createdOrder = {
-        id: this.generateLocalId('order'),
-        orderNumber: this.generateOrderNumber(),
-        guestUuid,
-        userId: this.auth.isAuthenticated() ? this.auth.getCurrentUser()?.id : undefined,
-        placeId,
-        branchId,
-        tableId: tableId || null,
-        items: [...cartItems],
-        status: OrderStatus.PENDING,
-        total,
-        currency,
-        paymentMethod,
-        notes,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        subtotal,
-        type: this.getOrderType(tableId),
-        source: this.getOrderSource(),
-        customer: this.buildCustomerPayload(guestUuid, tableId),
-        payment: {
-          method: this.mapPaymentMethod(paymentMethod),
-          amount: total,
-          status: this.auth.isAuthenticated() ? 'completed' : 'pending'
-        }
-      };
+      if (!this.hasApiSupport()) {
+        // Only create local order if API is not available
+        createdOrder = {
+          id: this.generateLocalId('order'),
+          orderNumber: this.generateOrderNumber(),
+          guestUuid,
+          userId: this.auth.isAuthenticated() ? this.auth.getCurrentUser()?.id : undefined,
+          placeId,
+          branchId,
+          tableId: tableId || null,
+          items: [...cartItems],
+          status: OrderStatus.PENDING,
+          total,
+          currency,
+          paymentMethod,
+          notes,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          subtotal,
+          type: this.getOrderType(tableId),
+          source: this.getOrderSource(),
+          customer: this.buildCustomerPayload(guestUuid, tableId),
+          payment: {
+            method: this.mapPaymentMethod(paymentMethod),
+            amount: total,
+            status: this.auth.isAuthenticated() ? 'completed' : 'pending'
+          }
+        };
+
+        await this.indexedDB.saveOrder(createdOrder);
+        await this.refreshOrders(guestUuid);
+      } else {
+        // If API is available but order creation failed, throw error
+        throw new Error('Order creation failed. Please try again.');
+      }
     }
 
-    await this.indexedDB.saveOrder(createdOrder);
-
-    this.inventoryDeduction.deductInventoryForOrder(createdOrder).subscribe({
-      next: (success) => {
-        const message = success
-          ? `Inventory deducted successfully for order ${createdOrder?.orderNumber}`
-          : `Inventory deduction had issues for order ${createdOrder?.orderNumber}`;
-        console[success ? 'log' : 'warn'](message);
-      },
-      error: (error) => {
-        console.error('Error deducting inventory:', error);
-        // Don't fail the order creation if inventory deduction fails
-        // The order is already saved, inventory can be updated manually
-      }
-    });
-
-    // Update observables
-    await this.refreshOrders(guestUuid);
+    // Inventory deduction is now handled by the backend upon order creation/status change.
+    // We no longer manually trigger it from the frontend to ensure data integrity and avoid duplicates.
 
     return createdOrder;
   }
@@ -301,6 +309,8 @@ export class OrderService {
 
   /**
    * Update order status
+   * According to swagger: PUT /orderDetail?id={id}
+   * Request body: UpdateOrderStatusRequest { id, status, lastUpdatedBy }
    */
   async updateOrderStatus(
     orderId: string,
@@ -312,38 +322,66 @@ export class OrderService {
 
     if (this.hasApiSupport()) {
       try {
+        // Build payload according to swagger spec
+        // Required fields: id, status, lastUpdatedBy
         const payload = {
           id: orderId,
           status: this.mapClientStatusToBackend(status),
           lastUpdatedBy: options?.lastUpdatedBy || this.auth.getCurrentUser()?.id || 'system'
         };
+        
+        // Endpoint: PUT /orderDetail?id={id}
         const response = await firstValueFrom(
           this.api.put<OrderApiModel>(`/orderDetail?id=${orderId}`, payload, includeAuth)
         );
+        
         if (response) {
           updatedOrder = this.mapOrderDtoToOrder(response);
+          
+          // Save to IndexedDB for offline access
           await this.indexedDB.saveOrder(updatedOrder);
+          
+          // Update observables
+          if (updatedOrder.guestUuid) {
+            await this.refreshOrders(updatedOrder.guestUuid);
+          } else {
+            const currentOrders = this.ordersSubject.value;
+            const index = currentOrders.findIndex(o => o.id === updatedOrder!.id);
+            if (index !== -1) {
+              const nextOrders = [...currentOrders];
+              nextOrders[index] = updatedOrder;
+              this.ordersSubject.next(nextOrders);
+            }
+          }
+          
+          return; // Success - return early
         }
       } catch (error) {
-        console.warn('Failed to update order status via API:', error);
+        console.error('Failed to update order status via API:', error);
+        // Don't fall through to local update - throw error so caller can handle it
+        throw new Error(`Failed to update order status: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
 
-    if (!updatedOrder) {
+    // If API is not available, update locally (offline scenario)
+    if (!this.hasApiSupport()) {
       await this.indexedDB.updateOrderStatus(orderId, status);
       updatedOrder = await this.indexedDB.getOrderById(orderId);
-    }
-
-    if (updatedOrder?.guestUuid) {
-      await this.refreshOrders(updatedOrder.guestUuid);
-    } else if (updatedOrder) {
-      const currentOrders = this.ordersSubject.value;
-      const index = currentOrders.findIndex(o => o.id === updatedOrder!.id);
-      if (index !== -1) {
-        const nextOrders = [...currentOrders];
-        nextOrders[index] = updatedOrder;
-        this.ordersSubject.next(nextOrders);
+      
+      if (updatedOrder?.guestUuid) {
+        await this.refreshOrders(updatedOrder.guestUuid);
+      } else if (updatedOrder) {
+        const currentOrders = this.ordersSubject.value;
+        const index = currentOrders.findIndex(o => o.id === updatedOrder!.id);
+        if (index !== -1) {
+          const nextOrders = [...currentOrders];
+          nextOrders[index] = updatedOrder;
+          this.ordersSubject.next(nextOrders);
+        }
       }
+    } else {
+      // API is available but update failed - throw error
+      throw new Error('Order status update failed. Please try again.');
     }
   }
 
@@ -392,7 +430,9 @@ export class OrderService {
 
     const paymentStatus = this.auth.isAuthenticated() ? 'completed' : 'pending';
 
-    return {
+    // Build command according to swagger spec
+    // Required fields: placeId, customer, items, type, payment, lastUpdatedBy
+    const command: CreateOrderCommand = {
       placeId,
       type,
       customer: this.buildCustomerPayload(guestUuid, tableId),
@@ -402,36 +442,89 @@ export class OrderService {
         amount: total,
         status: paymentStatus
       },
-      source,
-      tableId: tableId || undefined,
-      notes,
-      lastUpdatedBy: this.auth.getCurrentUser()?.id || guestUuid || 'guest',
-      metadata: {
-        branchId,
-        guestUuid,
-        currency,
-        subtotal,
-        total,
-        application: source === 'online' ? 'guest_menu' : 'pos'
-      }
+      lastUpdatedBy: this.auth.getCurrentUser()?.id || guestUuid || 'guest'
     };
+
+    // Optional fields
+    if (source) {
+      command.source = source;
+    }
+    if (tableId) {
+      command.tableId = tableId;
+    }
+    if (notes) {
+      command.notes = notes;
+    }
+
+    // Note: metadata is not in swagger spec but may be accepted by backend
+    // Keeping it for backward compatibility but it's not part of the official schema
+    command.metadata = {
+      branchId,
+      guestUuid,
+      currency,
+      subtotal,
+      total,
+      application: source === 'online' ? 'guest_menu' : 'pos'
+    };
+
+    return command;
   }
 
   private mapCartItemToPayload(item: CartItem): OrderItemPayload {
     const addonAdjust = item.addonUnitTotal ?? 0;
     const derivedBase = item.price - addonAdjust;
     const basePrice = item.item?.price ?? (derivedBase !== 0 ? derivedBase : item.price);
-    return {
+    
+    // Build payload according to swagger spec
+    // Required: itemId, itemName, itemPrice, quantity
+    const payload: OrderItemPayload = {
       itemId: item.item.id,
       itemName: item.item.name,
       itemPrice: basePrice,
-      quantity: item.quantity,
-      specialInstructions: item.notes,
-      selectedAddons: item.selectedAddons?.map(addon => ({ ...addon })) || []
+      quantity: item.quantity
     };
+
+    // Optional fields
+    if (item.notes) {
+      payload.specialInstructions = item.notes;
+    }
+    if (item.selectedAddons && item.selectedAddons.length > 0) {
+      // Ensure selectedAddons match CartAddonSelection schema
+      // Required: groupId, optionId, price, quantity
+      // groupName and optionName are required by CartAddonSelection interface
+      payload.selectedAddons = item.selectedAddons.map(addon => ({
+        groupId: addon.groupId,
+        optionId: addon.optionId,
+        price: addon.price,
+        quantity: addon.quantity,
+        groupName: addon.groupName || '',
+        optionName: addon.optionName || ''
+      }));
+    }
+
+    return payload;
   }
 
-  private mapOrderDtoToOrder(
+  private convertFirestoreTimestamp(timestamp: any): Date {
+    if (!timestamp) return new Date();
+    
+    if (typeof timestamp === 'string') {
+      return new Date(timestamp);
+    }
+    
+    if (timestamp && typeof timestamp === 'object') {
+      if ('_seconds' in timestamp) {
+        return new Date(timestamp._seconds * 1000 + (timestamp._nanoseconds || 0) / 1000000);
+      }
+      if ('seconds' in timestamp) {
+        return new Date(timestamp.seconds * 1000 + (timestamp.nanoseconds || 0) / 1000000);
+      }
+    }
+    
+    return new Date(timestamp);
+  }
+
+  mapOrderDtoToOrder(
     dto: OrderApiModel,
     fallback?: { fallbackCurrency?: string; fallbackGuestUuid?: string; fallbackBranchId?: string }
   ): Order {
@@ -441,12 +534,8 @@ export class OrderService {
     const backendStatus = dto.status || (metadata['status'] as BackendOrderStatus);
     const status = backendStatus ? this.mapBackendStatusToClient(backendStatus) : OrderStatus.PENDING;
     const tableId = dto.tableId ?? (metadata['tableId'] as string | null) ?? null;
-    const createdAt =
-      dto.createdAt ? new Date(dto.createdAt) :
-      (metadata['createdAt'] ? new Date(metadata['createdAt']) : new Date());
-    const updatedAt =
-      dto.updatedAt ? new Date(dto.updatedAt) :
-      (metadata['updatedAt'] ? new Date(metadata['updatedAt']) : new Date());
+    const createdAt = this.convertFirestoreTimestamp(dto.createdAt || metadata['createdAt']);
+    const updatedAt = this.convertFirestoreTimestamp(dto.updatedAt || metadata['updatedAt']);
 
     const items = Array.isArray(dto.items)
       ? dto.items.map((item, index) => this.mapOrderItemDtoToCartItem(item, index, orderNumber))
@@ -472,7 +561,7 @@ export class OrderService {
       notes: metadata['notes'] as string | undefined,
       createdAt,
       updatedAt,
-      estimatedReadyTime: dto.estimatedReadyTime ? new Date(dto.estimatedReadyTime) : undefined,
+      estimatedReadyTime: dto.estimatedReadyTime ? this.convertFirestoreTimestamp(dto.estimatedReadyTime) : undefined,
       type: dto.type,
       customer: dto.customer,
       payment: dto.payment,
@@ -565,7 +654,7 @@ export class OrderService {
       }
     };
 
-    appendParam('place_id', query.placeId);
+    appendParam('placeId', query.placeId);
     appendParam('status', query.status);
     appendParam('type', query.type);
     appendParam('customer_id', query.customerId);

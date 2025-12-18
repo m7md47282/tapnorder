@@ -19,7 +19,6 @@ export const routes: Routes = [
       {
         path: 'addons',
         canActivate: [roleGuard([
-          UserRole.SUPER_ADMIN,
           UserRole.RESTAURANT_MANAGER,
           UserRole.SHIFT_MANAGER,
           UserRole.INVENTORY_MANAGER,
@@ -52,6 +51,16 @@ export const routes: Routes = [
         ]
       },
       {
+        path: 'places/settings/:id',
+        canActivate: [roleGuard([
+          UserRole.RESTAURANT_MANAGER,
+          UserRole.STORE_MANAGER,
+          UserRole.SUPER_ADMIN
+        ])],
+        loadComponent: () =>
+          import('./pages/places/place-settings/place-settings.component').then(m => m.PlaceSettingsComponent)
+      },
+      {
         path: 'dashboard',
         canActivate: [roleGuard([
           UserRole.SUPER_ADMIN,
@@ -73,7 +82,6 @@ export const routes: Routes = [
       {
         path: 'pos',
         canActivate: [roleGuard([
-          UserRole.SUPER_ADMIN,
           UserRole.RESTAURANT_MANAGER,
           UserRole.SHIFT_MANAGER,
           UserRole.WAITER,
@@ -87,7 +95,6 @@ export const routes: Routes = [
       {
         path: 'products',
         canActivate: [roleGuard([
-          UserRole.SUPER_ADMIN,
           UserRole.RESTAURANT_MANAGER,
           UserRole.SHIFT_MANAGER,
           UserRole.WAITER,
@@ -101,7 +108,6 @@ export const routes: Routes = [
       {
         path: 'sales',
         canActivate: [roleGuard([
-          UserRole.SUPER_ADMIN,
           UserRole.RESTAURANT_MANAGER,
           UserRole.SHIFT_MANAGER,
           UserRole.WAITER,
@@ -115,7 +121,6 @@ export const routes: Routes = [
       {
         path: 'customers',
         canActivate: [roleGuard([
-          UserRole.SUPER_ADMIN,
           UserRole.RESTAURANT_MANAGER,
           UserRole.SHIFT_MANAGER,
           UserRole.WAITER,
@@ -129,7 +134,6 @@ export const routes: Routes = [
       {
         path: 'inventory',
         canActivate: [roleGuard([
-          UserRole.SUPER_ADMIN,
           UserRole.RESTAURANT_MANAGER,
           UserRole.INVENTORY_MANAGER,
           UserRole.STORE_MANAGER
@@ -152,7 +156,6 @@ export const routes: Routes = [
       {
         path: 'settings',
         canActivate: [roleGuard([
-          UserRole.SUPER_ADMIN,
           UserRole.RESTAURANT_MANAGER,
           UserRole.STORE_MANAGER
         ])],
@@ -162,7 +165,6 @@ export const routes: Routes = [
       {
         path: 'accounting',
         canActivate: [roleGuard([
-          UserRole.SUPER_ADMIN,
           UserRole.RESTAURANT_MANAGER,
           UserRole.ACCOUNTANT,
           UserRole.STORE_MANAGER
@@ -174,6 +176,7 @@ export const routes: Routes = [
         path: 'hr',
         canActivate: [roleGuard([
           UserRole.SUPER_ADMIN,
+          UserRole.ADMIN,
           UserRole.RESTAURANT_MANAGER,
           UserRole.STORE_MANAGER
         ])],
@@ -183,7 +186,6 @@ export const routes: Routes = [
       {
         path: 'kitchen',
         canActivate: [roleGuard([
-          UserRole.SUPER_ADMIN,
           UserRole.RESTAURANT_MANAGER,
           UserRole.SHIFT_MANAGER,
           UserRole.CHEF,
@@ -196,7 +198,6 @@ export const routes: Routes = [
       {
         path: 'tables',
         canActivate: [roleGuard([
-          UserRole.SUPER_ADMIN,
           UserRole.RESTAURANT_MANAGER,
           UserRole.SHIFT_MANAGER,
           UserRole.WAITER,

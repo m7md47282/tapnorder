@@ -1,11 +1,12 @@
-import { Component, OnInit, ViewChild, OnDestroy } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ViewChild, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormGroup, FormControl, Validators } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { MaterialModule } from '../../../material.module';
 import { Product } from '../../../models/product.model';
 import { Item } from '../../../models/item.model';
 import { ItemsService } from '../../../services/items.service';
+import { CategoriesService } from '../../../services/categories.service';
 import { ApiService } from '../../../services/api.service';
 import { NotificationService } from '../../../services/notification.service';
 import { LocalStorageService } from '../../../services/local-storage.service';
@@ -14,23 +15,27 @@ import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
 import { MatDialog } from '@angular/material/dialog';
-import { Subject, debounceTime, distinctUntilChanged, takeUntil, switchMap, of, Observable } from 'rxjs';
+import { Subject, debounceTime, distinctUntilChanged, takeUntil, switchMap, of, Observable, forkJoin } from 'rxjs';
 import { ProductFormDialogComponent, ProductFormData } from '../product-form-dialog/product-form-dialog.component';
 import { ProductImportDialogComponent } from '../product-import-dialog/product-import-dialog.component';
 import { ConfirmDialogComponent } from '../../../components/confirm-dialog/confirm-dialog.component';
 import { Attachment } from '../../../models/attachment.model';
+import { TenantContextService } from '../../../services/tenant-context.service';
+import { PlaceService } from '../../../services/place.service';
+import { PlaceBranch } from '../../../models/place.model';
 
 @Component({
   selector: 'app-products-list',
+  standalone: true,
   imports: [CommonModule, MaterialModule, FormsModule, ReactiveFormsModule],
   templateUrl: './products-list.component.html',
   styleUrls: ['./products-list.component.scss']
 })
-export class ProductsListComponent implements OnInit, OnDestroy {
+export class ProductsListComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
-  displayedColumns: string[] = ['image', 'name', 'sku', 'category', 'price', 'stock', 'status', 'actions'];
+  displayedColumns: string[] = ['image', 'name', 'sku', 'category', 'price', 'stock', 'branch', 'status', 'actions'];
   dataSource = new MatTableDataSource<Product>([]);
   
   searchControl = new FormControl('');
@@ -40,28 +45,73 @@ export class ProductsListComponent implements OnInit, OnDestroy {
   categories: string[] = ['all'];
   isLoading: boolean = false;
   menuId: string | null = null; // Menu ID for items API
+  placeId: string | null = null;
+  branchId: string | null = null;
+  private readonly BRANCH_STORAGE_KEY = 'branchId';
+  
+  // Category mapping: categoryId -> category name
+  private categoryMap: Map<string, string> = new Map();
+  
+  // Branch mapping: branchId -> branch name
+  private branchMap: Map<string, string> = new Map();
   
   private destroy$ = new Subject<void>();
 
   constructor(
     private api: ApiService,
     private itemsService: ItemsService,
+    private categoriesService: CategoriesService,
     private notification: NotificationService,
     private dialog: MatDialog,
     private route: ActivatedRoute,
     private localStorage: LocalStorageService,
-    private authService: AuthService
+    private authService: AuthService,
+    private tenantContext: TenantContextService,
+    private placeService: PlaceService
   ) {}
 
   ngOnInit(): void {
-    // Get menuId from route params or localStorage
+    this.placeId = this.tenantContext.getCurrentPlaceId();
+    this.tenantContext.currentPlaceId$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe((placeId) => {
+        if (this.placeId !== placeId) {
+          this.placeId = placeId;
+          this.loadCategories();
+          this.loadBranches();
+          this.loadProducts();
+        }
+      });
+
+    // Get menuId/branchId from route params or localStorage
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
+      let shouldReload = false;
+
       const newMenuId = params['menuId'] || this.localStorage.getItem<string>('menuId') || null;
       if (newMenuId !== this.menuId) {
         this.menuId = newMenuId;
         if (this.menuId) {
           this.localStorage.setItem('menuId', this.menuId);
         }
+        shouldReload = true;
+      }
+
+      const newBranchId = params['branchId'] || params['branch_id'] || null;
+      if (newBranchId) {
+        if (newBranchId !== this.branchId) {
+          this.branchId = newBranchId;
+          this.localStorage.setItem(this.BRANCH_STORAGE_KEY, newBranchId);
+          shouldReload = true;
+        }
+      } else if (!this.branchId) {
+        const storedBranch = this.localStorage.getItem<string>(this.BRANCH_STORAGE_KEY);
+        if (storedBranch && storedBranch !== this.branchId) {
+          this.branchId = storedBranch;
+          shouldReload = true;
+        }
+      }
+
+      if (shouldReload) {
         this.loadProducts();
       }
     });
@@ -70,7 +120,12 @@ export class ProductsListComponent implements OnInit, OnDestroy {
     if (!this.menuId) {
       this.menuId = this.localStorage.getItem<string>('menuId');
     }
+
+    if (!this.branchId) {
+      this.branchId = this.localStorage.getItem<string>(this.BRANCH_STORAGE_KEY);
+    }
     
+    this.loadBranches();
     this.loadProducts();
     this.setupFilters();
   }
@@ -108,7 +163,6 @@ export class ProductsListComponent implements OnInit, OnDestroy {
   }
 
   loadProducts(): void {
-
     this.isLoading = true;
 
     // Build query - menuId is optional
@@ -117,6 +171,14 @@ export class ProductsListComponent implements OnInit, OnDestroy {
     // Add menuId if available
     if (this.menuId) {
       query.menuId = this.menuId;
+    }
+
+    if (this.placeId) {
+      query.placeId = this.placeId;
+    }
+
+    if (this.branchId) {
+      query.branchId = this.branchId;
     }
     
     // Apply filters
@@ -136,28 +198,172 @@ export class ProductsListComponent implements OnInit, OnDestroy {
 
     console.log('query', JSON.stringify(query));
 
-    this.itemsService.getItems(query).subscribe({
-      next: (items) => {
-        // Convert Items to Products for display
+    // Load categories and items in parallel
+    const categories$ = this.placeId 
+      ? this.categoriesService.getCategories({
+          isActive: true,
+          placeId: this.placeId,
+          menuId: this.menuId || undefined
+        })
+      : of([]);
+    
+    const items$ = this.itemsService.getItems(query);
+
+    forkJoin({
+      categories: categories$,
+      items: items$
+    }).subscribe({
+      next: ({ categories, items }) => {
+        // Build category mapping
+        this.categoryMap.clear();
+        categories.forEach(cat => {
+          this.categoryMap.set(cat.id, cat.name);
+          // Also map by name for backward compatibility
+          if (cat.name) {
+            this.categoryMap.set(cat.name, cat.name);
+          }
+        });
+
+        // Convert Items to Products for display with category names
         this.dataSource.data = items.map(item => this.itemToProduct(item));
         this.updateCategories();
         this.setupTable();
+        // Ensure paginator is updated after data is set
+        if (this.paginator) {
+          this.dataSource.paginator = this.paginator;
+        }
         this.isLoading = false;
       },
       error: (error) => {
-        console.error('Error loading items:', error);
-        this.dataSource.data = [];
-        this.updateCategories();
-        this.setupTable();
-        this.isLoading = false;
-        this.notification.error('Failed to load items from the database. Please try again.');
+        console.error('Error loading data:', error);
+        // Fallback: try to load items without categories
+        this.itemsService.getItems(query).subscribe({
+          next: (items) => {
+            this.dataSource.data = items.map(item => this.itemToProduct(item));
+            this.updateCategories();
+            this.setupTable();
+            // Ensure paginator is updated after data is set
+            if (this.paginator) {
+              this.dataSource.paginator = this.paginator;
+            }
+            this.isLoading = false;
+          },
+          error: (err) => {
+            console.error('Error loading items:', err);
+            this.dataSource.data = [];
+            this.updateCategories();
+            this.setupTable();
+            // Ensure paginator is updated after data is set
+            if (this.paginator) {
+              this.dataSource.paginator = this.paginator;
+            }
+            this.isLoading = false;
+            this.notification.error('Failed to load items from the database. Please try again.');
+          }
+        });
       }
     });
   }
 
+  /**
+   * Load categories from API to map categoryId to category name
+   */
+  private loadCategories(): void {
+    if (!this.placeId) {
+      return;
+    }
+
+    const query: any = {
+      isActive: true,
+      placeId: this.placeId
+    };
+
+    if (this.menuId) {
+      query.menuId = this.menuId;
+    }
+
+    this.categoriesService.getCategories(query).subscribe({
+      next: (categories) => {
+        // Build category mapping
+        this.categoryMap.clear();
+        categories.forEach(cat => {
+          this.categoryMap.set(cat.id, cat.name);
+          // Also map by name for backward compatibility
+          if (cat.name) {
+            this.categoryMap.set(cat.name, cat.name);
+          }
+        });
+        
+        // Update category display in existing products
+        this.dataSource.data = this.dataSource.data.map(product => {
+          if (product.categoryId && this.categoryMap.has(product.categoryId)) {
+            product.category = this.categoryMap.get(product.categoryId)!;
+          } else if (!product.category && product.categoryId) {
+            // If we have categoryId but no name, try to use categoryId as fallback
+            product.category = product.categoryId;
+          }
+          return product;
+        });
+        this.updateCategories();
+      },
+      error: (error) => {
+        console.error('Error loading categories:', error);
+      }
+    });
+  }
+
+  /**
+   * Load branches from API to map branchId to branch name
+   */
+  private loadBranches(): void {
+    if (!this.placeId) {
+      return;
+    }
+
+    this.placeService.getBranches({ place_id: this.placeId }).subscribe({
+      next: (branches) => {
+        // Build branch mapping
+        this.branchMap.clear();
+        (branches || []).forEach(branch => {
+          if (branch.id && branch.name) {
+            this.branchMap.set(branch.id, branch.name);
+          }
+        });
+      },
+      error: (error) => {
+        console.error('Error loading branches:', error);
+      }
+    });
+  }
+
+  /**
+   * Get branch name by branchId
+   */
+  getBranchName(branchId: string | null | undefined): string {
+    if (!branchId) {
+      return '';
+    }
+    return this.branchMap.get(branchId) || branchId;
+  }
+
+  ngAfterViewInit(): void {
+    // Ensure paginator and sort are connected after view initialization
+    if (this.paginator) {
+      this.dataSource.paginator = this.paginator;
+    }
+    if (this.sort) {
+      this.dataSource.sort = this.sort;
+    }
+  }
+
   setupTable(): void {
-    this.dataSource.paginator = this.paginator;
-    this.dataSource.sort = this.sort;
+    // Reassign paginator and sort after data changes
+    if (this.paginator) {
+      this.dataSource.paginator = this.paginator;
+    }
+    if (this.sort) {
+      this.dataSource.sort = this.sort;
+    }
     this.dataSource.filterPredicate = this.customFilterPredicate;
   }
 
@@ -209,45 +415,24 @@ export class ProductsListComponent implements OnInit, OnDestroy {
   }
 
   openEditDialog(product: Product): void {
-    // Fetch full item to get recipe
-    this.itemsService.getItemById(product.id).subscribe({
-      next: (item: Item) => {
-        // Convert Item to Product with recipe
-        const productWithRecipe = this.itemToProduct(item);
-        
-        const dialogRef = this.dialog.open(ProductFormDialogComponent, {
-          width: '600px',
-          data: { product: productWithRecipe, menuId: this.menuId }
-        });
+    // Open dialog immediately with existing product data for better UX
+    const dialogRef = this.dialog.open(ProductFormDialogComponent, {
+      width: '600px',
+      data: { 
+        product: { ...product }, 
+        menuId: this.menuId,
+        loadFullData: true // Flag to indicate we need to load full item data
+      }
+    });
 
-        dialogRef.afterClosed().subscribe(result => {
-          if (result) {
-            this.updateProduct(product.id, result);
-          }
-        });
-      },
-      error: (error) => {
-        console.error('Error fetching item for edit:', error);
-        this.notification.error('Failed to load item details');
-        // Fallback to opening dialog without recipe
-        const dialogRef = this.dialog.open(ProductFormDialogComponent, {
-          width: '600px',
-          data: { product: { ...product }, menuId: this.menuId }
-        });
-
-        dialogRef.afterClosed().subscribe(result => {
-          if (result) {
-            this.updateProduct(product.id, result);
-          }
-        });
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.updateProduct(product.id, result);
       }
     });
   }
 
   createProduct(productData: ProductFormData): void {
-    // Note: menuId is optional for fetching, but may be required for creating items
-    // depending on backend requirements
-
     this.isLoading = true;
 
     // If image file is provided, upload it first
@@ -364,10 +549,35 @@ export class ProductsListComponent implements OnInit, OnDestroy {
 
   toggleStatus(product: Product): void {
     const newStatus = !product.isActive;
-    this.updateProduct(product.id, { isActive: newStatus });
+    // Use update logic but just with the isActive flag
+    // We need to use UpdateItemCommand structure
+    const updateCommand = {
+      id: product.id,
+      isAvailable: newStatus
+    };
+    
+    this.itemsService.updateItem(updateCommand).subscribe({
+      next: (item: Item) => {
+        const updatedProduct = this.itemToProduct(item);
+        const index = this.dataSource.data.findIndex(p => p.id === product.id);
+        if (index !== -1) {
+          this.dataSource.data[index] = updatedProduct;
+          this.dataSource.data = [...this.dataSource.data];
+          this.notification.success(`Product ${newStatus ? 'activated' : 'deactivated'}`);
+        }
+      },
+      error: (error) => {
+        console.error('Error updating status:', error);
+        this.notification.error('Failed to update status');
+        // Revert toggle in UI if possible or reload
+        this.loadProducts();
+      }
+    });
   }
 
   getStockStatus(stock: number): { label: string; color: string } {
+    // This method might be less relevant now that stock is managed in backend/inventory
+    // but we still use it for availableUnits if provided
     if (stock === 0) {
       return { label: 'Out of Stock', color: 'warn' };
     } else if (stock < 10) {
@@ -378,7 +588,6 @@ export class ProductsListComponent implements OnInit, OnDestroy {
   }
 
   exportProducts(): void {
-    // Implement export functionality (CSV, Excel, etc.)
     this.notification.info('Export functionality coming soon');
   }
 
@@ -391,7 +600,6 @@ export class ProductsListComponent implements OnInit, OnDestroy {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        // Reload products after successful import
         this.loadProducts();
       }
     });
@@ -401,6 +609,15 @@ export class ProductsListComponent implements OnInit, OnDestroy {
    * Convert Item model to Product model for display compatibility
    */
   private itemToProduct(item: Item): Product & { recipe?: any[] } {
+    // Get category name from map if categoryId exists, otherwise use category name
+    let categoryName = item.category;
+    if (item.categoryId && this.categoryMap.has(item.categoryId)) {
+      categoryName = this.categoryMap.get(item.categoryId)!;
+    } else if (!categoryName && item.categoryId) {
+      // Fallback: use categoryId if no name found
+      categoryName = item.categoryId;
+    }
+
     const product: Product & { recipe?: any[] } = {
       id: item.id,
       name: item.name,
@@ -408,10 +625,13 @@ export class ProductsListComponent implements OnInit, OnDestroy {
       sku: item.id.substring(0, 8).toUpperCase(), // Generate SKU from ID
       barcode: undefined,
       price: item.price,
-      cost: undefined,
-      stock: item.isAvailable ? 999 : 0, // Map isAvailable to stock
-      category: item.category, // Keep for display purposes
+      cost: item.calculatedCost, // Use calculated cost from backend
+      stock: item.availableUnits !== undefined ? item.availableUnits : (item.isAvailable ? 999 : 0), // Use backend available units or fallback
+      category: categoryName, // Use mapped category name
       categoryId: item.categoryId || item.category, // Use categoryId if available, fallback to category name
+      placeId: item.placeId,
+      branchId: item.branchId ?? null,
+      menuId: item.menuId,
       image: item.imageUrl,
       isActive: item.isAvailable,
       taxRate: 0.1, // Default tax rate
@@ -431,7 +651,7 @@ export class ProductsListComponent implements OnInit, OnDestroy {
   /**
    * Convert Product model to CreateItemCommand
    */
-  private productToCreateItemCommand(product: Product & { recipe?: any[] }): any {
+  private productToCreateItemCommand(product: Product & { recipe?: any[]; placeId?: string; branchId?: string | null }): any {
     const command: any = {
       name: product.name,
       description: product.description,
@@ -442,23 +662,30 @@ export class ProductsListComponent implements OnInit, OnDestroy {
       ingredients: product.description ? [product.description] : undefined
     };
     
-    // Use categoryId if available, otherwise fall back to category name
     if (product.categoryId) {
       command.categoryId = product.categoryId;
     } else if (product.category) {
-      // Fallback: if only category name is provided, use it (for backward compatibility)
       command.category = product.category;
     }
     
-    // Add recipe if provided (ingredients with quantities and units)
     if (product.recipe && product.recipe.length > 0) {
       command.recipe = product.recipe;
     }
     
-    // Add menuId if available (optional)
     if (this.menuId) {
       command.menuId = this.menuId;
     }
+
+    // placeId is required - items are linked to place
+    const effectivePlaceId = product.placeId || this.placeId;
+    if (!effectivePlaceId) {
+      throw new Error('Place ID is required to create item');
+    }
+    command.placeId = effectivePlaceId;
+
+    // branchId: if provided, item is branch-specific; if null/undefined, shared across all branches
+    const effectiveBranchId = product.branchId !== undefined ? product.branchId : (this.branchId ?? null);
+    command.branchId = effectiveBranchId ?? null;
     
     return command;
   }
@@ -466,7 +693,7 @@ export class ProductsListComponent implements OnInit, OnDestroy {
   /**
    * Convert Product model to UpdateItemCommand
    */
-  private productToUpdateItemCommand(id: string, product: Product & { recipe?: any[] }): any {
+  private productToUpdateItemCommand(id: string, product: Product & { recipe?: any[]; placeId?: string; branchId?: string | null }): any {
     const command: any = {
       id: id,
       name: product.name,
@@ -476,17 +703,29 @@ export class ProductsListComponent implements OnInit, OnDestroy {
       isAvailable: product.isActive !== false
     };
     
-    // Use categoryId if available, otherwise fall back to category name
     if (product.categoryId) {
       command.categoryId = product.categoryId;
     } else if (product.category) {
-      // Fallback: if only category name is provided, use it (for backward compatibility)
       command.category = product.category;
     }
     
-    // Add recipe if provided (ingredients with quantities and units)
     if (product.recipe && product.recipe.length > 0) {
       command.recipe = product.recipe;
+    }
+
+    // placeId should be preserved from existing item or use current placeId
+    const effectivePlaceId = product.placeId || this.placeId;
+    if (effectivePlaceId) {
+      command.placeId = effectivePlaceId;
+    }
+
+    // branchId: if provided, item is branch-specific; if null, shared across all branches
+    if (product.branchId !== undefined) {
+      command.branchId = product.branchId;
+    } else if (this.branchId !== undefined) {
+      command.branchId = this.branchId;
+    } else {
+      command.branchId = null; // Explicitly set to null if not provided (shared)
     }
     
     return command;

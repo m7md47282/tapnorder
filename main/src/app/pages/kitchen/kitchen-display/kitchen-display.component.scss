@@ -125,7 +125,7 @@ $color-gray-dark: #1d1d1f;
 // Order Card - Large, High Contrast
 .order-card {
   background: $color-white;
-  border-radius: 12px;
+  border-radius: 8px;
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border: 3px solid transparent;
@@ -191,7 +191,7 @@ $color-gray-dark: #1d1d1f;
 }
 
 .order-number {
-  font-size: 42px;
+  font-size: 21px;
   font-weight: 800;
   color: $color-gray-dark;
   line-height: 1;
@@ -205,6 +205,7 @@ $color-gray-dark: #1d1d1f;
   font-size: 14px;
   color: $color-gray-medium;
   font-weight: 600;
+  align-items: center;
 
   .table-number,
   .server-name,
@@ -341,11 +342,10 @@ $color-gray-dark: #1d1d1f;
 }
 
 .order-item {
-  padding: 20px;
+  padding: 10px;
   margin-bottom: 16px;
   background: $color-gray-light;
-  border-radius: 12px;
-  border-left: 4px solid $color-blue;
+  border-radius: 5px;
   transition: all 0.2s ease;
 
   &.item-completed {
@@ -512,6 +512,15 @@ $color-gray-dark: #1d1d1f;
   }
 }
 
+.tab-filters{
+  margin: 30px 0;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.kitchen-tabs-container{
+  margin-bottom: 30px;
+}
 // Empty State
 .empty-state {
   display: flex;
@@ -520,9 +529,6 @@ $color-gray-dark: #1d1d1f;
   justify-content: center;
   padding: 80px 40px;
   text-align: center;
-  background: $color-white;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
   mat-icon {
     font-size: 64px;
@@ -565,7 +571,7 @@ $color-gray-dark: #1d1d1f;
     }
 
   .order-number {
-    font-size: 36px;
+    font-size: 18px;
     }
 
   .action-btn {

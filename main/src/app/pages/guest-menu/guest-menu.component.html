@@ -28,7 +28,13 @@
     <!-- Restaurant Info Card -->
     <div class="restaurant-info-card">
       <div class="restaurant-logo">
-        <img src="/assets/images/logos/tc-logo.png" alt="Restaurant Logo" class="logo-image" />
+        @if (placeLogo) {
+          <img [src]="placeLogo" [alt]="restaurantName + ' Logo'" class="logo-image" />
+        } @else {
+          <div class="logo-placeholder">
+            <div class="logo-text">{{ restaurantName.substring(0, 2).toUpperCase() }}</div>
+          </div>
+        }
       </div>
       
       <!-- <h1 class="restaurant-name">{{ restaurantName }}</h1>

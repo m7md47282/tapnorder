@@ -8,6 +8,10 @@ export class LocalStorageService {
   private readonly REFRESH_TOKEN_KEY = 'pos_refresh_token';
   private readonly USER_KEY = 'pos_user';
   private readonly REMEMBER_ME_KEY = 'pos_remember_me';
+  private readonly CURRENT_PLACE_ID_KEY = 'pos_current_place_id';
+  private readonly ACCESSIBLE_PLACE_IDS_KEY = 'pos_accessible_place_ids';
+  private readonly ALLOW_OVERRIDE_KEY = 'pos_allow_override';
+  private readonly CURRENT_PLACE_KEY = 'pos_current_place';
 
   constructor() {
     // Check if localStorage is available
@@ -129,6 +133,71 @@ export class LocalStorageService {
     this.removeToken();
     this.removeRefreshToken();
     this.removeUser();
+    this.clearTenantData();
+  }
+
+  // Tenant/Tenant management methods
+  setCurrentPlaceId(placeId: string | null): void {
+    if (placeId === null) {
+      this.removeItem(this.CURRENT_PLACE_ID_KEY);
+    } else {
+      this.setItem(this.CURRENT_PLACE_ID_KEY, placeId);
+    }
+  }
+
+  getCurrentPlaceId(): string | null {
+    return this.getItem<string>(this.CURRENT_PLACE_ID_KEY);
+  }
+
+  removeCurrentPlaceId(): void {
+    this.removeItem(this.CURRENT_PLACE_ID_KEY);
+  }
+
+  setAccessiblePlaceIds(placeIds: string[]): void {
+    this.setItem(this.ACCESSIBLE_PLACE_IDS_KEY, placeIds);
+  }
+
+  getAccessiblePlaceIds(): string[] {
+    return this.getItem<string[]>(this.ACCESSIBLE_PLACE_IDS_KEY) || [];
+  }
+
+  removeAccessiblePlaceIds(): void {
+    this.removeItem(this.ACCESSIBLE_PLACE_IDS_KEY);
+  }
+
+  setAllowOverride(allow: boolean): void {
+    this.setItem(this.ALLOW_OVERRIDE_KEY, allow);
+  }
+
+  getAllowOverride(): boolean {
+    return this.getItem<boolean>(this.ALLOW_OVERRIDE_KEY) ?? false;
+  }
+
+  removeAllowOverride(): void {
+    this.removeItem(this.ALLOW_OVERRIDE_KEY);
+  }
+
+  setCurrentPlace(place: any): void {
+    if (place === null) {
+      this.removeItem(this.CURRENT_PLACE_KEY);
+    } else {
+      this.setItem(this.CURRENT_PLACE_KEY, place);
+    }
+  }
+
+  getCurrentPlace<T>(): T | null {
+    return this.getItem<T>(this.CURRENT_PLACE_KEY);
+  }
+
+  removeCurrentPlace(): void {
+    this.removeItem(this.CURRENT_PLACE_KEY);
+  }
+
+  clearTenantData(): void {
+    this.removeCurrentPlaceId();
+    this.removeAccessiblePlaceIds();
+    this.removeAllowOverride();
+    this.removeCurrentPlace();
   }
 }
 

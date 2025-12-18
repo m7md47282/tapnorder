@@ -1,42 +1,107 @@
 <div class="kitchen-display-container" [class.fullscreen]="isFullscreen">
   <!-- Minimal Header -->
-  <div class="kitchen-header" *ngIf="!isFullscreen">
-      <h1>Kitchen Board</h1>
+  @if (!isFullscreen) {
+  <div class="kitchen-header">
+    <h1>Kitchen Board</h1>
     <div class="header-controls">
-      <!-- Status Filter -->
-      <mat-form-field appearance="outline" class="filter-field">
-        <mat-label>Status</mat-label>
-        <mat-select [formControl]="statusFilter">
-          <mat-option value="all">Active (New, Cooking, Ready)</mat-option>
-          <mat-option [value]="KitchenOrderStatus.NEW">New</mat-option>
-          <mat-option [value]="KitchenOrderStatus.IN_PROGRESS">Cooking</mat-option>
-          <mat-option [value]="KitchenOrderStatus.READY">Ready</mat-option>
-          <mat-option [value]="KitchenOrderStatus.COMPLETED">Completed</mat-option>
-        </mat-select>
-      </mat-form-field>
-
       <button mat-icon-button (click)="toggleFullscreen()" matTooltip="Fullscreen">
         <mat-icon>fullscreen</mat-icon>
       </button>
-      <button mat-icon-button (click)="loadOrders()" matTooltip="Refresh">
+      <button mat-icon-button (click)="selectedTabIndex === 0 ? loadOrders() : refreshHistory()" 
+              matTooltip="Refresh">
         <mat-icon>refresh</mat-icon>
       </button>
     </div>
   </div>
+  }
+
+  <!-- Tab Navigation -->
+  @if (!isFullscreen) {
+  <div class="kitchen-tabs-container">
+    <mat-tab-group [(selectedIndex)]="selectedTabIndex" class="kitchen-tabs" (selectedTabChange)="onTabChange($event)">
+      <mat-tab label="Live Board"></mat-tab>
+      <mat-tab label="Order History"></mat-tab>
+    </mat-tab-group>
+  </div>
+  }
+
+  <!-- Filters Section -->
+  @if (!isFullscreen) {
+  <div class="filters-section">
+    <!-- History Filters -->
+    @if (selectedTabIndex === 1) {
+    <div class="tab-filters history-filters">
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Status</mat-label>
+        <mat-select [formControl]="historyStatusFilter">
+          <mat-option value="all">All Statuses</mat-option>
+          <mat-option [value]="KitchenOrderStatus.NEW">New</mat-option>
+          <mat-option [value]="KitchenOrderStatus.IN_PROGRESS">Cooking</mat-option>
+          <mat-option [value]="KitchenOrderStatus.READY">Ready</mat-option>
+          <mat-option [value]="KitchenOrderStatus.COMPLETED">Completed</mat-option>
+          <mat-option [value]="KitchenOrderStatus.CANCELLED">Cancelled</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Order Type</mat-label>
+        <mat-select [formControl]="historyTypeFilter">
+          <mat-option value="all">All Types</mat-option>
+          <mat-option value="dine_in">Dine In</mat-option>
+          <mat-option value="takeout">Takeout</mat-option>
+          <mat-option value="delivery">Delivery</mat-option>
+          <mat-option value="pickup">Pickup</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>From Date</mat-label>
+        <input matInput [matDatepicker]="fromPicker" [formControl]="historyDateFrom">
+        <mat-datepicker-toggle matSuffix [for]="fromPicker"></mat-datepicker-toggle>
+        <mat-datepicker #fromPicker></mat-datepicker>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>To Date</mat-label>
+        <input matInput [matDatepicker]="toPicker" [formControl]="historyDateTo">
+        <mat-datepicker-toggle matSuffix [for]="toPicker"></mat-datepicker-toggle>
+        <mat-datepicker #toPicker></mat-datepicker>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Search</mat-label>
+        <input matInput [formControl]="historySearchFilter" placeholder="Order #, Customer, Table">
+      </mat-form-field>
+
+      <button mat-raised-button color="primary" (click)="refreshHistory()" [disabled]="isLoadingHistory">
+        <mat-icon>refresh</mat-icon>
+        Refresh
+      </button>
+    </div>
+    }
+  </div>
+  }
 
   <!-- Fullscreen Header -->
-  <div class="fullscreen-header" *ngIf="isFullscreen">
+  @if (isFullscreen) {
+  <div class="fullscreen-header">
     <button mat-icon-button (click)="toggleFullscreen()" matTooltip="Exit Fullscreen">
       <mat-icon>fullscreen_exit</mat-icon>
     </button>
-    <button mat-icon-button (click)="loadOrders()" matTooltip="Refresh">
+    <button mat-icon-button (click)="selectedTabIndex === 0 ? loadOrders() : refreshHistory()" 
+            matTooltip="Refresh">
       <mat-icon>refresh</mat-icon>
     </button>
   </div>
+  }
 
-  <!-- Orders Grid - Optimized for Distance Viewing -->
-    <div class="orders-grid" *ngIf="!isLoading && filteredOrders.length > 0">
-    <div *ngFor="let order of filteredOrders" 
+  <!-- Live Board Orders Grid -->
+  @if (selectedTabIndex === 0) {
+  <div>
+    @if (!isLoading && filteredOrders.length > 0) {
+    <div class="orders-grid">
+    @for (order of filteredOrders; track order.id) {
+    <div 
                 class="order-card" 
          [class.status-new]="order.status === KitchenOrderStatus.NEW"
          [class.status-progress]="order.status === KitchenOrderStatus.IN_PROGRESS"
@@ -50,9 +115,15 @@
         <div class="order-number-section">
           <div class="order-number">{{ order.orderNumber }}</div>
           <div class="order-meta">
-            <span *ngIf="order.tableNumber" class="table-number">Table {{ order.tableNumber }}</span>
-            <span *ngIf="order.serverName" class="server-name">{{ order.serverName }}</span>
-            <span *ngIf="order.orderType && !order.tableNumber" class="order-type">{{ getOrderTypeLabel(order.orderType) }}</span>
+            @if (order.tableNumber) {
+            <span class="table-number">Table {{ order.tableNumber }}</span>
+            }
+            @if (order.serverName) {
+            <span class="server-name">{{ order.serverName }}</span>
+            }
+            @if (order.orderType && !order.tableNumber) {
+            <span class="order-type">{{ getOrderTypeLabel(order.orderType) }}</span>
+            }
           </div>
         </div>
         
@@ -61,13 +132,19 @@
           <div class="timer-compact" 
                [class.overdue]="isOrderOverdue(order.id) && order.status !== KitchenOrderStatus.COMPLETED">
             <div class="timer-value-compact">
-                      <span *ngIf="order.status === KitchenOrderStatus.COMPLETED">00:00</span>
-                      <span *ngIf="order.status !== KitchenOrderStatus.COMPLETED && !isOrderOverdue(order.id)">
+                      @if (order.status === KitchenOrderStatus.COMPLETED) {
+                      <span>00:00</span>
+                      }
+                      @if (order.status !== KitchenOrderStatus.COMPLETED && !isOrderOverdue(order.id)) {
+                      <span>
                         -{{ getTimerCountdown(order.id) }}
                       </span>
-                      <span *ngIf="order.status !== KitchenOrderStatus.COMPLETED && isOrderOverdue(order.id)">
+                      }
+                      @if (order.status !== KitchenOrderStatus.COMPLETED && isOrderOverdue(order.id)) {
+                      <span>
                         +{{ getElapsedTimeFormatted(order.id) }}
                       </span>
+                      }
                     </div>
                     </div>
           
@@ -82,45 +159,60 @@
 
       <!-- Action Buttons - Large Touch Targets -->
       <div class="action-buttons">
-            <button *ngIf="order.status === KitchenOrderStatus.NEW" 
+            @if (order.status === KitchenOrderStatus.NEW) {
+            <button 
                 class="action-btn btn-start"
                     (click)="updateOrderStatus(order, KitchenOrderStatus.IN_PROGRESS)">
               <mat-icon>play_arrow</mat-icon>
           START
             </button>
-            <button *ngIf="order.status === KitchenOrderStatus.IN_PROGRESS" 
+            }
+            @if (order.status === KitchenOrderStatus.IN_PROGRESS) {
+            <button 
                 class="action-btn btn-ready"
                     (click)="updateOrderStatus(order, KitchenOrderStatus.READY)">
               <mat-icon>check_circle</mat-icon>
           READY
             </button>
-            <button *ngIf="order.status === KitchenOrderStatus.READY" 
+            }
+            @if (order.status === KitchenOrderStatus.READY) {
+            <button 
                 class="action-btn btn-complete"
                     (click)="updateOrderStatus(order, KitchenOrderStatus.COMPLETED)">
               <mat-icon>done_all</mat-icon>
           COMPLETE
             </button>
+            }
           </div>
 
       <!-- Priority/Urgent Indicators -->
-      <div class="priority-indicators" *ngIf="order.priority === 'URGENT' || order.priority === 'RUSH' || isOrderOverdue(order.id)">
-        <div class="priority-badge urgent" *ngIf="order.priority === 'URGENT' || order.priority === 'RUSH'">
+      @if (order.priority === 'URGENT' || order.priority === 'RUSH' || isOrderOverdue(order.id)) {
+      <div class="priority-indicators">
+        @if (order.priority === 'URGENT' || order.priority === 'RUSH') {
+        <div class="priority-badge urgent">
           {{ order.priority }}
         </div>
-        <div class="priority-badge overdue" *ngIf="isOrderOverdue(order.id)">
+        }
+        @if (isOrderOverdue(order.id)) {
+        <div class="priority-badge overdue">
           OVERDUE
         </div>
+        }
       </div>
+      }
 
       <!-- Special Instructions - Large and Visible -->
-      <div class="special-instructions" *ngIf="order.specialInstructions">
+      @if (order.specialInstructions) {
+      <div class="special-instructions">
             <mat-icon>info</mat-icon>
             <span>{{ order.specialInstructions }}</span>
           </div>
+      }
 
       <!-- Order Items - Simplified List -->
       <div class="order-items">
-        <div *ngFor="let item of order.items" 
+        @for (item of order.items; track item.id) {
+        <div 
              class="order-item"
              [class.item-completed]="item.status === KitchenOrderStatus.COMPLETED || item.status === KitchenOrderStatus.READY">
           <div class="item-header">
@@ -128,37 +220,156 @@
               <span class="item-quantity">x{{ item.quantity }}</span>
               <span class="item-title">{{ item.productName }}</span>
             </div>
-            <div class="item-station" *ngIf="item.station">{{ item.station }}</div>
+            @if (item.station) {
+            <div class="item-station">{{ item.station }}</div>
+            }
           </div>
 
           <!-- Modifiers and Special Instructions -->
-          <div class="item-details" *ngIf="item.modifiers?.length || item.specialInstructions">
-            <div *ngIf="item.modifiers?.length" class="modifiers">
-              <span *ngFor="let modifier of item.modifiers" class="modifier">{{ modifier }}</span>
+          @if (item.modifiers?.length || item.specialInstructions) {
+          <div class="item-details">
+            @if (item.modifiers?.length) {
+            <div class="modifiers">
+              @for (modifier of item.modifiers; track modifier) {
+              <span class="modifier">{{ modifier }}</span>
+              }
                 </div>
-                <div *ngIf="item.specialInstructions" class="item-instructions">
+            }
+                @if (item.specialInstructions) {
+                <div class="item-instructions">
                   {{ item.specialInstructions }}
             </div>
+            }
           </div>
+          }
 
           <!-- Allergens Warning -->
-          <div class="allergen-warning" *ngIf="item.allergens && item.allergens.length > 0 && getAllergenDisplay(item)">
+          @if (item.allergens && item.allergens.length > 0 && getAllergenDisplay(item)) {
+          <div class="allergen-warning">
             <mat-icon>warning</mat-icon>
             <span>{{ getAllergenDisplay(item) }}</span>
           </div>
+          }
         </div>
+        }
       </div>
     </div>
-  </div>
+    }
+    </div>
+    }
 
-  <!-- Empty State -->
-  <div *ngIf="!isLoading && filteredOrders.length === 0" class="empty-state">
-    <mat-icon>restaurant_menu</mat-icon>
-    <h2>No Orders</h2>
-  </div>
+    <!-- Empty State for Live Board -->
+    @if (!isLoading && filteredOrders.length === 0) {
+    <div class="empty-state">
+      <mat-icon>restaurant_menu</mat-icon>
+      <h2>No Active Orders</h2>
+    </div>
+    }
 
-  <!-- Loading State -->
-  <div *ngIf="isLoading" class="loading-state">
-    <mat-spinner diameter="80"></mat-spinner>
+    <!-- Loading State for Live Board -->
+    @if (isLoading) {
+    <div class="loading-state">
+      <mat-spinner diameter="80"></mat-spinner>
+    </div>
+    }
   </div>
+  }
+
+  <!-- Order History Grid -->
+  @if (selectedTabIndex === 1) {
+  <div>
+    @if (!isLoadingHistory && filteredHistoryOrders.length > 0) {
+    <div class="orders-grid">
+      @for (order of filteredHistoryOrders; track order.id) {
+      <div 
+           class="order-card history-order-card"
+           [class.status-new]="order.status === KitchenOrderStatus.NEW"
+           [class.status-progress]="order.status === KitchenOrderStatus.IN_PROGRESS"
+           [class.status-ready]="order.status === KitchenOrderStatus.READY"
+           [class.status-completed]="order.status === KitchenOrderStatus.COMPLETED"
+           [class.status-cancelled]="order.status === KitchenOrderStatus.CANCELLED">
+        
+        <!-- Order Header -->
+        <div class="order-header">
+          <div class="order-number-section">
+            <div class="order-number">{{ order.orderNumber }}</div>
+            <div class="order-meta">
+              @if (order.tableNumber) {
+              <span class="table-number">Table {{ order.tableNumber }}</span>
+              }
+              @if (order.serverName) {
+              <span class="server-name">{{ order.serverName }}</span>
+              }
+              @if (order.orderType && !order.tableNumber) {
+              <span class="order-type">{{ getOrderTypeLabel(order.orderType) }}</span>
+              }
+              <span class="order-date">{{ getElapsedTime(order.createdAt) }} ago</span>
+            </div>
+          </div>
+          
+          <div class="header-right">
+            <!-- Status Badge -->
+            <div class="status-badge" [class]="'status-' + order.status.toLowerCase().replace('_', '-')">
+              {{ order.status === KitchenOrderStatus.NEW ? 'NEW' : 
+                 order.status === KitchenOrderStatus.IN_PROGRESS ? 'COOKING' : 
+                 order.status === KitchenOrderStatus.READY ? 'READY' : 
+                 order.status === KitchenOrderStatus.COMPLETED ? 'COMPLETED' : 'CANCELLED' }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Order Items -->
+        <div class="order-items">
+          @for (item of order.items; track item.id) {
+          <div 
+               class="order-item"
+               [class.item-completed]="item.status === KitchenOrderStatus.COMPLETED || item.status === KitchenOrderStatus.READY">
+            <div class="item-header">
+              <div class="item-name">
+                <span class="item-quantity">x{{ item.quantity }}</span>
+                <span class="item-title">{{ item.productName }}</span>
+              </div>
+            </div>
+
+            @if (item.modifiers?.length || item.specialInstructions) {
+            <div class="item-details">
+              @if (item.modifiers?.length) {
+              <div class="modifiers">
+                @for (modifier of item.modifiers; track modifier) {
+                <span class="modifier">{{ modifier }}</span>
+                }
+              </div>
+              }
+              @if (item.specialInstructions) {
+              <div class="item-instructions">
+                {{ item.specialInstructions }}
+              </div>
+              }
+            </div>
+            }
+          </div>
+          }
+        </div>
+      </div>
+    }
+    </div>
+    }
+
+    <!-- Empty State for History -->
+    @if (!isLoadingHistory && filteredHistoryOrders.length === 0) {
+    <div class="empty-state">
+      <mat-icon>history</mat-icon>
+      <h2>No Orders Found</h2>
+      <p>Try adjusting your filters</p>
+    </div>
+    }
+
+    <!-- Loading State for History -->
+    @if (isLoadingHistory) {
+    <div class="loading-state">
+      <mat-spinner diameter="80"></mat-spinner>
+    </div>
+    }
+  </div>
+  }
 </div>

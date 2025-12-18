@@ -1,0 +1,217 @@
+<div class="place-settings">
+  <div class="page-header">
+    <div>
+      <button mat-icon-button (click)="onCancel()" class="back-button">
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <div>
+        <h1>Place Settings</h1>
+        <p>Edit place information, logo, currency, and tenant details.</p>
+      </div>
+    </div>
+  </div>
+
+  @if (isLoading()) {
+    <mat-card>
+      <mat-card-content>
+        <div class="loading-container">
+          <mat-progress-spinner mode="indeterminate"></mat-progress-spinner>
+          <p>Loading place information...</p>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  } @else if (place()) {
+    <div class="forms-grid">
+      <!-- Place Information Card -->
+      <mat-card class="form-card">
+        <mat-card-header>
+          <mat-card-title>Place Information</mat-card-title>
+          <mat-card-subtitle>Update place name, description, and logo</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <form [formGroup]="placeForm">
+            <!-- Logo Upload Section -->
+            <div class="logo-section">
+              <mat-label>Place Logo</mat-label>
+              <div class="logo-upload-section">
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  (change)="onLogoSelected($event)"
+                  #logoInput
+                  style="display: none;"
+                />
+                @if (logoPreview) {
+                  <div class="logo-preview-container">
+                    <div class="logo-preview">
+                      <img [src]="logoPreview" alt="Place logo">
+                      <div class="logo-overlay">
+                        <button 
+                          mat-icon-button 
+                          type="button" 
+                          (click)="logoInput.click()" 
+                          class="change-logo-btn" 
+                          [disabled]="isUploadingLogo()"
+                          matTooltip="Change logo"
+                        >
+                          <mat-icon>edit</mat-icon>
+                        </button>
+                        <button 
+                          mat-icon-button 
+                          type="button" 
+                          (click)="removeLogo()" 
+                          class="remove-logo-btn" 
+                          [disabled]="isUploadingLogo()"
+                          matTooltip="Remove logo"
+                        >
+                          <mat-icon>delete</mat-icon>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                } @else {
+                  <div 
+                    class="logo-upload-zone"
+                    (click)="logoInput.click()"
+                    [class.uploading]="isUploadingLogo()"
+                  >
+                    <div class="upload-content">
+                      <div class="upload-icon-wrapper">
+                        <mat-icon>image</mat-icon>
+                      </div>
+                      <div class="upload-text">
+                        <p class="upload-title">Click to upload logo</p>
+                        <p class="upload-subtitle">Supports: JPG, PNG, GIF (Max 5MB)</p>
+                      </div>
+                    </div>
+                    @if (isUploadingLogo()) {
+                      <div class="upload-progress">
+                        <mat-progress-spinner mode="indeterminate" diameter="40"></mat-progress-spinner>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Place Name -->
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Place Name</mat-label>
+              <input matInput formControlName="name" placeholder="e.g., Modern Bistro" />
+              <mat-error *ngIf="placeForm.get('name')?.hasError('required')">Name is required</mat-error>
+              <mat-error *ngIf="placeForm.get('name')?.hasError('minlength')">Name must be at least 3 characters</mat-error>
+            </mat-form-field>
+
+            <!-- Description -->
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Description</mat-label>
+              <textarea matInput formControlName="description" rows="3" placeholder="Brief description of the place"></textarea>
+            </mat-form-field>
+
+            <!-- Settings Section -->
+            <div formGroupName="settings" class="section">
+              <h3>Settings</h3>
+              <div class="two-column">
+                <mat-form-field appearance="outline">
+                  <mat-label>Currency</mat-label>
+                  <mat-select formControlName="currency">
+                    <mat-option *ngFor="let currency of currencyOptions" [value]="currency">{{ currency }}</mat-option>
+                  </mat-select>
+                  <mat-error *ngIf="placeForm.get('settings.currency')?.hasError('required')">Currency is required</mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Timezone</mat-label>
+                  <mat-select formControlName="timezone">
+                    <mat-option *ngFor="let tz of timezoneOptions" [value]="tz">{{ tz }}</mat-option>
+                  </mat-select>
+                  <mat-error *ngIf="placeForm.get('settings.timezone')?.hasError('required')">Timezone is required</mat-error>
+                </mat-form-field>
+              </div>
+            </div>
+          </form>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Tenant/Owner Information Card -->
+      <mat-card class="form-card">
+        <mat-card-header>
+          <mat-card-title>Tenant Information</mat-card-title>
+          <mat-card-subtitle>Edit the place owner/tenant details</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          @if (owner()) {
+            <form [formGroup]="ownerForm">
+              <div class="two-column">
+                <mat-form-field appearance="outline">
+                  <mat-label>First Name</mat-label>
+                  <input matInput formControlName="firstName" />
+                  <mat-error *ngIf="ownerForm.get('firstName')?.hasError('required')">First name is required</mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Last Name</mat-label>
+                  <input matInput formControlName="lastName" />
+                  <mat-error *ngIf="ownerForm.get('lastName')?.hasError('required')">Last name is required</mat-error>
+                </mat-form-field>
+              </div>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Email</mat-label>
+                <input matInput type="email" formControlName="email" />
+                <mat-error *ngIf="ownerForm.get('email')?.hasError('required')">Email is required</mat-error>
+                <mat-error *ngIf="ownerForm.get('email')?.hasError('email')">Invalid email format</mat-error>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Phone Number</mat-label>
+                <input matInput formControlName="phoneNumber" placeholder="+1 415 555 0199" />
+              </mat-form-field>
+            </form>
+          } @else {
+            <div class="no-owner">
+              <mat-icon>person_off</mat-icon>
+              <p>Owner information not available</p>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+      <button 
+        mat-stroked-button 
+        (click)="onCancel()"
+        [disabled]="isSaving() || isUploadingLogo()"
+      >
+        Cancel
+      </button>
+      <button 
+        mat-raised-button 
+        color="primary" 
+        (click)="onSubmit()"
+        [disabled]="isSaving() || isUploadingLogo() || placeForm.invalid"
+      >
+        @if (isSaving()) {
+          <mat-spinner diameter="20" class="button-spinner"></mat-spinner>
+          <span>Saving...</span>
+        } @else {
+          <mat-icon>save</mat-icon>
+          <span>Save Changes</span>
+        }
+      </button>
+    </div>
+  } @else {
+    <mat-card>
+      <mat-card-content>
+        <div class="error-container">
+          <mat-icon>error_outline</mat-icon>
+          <p>Place not found</p>
+          <button mat-stroked-button (click)="onCancel()">Go Back</button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+</div>
+

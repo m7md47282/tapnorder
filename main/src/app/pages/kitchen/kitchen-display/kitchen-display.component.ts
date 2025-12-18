@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule, NgIf } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
 import { MaterialModule } from '../../../material.module';
 import { NotificationService } from '../../../services/notification.service';
 import { 
@@ -15,6 +16,9 @@ import { OrderService } from '../../../services/order.service';
 import { Order, OrderStatus } from '../../../models/order.model';
 import { Subject, interval, takeUntil } from 'rxjs';
 import { MatDialog } from '@angular/material/dialog';
+import { RealtimeOrdersService } from '../../../services/realtime-orders.service';
+import { TenantContextService } from '../../../services/tenant-context.service';
+import { LocalStorageService } from '../../../services/local-storage.service';
 
 @Component({
   selector: 'app-kitchen-display',
@@ -28,13 +32,28 @@ export class KitchenDisplayComponent implements OnInit, OnDestroy {
   filteredOrders: KitchenOrder[] = [];
   batchCookingItems: BatchCookingItem[] = [];
   
+  // History orders
+  historyOrders: KitchenOrder[] = [];
+  filteredHistoryOrders: KitchenOrder[] = [];
+  
+  // Tab control
+  selectedTabIndex: number = 0; // 0 = Live Board, 1 = Order History
+  
   statusFilter = new FormControl('all');
   stationFilter = new FormControl('all');
   viewMode = new FormControl('orders'); // 'orders' | 'batch'
   
+  // History filters
+  historyStatusFilter = new FormControl('all');
+  historyTypeFilter = new FormControl('all');
+  historyDateFrom = new FormControl<Date | null>(null);
+  historyDateTo = new FormControl<Date | null>(null);
+  historySearchFilter = new FormControl('');
+  
   KitchenOrderStatus = KitchenOrderStatus;
   
   isLoading: boolean = false;
+  isLoadingHistory: boolean = false;
   autoRefresh: boolean = false;
   isFullscreen: boolean = false;
   largeTextMode: boolean = false;
@@ -59,37 +78,144 @@ export class KitchenDisplayComponent implements OnInit, OnDestroy {
   selectedOrderForMessage: KitchenOrder | null = null;
   
   private destroy$ = new Subject<void>();
-  private refreshInterval$ = interval(5000); // Refresh every 5 seconds
+  private refreshInterval$ = interval(5000);
+  private currentPlaceId: string | null = null;
+  private currentBranchId: string | null = null;
+  private realtimeSubscription: any = null;
+  private readonly BRANCH_STORAGE_KEY = 'branchId';
 
   constructor(
     private orderService: OrderService,
     private notification: NotificationService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private realtimeOrders: RealtimeOrdersService,
+    private tenantContext: TenantContextService,
+    private localStorage: LocalStorageService,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
-    this.loadOrders();
+    this.getBranchId();
+    this.getPlaceId();
     this.setupFilters();
+    this.setupHistoryFilters();
     this.startTimers();
     
-    // Auto-refresh disabled - will use real-time updates instead
-    // if (this.autoRefresh) {
-    //   this.startAutoRefresh();
-    // }
+    // Tab changes are handled via onTabChange event
     
-    // Listen for view mode changes
     this.viewMode.valueChanges.subscribe(() => {
       if (this.viewMode.value === 'batch') {
         this.updateBatchCookingView();
       }
     });
+
+    this.realtimeOrders.getConnectionStatus$()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(status => {
+        if (!status.connected && status.error) {
+          console.warn('Real-time connection lost:', status.error);
+        }
+      });
   }
 
   ngOnDestroy(): void {
-    // Clean up fullscreen mode class
     document.body.classList.remove('kitchen-fullscreen-mode');
+    
+    if (this.realtimeSubscription) {
+      this.realtimeSubscription.unsubscribe();
+    }
+    this.realtimeOrders.disconnectAll();
+    
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  private getBranchId(): void {
+    // Get branchId from route params or localStorage
+    this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
+      const newBranchId = params['branchId'] || params['branch_id'] || null;
+      if (newBranchId) {
+        if (newBranchId !== this.currentBranchId) {
+          this.currentBranchId = newBranchId;
+          this.localStorage.setItem(this.BRANCH_STORAGE_KEY, newBranchId);
+          if (this.currentPlaceId) {
+            this.connectRealtimeOrders();
+          }
+        }
+      } else if (!this.currentBranchId) {
+        const storedBranch = this.localStorage.getItem<string>(this.BRANCH_STORAGE_KEY);
+        if (storedBranch) {
+          this.currentBranchId = storedBranch;
+        }
+      }
+    });
+
+    // If no branchId in route, try localStorage
+    if (!this.currentBranchId) {
+      this.currentBranchId = this.localStorage.getItem<string>(this.BRANCH_STORAGE_KEY);
+    }
+  }
+
+  private getPlaceId(): void {
+    this.tenantContext.currentPlaceId$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(placeId => {
+        if (placeId && placeId !== this.currentPlaceId) {
+          this.currentPlaceId = placeId;
+          this.connectRealtimeOrders();
+        } else if (!placeId) {
+          this.loadOrders();
+        }
+      });
+  }
+
+  private connectRealtimeOrders(): void {
+    if (!this.currentPlaceId) {
+      this.loadOrders();
+      return;
+    }
+
+    if (this.realtimeSubscription) {
+      this.realtimeSubscription.unsubscribe();
+    }
+
+    const statuses = ['pending', 'confirmed', 'preparing', 'ready'];
+
+    this.isLoading = true;
+    
+    // Set a timeout to clear loading state if no data is received within 5 seconds
+    const loadingTimeout = setTimeout(() => {
+      if (this.isLoading) {
+        console.warn('No data received from realtime connection, clearing loading state');
+        this.isLoading = false;
+      }
+    }, 5000);
+
+    this.realtimeSubscription = this.realtimeOrders
+      .connectRealtimeOrders(this.currentPlaceId, statuses, this.currentBranchId, 6)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (orders) => {
+          clearTimeout(loadingTimeout);
+          this.orders = orders.length
+            ? orders.map(order => this.mapOrderToKitchenOrder(order))
+            : [];
+          
+          this.applyFilters();
+          
+          if (this.viewMode.value === 'batch') {
+            this.updateBatchCookingView();
+          }
+          
+          this.isLoading = false;
+        },
+        error: (error) => {
+          clearTimeout(loadingTimeout);
+          console.error('Real-time connection error:', error);
+          this.isLoading = false;
+          this.loadOrders();
+        }
+      });
   }
 
   loadOrders(): void {
@@ -228,6 +354,28 @@ export class KitchenDisplayComponent implements OnInit, OnDestroy {
     });
   }
 
+  setupHistoryFilters(): void {
+    this.historyStatusFilter.valueChanges.subscribe(() => {
+      this.applyHistoryFilters();
+    });
+
+    this.historyTypeFilter.valueChanges.subscribe(() => {
+      this.applyHistoryFilters();
+    });
+
+    this.historyDateFrom.valueChanges.subscribe(() => {
+      this.applyHistoryFilters();
+    });
+
+    this.historyDateTo.valueChanges.subscribe(() => {
+      this.applyHistoryFilters();
+    });
+
+    this.historySearchFilter.valueChanges.subscribe(() => {
+      this.applyHistoryFilters();
+    });
+  }
+
   applyFilters(): void {
     const status = this.statusFilter.value || 'all';
     const station = this.stationFilter.value || 'all';
@@ -261,6 +409,121 @@ export class KitchenDisplayComponent implements OnInit, OnDestroy {
     });
   }
 
+  loadHistoryOrders(): void {
+    if (this.isLoadingHistory) return; // Prevent multiple simultaneous loads
+    
+    // Don't load if placeId is not available
+    if (!this.currentPlaceId) {
+      console.warn('Cannot load history orders: placeId is not available');
+      this.notification.warning('Please wait for place information to load.');
+      return;
+    }
+    
+    this.isLoadingHistory = true;
+    
+    const query: any = {
+      placeId: this.currentPlaceId,
+      // Don't filter by status - get all statuses for history
+    };
+
+    // Add status filter if not 'all'
+    const statusFilter = this.historyStatusFilter.value;
+    if (statusFilter && statusFilter !== 'all') {
+      // Map KitchenOrderStatus to backend status
+      const backendStatus = this.mapKitchenStatusToBackendStatus(statusFilter);
+      if (backendStatus) {
+        query.status = backendStatus;
+      }
+    }
+
+    // Add type filter if not 'all'
+    const typeFilter = this.historyTypeFilter.value;
+    if (typeFilter && typeFilter !== 'all') {
+      query.type = typeFilter;
+    }
+
+    // Add date range filters
+    if (this.historyDateFrom.value) {
+      query.dateFrom = this.historyDateFrom.value.toISOString();
+    }
+    if (this.historyDateTo.value) {
+      // Set to end of day
+      const endDate = new Date(this.historyDateTo.value);
+      endDate.setHours(23, 59, 59, 999);
+      query.dateTo = endDate.toISOString();
+    }
+
+    // Add search filter
+    const searchTerm = this.historySearchFilter.value;
+    if (searchTerm && searchTerm.trim()) {
+      query.search = searchTerm.trim();
+    }
+
+    this.orderService.fetchOrders(query)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (orders) => {
+          this.historyOrders = orders.length
+            ? orders.map(order => this.mapOrderToKitchenOrder(order))
+            : [];
+          this.applyHistoryFilters();
+          this.isLoadingHistory = false;
+        },
+        error: () => {
+          this.historyOrders = [];
+          this.applyHistoryFilters();
+          this.isLoadingHistory = false;
+          this.notification.error('Failed to load order history.');
+        }
+      });
+  }
+
+  applyHistoryFilters(): void {
+    const status = this.historyStatusFilter.value || 'all';
+    const searchTerm = (this.historySearchFilter.value || '').toLowerCase().trim();
+
+    this.filteredHistoryOrders = this.historyOrders.filter(order => {
+      let matchesStatus = true;
+      if (status !== 'all') {
+        matchesStatus = order.status === status;
+      }
+      let matchesSearch = true;
+      if (searchTerm) {
+        matchesSearch = 
+          order.orderNumber.toLowerCase().includes(searchTerm) ||
+          (order.customerName ? order.customerName.toLowerCase().includes(searchTerm) : false) ||
+          (order.tableNumber ? order.tableNumber.toLowerCase().includes(searchTerm) : false);
+      }
+
+      return matchesStatus && matchesSearch;
+    });
+
+    this.filteredHistoryOrders.sort((a, b) => {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+  }
+
+  refreshHistory(): void {
+    this.loadHistoryOrders();
+  }
+
+  private mapKitchenStatusToBackendStatus(kitchenStatus: string): string | null {
+    switch (kitchenStatus) {
+      case KitchenOrderStatus.NEW:
+        return 'pending';
+      case KitchenOrderStatus.IN_PROGRESS:
+        return 'preparing';
+      case KitchenOrderStatus.READY:
+        return 'ready';
+      case KitchenOrderStatus.COMPLETED:
+        return 'completed';
+      case KitchenOrderStatus.CANCELLED:
+        return 'cancelled';
+      default:
+        return null;
+    }
+  }
+
   updateOrderStatus(order: KitchenOrder, status: KitchenOrderStatus): void {
     const oldStatus = order.status;
     order.status = status;
@@ -287,11 +550,9 @@ export class KitchenDisplayComponent implements OnInit, OnDestroy {
     const nextStatus = this.mapKitchenStatusToOrderStatus(status);
     this.orderService.updateOrderStatus(order.id, nextStatus).then(() => {
       this.notification.success(`Order ${order.orderNumber} status updated`);
-      this.loadOrders();
     }).catch(() => {
       order.status = oldStatus;
       this.notification.error('Failed to update order status');
-      this.loadOrders();
     });
   }
 
@@ -768,6 +1029,16 @@ export class KitchenDisplayComponent implements OnInit, OnDestroy {
 
   toggleSoundAlerts(): void {
     this.soundAlerts = !this.soundAlerts;
+  }
+
+  onTabChange(event: any): void {
+    // Update the selected tab index
+    this.selectedTabIndex = event.index;
+    
+    // Load history orders when switching to history tab
+    if (event.index === 1) {
+      this.loadHistoryOrders();
+    }
   }
 }
 

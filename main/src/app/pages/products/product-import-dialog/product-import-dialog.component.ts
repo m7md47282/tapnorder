@@ -6,8 +6,11 @@ import { ItemsService } from '../../../services/items.service';
 import { CategoriesService } from '../../../services/categories.service';
 import { NotificationService } from '../../../services/notification.service';
 import { LocalStorageService } from '../../../services/local-storage.service';
+import { TenantContextService } from '../../../services/tenant-context.service';
+import { PlaceService } from '../../../services/place.service';
 import { CreateItemCommand } from '../../../models/item.model';
 import { Category } from '../../../models/category.model';
+import { PlaceBranch } from '../../../models/place.model';
 import { forkJoin, of, firstValueFrom } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import * as XLSX from 'xlsx';
@@ -37,30 +40,89 @@ export class ProductImportDialogComponent implements OnInit {
   categoryMap: Map<string, Category> = new Map(); // Map categoryId -> Category
   categoryNameMap: Map<string, string> = new Map(); // Map category name -> categoryId
   isLoadingCategories: boolean = false;
+  
+  // Branch selection
+  availableBranches: PlaceBranch[] = [];
+  branchMap: Map<string, PlaceBranch> = new Map(); // Map branchId -> PlaceBranch
+  branchNameMap: Map<string, string> = new Map(); // Map branch name -> branchId
+  isLoadingBranches: boolean = false;
+  selectedBranchId: string | null = null; // null means shared across all branches
 
   // Expected Excel columns - categoryId or category (name) are both acceptable
+  // branchId or branch (name) are both acceptable
   expectedColumns = ['name', 'description', 'price', 'isAvailable'];
   requiredCategoryColumn = 'categoryId'; // Will accept 'category' or 'categoryId'
-  optionalColumns = ['imageUrl', 'preparationTime', 'ingredients'];
+  optionalColumns = ['imageUrl', 'preparationTime', 'ingredients', 'branchId', 'branch'];
+
+  private placeId: string | null = null;
 
   constructor(
     public dialogRef: MatDialogRef<ProductImportDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: { menuId?: string | null },
+    @Inject(MAT_DIALOG_DATA) public data: { menuId?: string | null; placeId?: string | null },
     private itemsService: ItemsService,
     private categoriesService: CategoriesService,
     private notification: NotificationService,
-    private localStorage: LocalStorageService
+    private localStorage: LocalStorageService,
+    private tenantContext: TenantContextService,
+    private placeService: PlaceService
   ) {}
 
   ngOnInit(): void {
+    // Initialize placeId from data, tenant context, or localStorage
+    this.placeId = this.data.placeId || 
+                   this.tenantContext.getCurrentPlaceId() || 
+                   this.localStorage.getUser<any>()?.placeId || 
+                   null;
     this.loadCategories();
+    if (this.placeId) {
+      this.loadBranches();
+    }
+  }
+
+  loadBranches(): void {
+    if (!this.placeId) {
+      return;
+    }
+    this.isLoadingBranches = true;
+    this.placeService.getBranches({ place_id: this.placeId }).subscribe({
+      next: (branches) => {
+        this.availableBranches = branches || [];
+        this.buildBranchMap();
+        this.isLoadingBranches = false;
+      },
+      error: (error) => {
+        console.error('Error loading branches:', error);
+        this.availableBranches = [];
+        this.buildBranchMap();
+        this.isLoadingBranches = false;
+      }
+    });
+  }
+
+  private buildBranchMap(): void {
+    this.branchMap.clear();
+    this.branchNameMap.clear();
+    this.availableBranches.forEach(branch => {
+      this.branchMap.set(branch.id, branch);
+      this.branchNameMap.set(branch.name, branch.id);
+    });
   }
 
   loadCategories(): void {
     this.isLoadingCategories = true;
     const menuId = this.data.menuId || this.localStorage.getItem<string>('menuId');
     console.log('this is the loadcategories function');
-    const query = menuId ? { menuId } : undefined;
+    const query: any = {};
+    
+    if (menuId) {
+      query.menuId = menuId;
+    }
+    
+    // Include placeId to filter categories by place
+    if (this.placeId) {
+      query.placeId = this.placeId;
+    }
+    
     this.categoriesService.getCategories(query).subscribe({
       next: (categories) => {
         if (Array.isArray(categories)) {
@@ -225,6 +287,10 @@ export class ProductImportDialogComponent implements OnInit {
               // Accept both categoryId and category (name)
               // Store the raw value - we'll process it below
               row.categoryRaw = value;
+            } else if (normalizedHeader === 'branchid' || normalizedHeader === 'branch') {
+              // Accept both branchId and branch (name)
+              // Store the raw value - we'll process it below
+              row.branchRaw = value;
             }
           });
 
@@ -280,6 +346,62 @@ export class ProductImportDialogComponent implements OnInit {
 
           // Map to CreateItemCommand format
           // Always use categoryId when a match is found, never use category name
+          if (!this.placeId) {
+            throw new Error('Place ID is required to import items');
+          }
+          
+          // Process branch - match branch name from import with existing branches
+          // The import will contain branch names (from dropdown), we need to match them
+          // and save the branch ID (not the branch name)
+          let branchId: string | null = null;
+          let branchName = '';
+          let branch: PlaceBranch | undefined;
+          
+          if (row.branchRaw) {
+            const rawValue = String(row.branchRaw).trim();
+            
+            // Handle empty string or "Shared" as null (shared across all branches)
+            if (rawValue === '' || rawValue.toLowerCase() === 'shared' || rawValue.toLowerCase() === 'shared (all branches)') {
+              branchId = null;
+            } else {
+              // First, try to find by ID (in case someone imports with ID)
+              branch = this.branchMap.get(rawValue);
+              if (branch) {
+                branchId = branch.id;
+                branchName = branch.name;
+              } else {
+                // If not found by ID, try to find by name (case-insensitive)
+                // This is the main use case: branch name from dropdown
+                const normalizedRawValue = rawValue.toLowerCase().trim();
+                
+                // Try exact match first (case-insensitive)
+                let foundBranchId: string | undefined;
+                for (const [name, id] of this.branchNameMap.entries()) {
+                  if (name.toLowerCase().trim() === normalizedRawValue) {
+                    foundBranchId = id;
+                    break;
+                  }
+                }
+                
+                if (foundBranchId) {
+                  branch = this.branchMap.get(foundBranchId);
+                  if (branch) {
+                    branchId = branch.id;
+                    branchName = branch.name;
+                  }
+                } else {
+                  // Branch name not found in existing branches
+                  branchName = rawValue;
+                  branchId = null; // Invalid branch, treat as shared
+                  console.warn(`Branch "${rawValue}" not found in system branches`);
+                }
+              }
+            }
+          } else {
+            // No branch specified in row, use selected branch or null (shared)
+            branchId = this.selectedBranchId || null;
+          }
+          
           const itemCommand: CreateItemCommand = {
             name: row.name || '',
             description: row.description || '',
@@ -288,7 +410,9 @@ export class ProductImportDialogComponent implements OnInit {
             isAvailable: row.isAvailable !== undefined ? row.isAvailable : true,
             preparationTime: row.preparationTime || undefined,
             ingredients: row.ingredients || undefined,
-            menuId: this.data.menuId || undefined
+            menuId: this.data.menuId || undefined,
+            placeId: this.placeId, // Required - items are linked to place
+            branchId: branchId // If provided, item is branch-specific; if null, shared across all branches
           };
           
           // Always use categoryId when category is found (matched by name or ID)
@@ -312,14 +436,16 @@ export class ProductImportDialogComponent implements OnInit {
             rowNumber: i + 1 // +1 because header is row 1
           });
           
-          // Store preview data (first 5 rows) with category info for display
+          // Store preview data (first 5 rows) with category and branch info for display
           if (i <= 6) {
             this.previewData.push({
               ...itemCommand,
               rowNumber: i + 1,
               categoryId: categoryId,
               categoryName: categoryName || row.categoryRaw || 'Uncategorized',
-              categoryValid: categoryValid
+              categoryValid: categoryValid,
+              branchName: branchName || (branchId ? this.branchMap.get(branchId)?.name : 'Shared (All Branches)') || 'Shared (All Branches)',
+              branchId: branchId
             });
           }
         }
@@ -397,12 +523,32 @@ export class ProductImportDialogComponent implements OnInit {
 
   async downloadTemplate(): Promise<void> {
     try {
+      // Load branches if not already loaded
+      if (this.placeId && this.availableBranches.length === 0) {
+        await firstValueFrom(
+          this.placeService.getBranches({ place_id: this.placeId }).pipe(
+            catchError((error) => {
+              console.error('Error loading branches:', error);
+              return of([]);
+            })
+          )
+        ).then(branches => {
+          this.availableBranches = branches || [];
+        });
+      }
+      
       // Fetch categories directly using categoriesService
       if (this.categories.length === 0) {
         this.notification.info('Loading categories...');
         try {
+          const query: any = {};
+          // Include placeId to filter categories by place
+          if (this.placeId) {
+            query.placeId = this.placeId;
+          }
+          
           const fetchedCategories = await firstValueFrom(
-            this.categoriesService.getCategories().pipe(
+            this.categoriesService.getCategories(query).pipe(
               catchError((error) => {
                 console.error('Error loading categories:', error);
                 return of([]); // Return empty array on error
@@ -437,8 +583,8 @@ export class ProductImportDialogComponent implements OnInit {
       const productsSheet = workbook.sheet(0);
       productsSheet.name('Products');
       
-      // Set headers - use 'category' as header name since dropdown shows category names
-      const headers = ['name', 'description', 'price', 'category', 'isAvailable', 'imageUrl', 'preparationTime', 'ingredients'];
+      // Set headers - use 'category' and 'branch' as header names since dropdowns show names
+      const headers = ['name', 'description', 'price', 'category', 'isAvailable', 'imageUrl', 'preparationTime', 'ingredients', 'branch'];
       headers.forEach((header, index) => {
         productsSheet.cell(1, index + 1).value(header);
         productsSheet.cell(1, index + 1).style({ bold: true, fill: '4472C4', fontColor: 'FFFFFF' });
@@ -447,8 +593,11 @@ export class ProductImportDialogComponent implements OnInit {
       // Get example category name for the example row
       const exampleCategoryName = this.categories.length > 0 ? this.categories[0].name : 'Enter Category Name';
       
-      // Add example row with category name
-      const exampleRow = ['Sample Product', 'Product description', 10.99, exampleCategoryName, true, 'https://example.com/image.jpg', 15, 'ingredient1, ingredient2'];
+      // Get example branch name for the example row (or leave empty for shared)
+      const exampleBranchName = this.availableBranches.length > 0 ? this.availableBranches[0].name : '';
+      
+      // Add example row with category name and branch name
+      const exampleRow = ['Sample Product', 'Product description', 10.99, exampleCategoryName, true, 'https://example.com/image.jpg', 15, 'ingredient1, ingredient2', exampleBranchName];
       exampleRow.forEach((value, index) => {
         productsSheet.cell(2, index + 1).value(value);
       });
@@ -462,6 +611,45 @@ export class ProductImportDialogComponent implements OnInit {
       productsSheet.column(6).width(30); // imageUrl
       productsSheet.column(7).width(15); // preparationTime
       productsSheet.column(8).width(30); // ingredients
+      productsSheet.column(9).width(25); // branch (with dropdown if available)
+      
+      // Create Branches sheet with all available branches (always create, even if empty)
+      const branchesSheet = workbook.addSheet('Branches');
+      branchesSheet.cell(1, 1).value('Branch Name');
+      branchesSheet.cell(1, 2).value('Branch ID');
+      branchesSheet.cell(1, 1).style({ bold: true, fill: 'FFC000', fontColor: 'FFFFFF' });
+      branchesSheet.cell(1, 2).style({ bold: true, fill: 'FFC000', fontColor: 'FFFFFF' });
+      
+      // Add "Shared (All Branches)" option at the top
+      branchesSheet.cell(2, 1).value('Shared (All Branches)');
+      branchesSheet.cell(2, 2).value('');
+      
+      // Add branch data (names in column A for dropdown, IDs in column B for reference)
+      this.availableBranches.forEach((branch, index) => {
+        branchesSheet.cell(index + 3, 1).value(branch.name);
+        branchesSheet.cell(index + 3, 2).value(branch.id);
+      });
+      
+      branchesSheet.column(1).width(30);
+      branchesSheet.column(2).width(25);
+      
+      // Add data validation dropdown to branch column (column I, rows 2-1000)
+      // Use column A (Branch Name) for the dropdown values to show names, not IDs
+      const branchRangeFormula = `Branches!$A$2:$A$${this.availableBranches.length + 2}`; // Include "Shared" option
+      
+      // Apply data validation to each cell in the range
+      for (let row = 2; row <= 1000; row++) {
+        const cell = productsSheet.cell(row, 9); // Column I (branch column)
+        cell.dataValidation({
+          type: 'list',
+          allowBlank: true,
+          showInputMessage: true,
+          promptTitle: 'Branch Selection',
+          prompt: 'Select a branch name from the dropdown (or leave empty for shared items). See Branches sheet for reference.',
+          showErrorMessage: false,
+          formula1: branchRangeFormula
+        });
+      }
       
       // Only create dropdown if categories are available
       if (this.categories.length > 0) {

@@ -8,16 +8,19 @@ import { IndexedDBService } from '../../services/indexeddb.service';
 import { OrderService } from '../../services/order.service';
 import { OrderTrackingService } from '../../services/order-tracking.service';
 import { NotificationService } from '../../services/notification.service';
-import { Order, OrderStatus } from '../../models/order.model';
+import { Order, OrderStatus, ACTIVE_ORDER_STATUSES } from '../../models/order.model';
 import { ItemsService } from '../../services/items.service';
 import { CategoriesService } from '../../services/categories.service';
 import { Item } from '../../models/item.model';
 import { AddonsService } from '../../services/addons.service';
 import { ItemAddonGroup } from '../../models/addon.model';
 import { Category } from '../../models/category.model';
-import { Subject, takeUntil } from 'rxjs';
+import { PlaceService } from '../../services/place.service';
+import { Place } from '../../models/place.model';
+import { Subject, takeUntil, finalize, Subscription } from 'rxjs';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import { RealtimeOrdersService } from '../../services/realtime-orders.service';
 
 export interface MenuCategory {
   id: string;
@@ -54,13 +57,15 @@ import { AiAssistantService, CustomOrderSuggestion } from '../../services/ai-ass
   styleUrls: ['./guest-menu.component.scss']
 })
 export class GuestMenuComponent implements OnInit, OnDestroy {
-  restaurantName: string = 'Triple Chocolate';
-  cuisine: string = 'Arabic';
+  restaurantName: string = 'Restaurant';
+  cuisine: string = '';
   rating: number = 4.6;
   ratingCount: number = 1000;
   deliveryTime: string = '15-25 mins';
   deliveryFee: number = 1.75;
-  currency: string = 'JOD';
+  currency: string = 'USD';
+  placeLogo: string | null = null;
+  currentPlace: Place | null = null;
   
   selectedCategory: string = 'picks-for-you';
   selectedItem: MenuItem | null = null;
@@ -117,7 +122,9 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
   }
   
   private destroy$ = new Subject<void>();
-  
+  private realtimeSubscription?: Subscription;
+  private singleOrderSubscription?: Subscription;
+
   categories: MenuCategory[] = [
     { id: 'picks-for-you', name: 'Picks for you', icon: 'local_fire_department' }
   ];
@@ -196,7 +203,9 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
     private itemsService: ItemsService,
     private categoriesService: CategoriesService,
     private addonsService: AddonsService,
-    private cdr: ChangeDetectorRef
+    private placeService: PlaceService,
+    private cdr: ChangeDetectorRef,
+    private realtimeOrders: RealtimeOrdersService
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -220,6 +229,11 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
       this.tableId = params['table_id'] || null;
       this.menuId = params['menu_id'] || null;
 
+      // Load place data if placeId is available
+      if (this.placeId) {
+        this.loadPlaceData(this.placeId);
+      }
+
       // Load items from database
       this.loadItems();
       this.loadAddonGroups();
@@ -236,64 +250,187 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    // Stop tracking all orders
     this.orderTracking.stopAllTracking();
+    if (this.realtimeSubscription) {
+      this.realtimeSubscription.unsubscribe();
+    }
+    if (this.singleOrderSubscription) {
+      this.singleOrderSubscription.unsubscribe();
+    }
+    if (this.activeOrder) {
+      this.realtimeOrders.disconnect(`order-single-${this.activeOrder.id}`);
+    }
     this.destroy$.next();
     this.destroy$.complete();
     this.clearAnimationTimers();
   }
 
   /**
-   * Initialize guest session and check for active orders
+   * Load place data to get currency, logo, and name
    */
+  private loadPlaceData(placeId: string): void {
+    this.placeService.getPlaceById(placeId)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.cdr.detectChanges())
+      )
+      .subscribe({
+        next: (place) => {
+          this.currentPlace = place;
+          
+          // Update restaurant name
+          if (place.name) {
+            this.restaurantName = place.name;
+          }
+          
+          // Update currency from place settings
+          if (place.settings?.currency) {
+            this.currency = place.settings.currency;
+          }
+          
+          // Update logo
+          if (place.logoUrl) {
+            this.placeLogo = place.logoUrl;
+          } else {
+            // Fallback to default logo if no logo is set
+            this.placeLogo = '/assets/images/logos/tc-logo.png';
+          }
+          
+          // Update delivery fee if available
+          if (place.settings?.deliveryFee !== undefined) {
+            this.deliveryFee = place.settings.deliveryFee;
+          }
+          
+          // Update description/cuisine if available
+          if (place.description) {
+            this.cuisine = place.description;
+          }
+        },
+        error: (error) => {
+          console.error('Error loading place data:', error);
+          // Use defaults if place data fails to load
+          this.placeLogo = '/assets/images/logos/tc-logo.png';
+        }
+      });
+  }
+
   private async initializeGuestSession(): Promise<void> {
     try {
-      // Get or create guest UUID
       this.guestUuid = await this.indexedDB.getOrCreateGuestUuid(
         this.placeId!,
         this.branchId!,
         this.tableId
       );
 
-      // Update filtered items when guest UUID is set
       this.updateFilteredItems();
       this.cdr.detectChanges();
 
-      // Initialize orders for this guest
       await this.orderService.initializeOrders(this.guestUuid);
 
-      // Subscribe to active order
+      this.connectRealtimeUpdates();
+
       this.orderService.activeOrder$
         .pipe(takeUntil(this.destroy$))
         .subscribe(order => {
           this.activeOrder = order;
-          
-          // Start tracking if there's an active order
           if (order) {
-            this.orderTracking.startTracking(order.id, this.guestUuid || undefined);
-            
-            // Subscribe to order status changes
-            this.orderTracking.getOrderStatus$(order.id)
-              .pipe(takeUntil(this.destroy$))
-              .subscribe(status => {
-                if (order) {
-                  order.status = status;
-                }
-              });
+            this.connectSingleOrderRealtime(order.id);
           }
         });
 
-      // Load active order
       this.orderService.getActiveOrder(this.guestUuid).subscribe(order => {
         this.activeOrder = order;
         if (order) {
-          this.orderTracking.startTracking(order.id, this.guestUuid || undefined);
+          this.connectSingleOrderRealtime(order.id);
         }
       });
 
     } catch (error) {
       console.error('Error initializing guest session:', error);
       this.notification.error('Failed to initialize session. Please try again.');
+    }
+  }
+
+  private connectRealtimeUpdates(): void {
+    if (!this.placeId || !this.guestUuid) {
+      return;
+    }
+
+    if (this.realtimeSubscription) {
+      this.realtimeSubscription.unsubscribe();
+    }
+    
+    this.realtimeSubscription = this.realtimeOrders
+      .connectRealtimeOrders(this.placeId, ACTIVE_ORDER_STATUSES, this.branchId, 6)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (orders) => {
+          const guestOrders = orders.filter(order => order.guestUuid === this.guestUuid);
+          
+          if (guestOrders.length > 0) {
+            const updatedOrder = guestOrders.find(o => 
+              this.activeOrder && o.id === this.activeOrder.id
+            );
+            
+            if (updatedOrder) {
+              this.activeOrder = updatedOrder;
+              this.orderTracking.updateOrderStatusDirectly(
+                updatedOrder.id, 
+                updatedOrder.status
+              );
+            }
+          }
+        },
+        error: (error) => {
+          console.error('Real-time connection error:', error);
+          if (this.activeOrder) {
+            this.orderTracking.startTracking(this.activeOrder.id, this.guestUuid || undefined);
+          }
+        }
+      });
+
+    this.realtimeOrders.getOrderUpdate$()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(order => {
+        if (order.guestUuid === this.guestUuid && this.activeOrder?.id === order.id) {
+          this.activeOrder = order;
+          this.orderTracking.updateOrderStatusDirectly(order.id, order.status);
+        }
+      });
+  }
+
+  private connectSingleOrderRealtime(orderId: string): void {
+    if (this.singleOrderSubscription) {
+      this.singleOrderSubscription.unsubscribe();
+    }
+
+    this.singleOrderSubscription = this.realtimeOrders
+      .connectRealtimeOrderSingle(orderId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (order) => {
+          if (this.activeOrder?.id === order.id) {
+            this.activeOrder = order;
+            this.orderTracking.updateOrderStatusDirectly(order.id, order.status);
+            
+            if (order.status === OrderStatus.SERVED || order.status === OrderStatus.CANCELLED) {
+              this.disconnectSingleOrderRealtime();
+            }
+          }
+        },
+        error: (error) => {
+          console.error('Single order real-time connection error:', error);
+        }
+      });
+  }
+
+  private disconnectSingleOrderRealtime(): void {
+    if (this.singleOrderSubscription) {
+      this.singleOrderSubscription.unsubscribe();
+      this.singleOrderSubscription = undefined;
+    }
+    if (this.activeOrder) {
+      this.realtimeOrders.disconnect(`order-single-${this.activeOrder.id}`);
     }
   }
 
@@ -433,7 +570,6 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
   }
 
   async processPayment(paymentMethod: string): Promise<void> {
-    // Validate required parameters
     if (!this.placeId || !this.branchId || !this.guestUuid) {
       this.notification.error('Session error. Please refresh the page.');
       return;
@@ -445,7 +581,6 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
     }
 
     try {
-      // Create order
       const order = await this.orderService.createOrder(
         this.cartItems,
         this.placeId,
@@ -453,40 +588,27 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
         this.tableId,
         this.guestUuid,
         paymentMethod,
-        undefined, // notes
+        undefined,
         this.currency
       );
     
-      // Store order data for receipt
-    this.receiptItems = [...this.cartItems];
+      this.receiptItems = [...this.cartItems];
       this.orderNumber = order.orderNumber;
       this.orderDate = order.createdAt;
       this.orderTableNumber = order.tableId || '';
 
-      // Start tracking the order
-      this.orderTracking.startTracking(order.id, this.guestUuid || undefined);
-
-      // Subscribe to order status changes
-      this.orderTracking.getOrderStatus$(order.id)
-        .pipe(takeUntil(this.destroy$))
-        .subscribe(status => {
-          order.status = status;
-        });
+      this.connectSingleOrderRealtime(order.id);
     
-      // Update AI preferences from order
       if (this.guestUuid) {
         this.aiService.updatePreferencesFromOrder(this.guestUuid, order);
       }
     
-      // Show success notification
       this.notification.success('Order placed successfully!');
 
-      // Show receipt
-    this.showReceipt = true;
-    this.closeCart();
+      this.showReceipt = true;
+      this.closeCart();
     
-    // Clear cart after showing receipt
-    this.cartService.clearCart();
+      this.cartService.clearCart();
 
     } catch (error) {
       console.error('Error creating order:', error);
@@ -501,24 +623,20 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
   }
 
   onHideOrder(order: Order): void {
-    // Add order to hidden orders list
     if (!this.hiddenOrders.find(o => o.id === order.id)) {
-      this.hiddenOrders.unshift(order); // Add to beginning
-      // Keep only last 10 orders
+      this.hiddenOrders.unshift(order);
       if (this.hiddenOrders.length > 10) {
         this.hiddenOrders = this.hiddenOrders.slice(0, 10);
       }
     }
     
-    // Clear active order if it's the one being hidden
     if (this.activeOrder?.id === order.id) {
       this.activeOrder = null;
     }
     
-    // Stop tracking this order
     this.orderTracking.stopTracking(order.id);
+    this.disconnectSingleOrderRealtime();
     
-    // Show last orders if not already shown
     if (!this.showLastOrders && this.hiddenOrders.length > 0) {
       this.showLastOrders = true;
     }
@@ -758,15 +876,27 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
     if (this.menuId) {
       query.menuId = this.menuId;
     }
+
+    // Add placeId and branchId for filtering items by branch/place
+    if (this.placeId) {
+      query.placeId = this.placeId;
+    }
+
+    if (this.branchId) {
+      query.branchId = this.branchId;
+    }
     
-    // Load categories first, then items
-    this.loadCategories();
-    
+    // Load items first, then categories based on loaded items
+    // This ensures categories are filtered to only those that have items for this branch/place
     this.itemsService.getItems(query).subscribe({
       next: (items) => {
         // Ensure items is an array
         const itemsArray = Array.isArray(items) ? items : [];
         this.rawItems = itemsArray;
+        
+        // Load categories after items are loaded
+        // Categories will be filtered to only those that have items for this branch/place
+        this.loadCategories();
         this.buildMenuItems();
         
         this.isLoadingItems = false;
@@ -1086,27 +1216,60 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
 
   /**
    * Load categories from API
+   * Note: Categories API doesn't support placeId/branchId filtering.
+   * Instead, we filter categories to only show those that have items for the current branch/place.
    */
   private loadCategories(): void {
-    // Build query for categories
     const query: any = { 
       isActive: true 
     };
-    
-    // Add menuId if available
+
     if (this.menuId) {
       query.menuId = this.menuId;
     }
-    
-    // Load categories from API
+
+    if (this.placeId) {   
+      query.placeId = this.placeId;
+    }
+
+    if (this.branchId) {
+      query.branchId = this.branchId;
+    }
+
     this.categoriesService.getCategories(query).subscribe({
       next: (categories) => {
         // Ensure categories is an array
         const categoriesArray = Array.isArray(categories) ? categories : [];
         
+        // Extract unique category IDs from loaded items
+        // This ensures we only show categories that have items for this branch/place
+        const itemCategoryIds = new Set<string>();
+        this.rawItems.forEach(item => {
+          if (item.categoryId) {
+            itemCategoryIds.add(item.categoryId);
+          }
+          // Also handle items that use category name instead of categoryId
+          if (item.category && !item.categoryId) {
+            // Find category by name
+            const categoryName = item.category;
+            const categoryByName = categoriesArray.find(cat => 
+              cat.name === categoryName || 
+              cat.id === this.normalizeCategoryId(categoryName)
+            );
+            if (categoryByName) {
+              itemCategoryIds.add(categoryByName.id);
+            }
+          }
+        });
+        
+        // Filter categories to only those that have items for this branch/place
+        const filteredCategories = categoriesArray.filter(cat => 
+          itemCategoryIds.has(cat.id)
+        );
+        
         // Build category name to ID mapping for items that only have category names
         this.categoryNameToIdMap.clear();
-        categoriesArray.forEach(cat => {
+        filteredCategories.forEach(cat => {
           // Map category name to its ID
           this.categoryNameToIdMap.set(cat.name, cat.id);
           // Also map normalized name to ID for better matching
@@ -1118,7 +1281,7 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
         
         // Convert Category model to MenuCategory format
         // Keep "Picks for you" as the first category
-        const dynamicCategories: MenuCategory[] = categoriesArray
+        const dynamicCategories: MenuCategory[] = filteredCategories
           .filter(cat => cat.isActive !== false)
           .map(cat => ({
             id: cat.id,
@@ -1127,8 +1290,8 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
           }))
           .sort((a, b) => {
             // Sort by displayOrder if available, otherwise by name
-            const catA = categoriesArray.find(c => c.id === a.id);
-            const catB = categoriesArray.find(c => c.id === b.id);
+            const catA = filteredCategories.find(c => c.id === a.id);
+            const catB = filteredCategories.find(c => c.id === b.id);
             if (catA?.displayOrder !== undefined && catB?.displayOrder !== undefined) {
               return (catA.displayOrder || 0) - (catB.displayOrder || 0);
             }

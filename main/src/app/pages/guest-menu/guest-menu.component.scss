@@ -12,9 +12,10 @@
 // ============================================
 // THEME SYSTEM - CSS Custom Properties
 // ============================================
-// Default theme: Golden (current) - No class needed
+// Uses main theme variables as single source of truth
+// Inherits from --mat-sys-primary and --mat-sys-secondary
 // 
-// To apply a theme, add the theme class to the .guest-menu-container element:
+// To apply a custom theme, add the theme class to the .guest-menu-container element:
 // 
 // 1. Peach Theme: Add class "theme-peach"
 //    <div class="guest-menu-container theme-peach">
@@ -28,22 +29,24 @@
 //    <div class="guest-menu-container theme-ocean-blue">
 //    Colors: Ocean blue (#00A8CC), dark gray (#2B2B2B), white, gray
 //
-// Default (no class): Golden theme with #FFB800
+// Default: Uses main app theme (--mat-sys-primary, --mat-sys-secondary)
 // ============================================
 
 .guest-menu-container {
-  // Default theme variables (Golden)
-  --theme-primary: #FFB800;
-  --theme-primary-dark: #e6a600;
-  --theme-primary-light: rgba(255, 184, 0, 0.3);
-  --theme-primary-rgb: 255, 184, 0;
-  --theme-secondary: #5E5E5E;
-  --theme-secondary-light: rgba(94, 94, 94, 0.15);
+
+  --theme-primary: var(--mat-sys-primary);
+  --theme-primary-light: var(--mat-sys-primary-fixed-dim);
+  --theme-primary-dark: var(--mat-sys-primary);
+
+  --theme-primary-rgb: var(--mat-sys-primary-rgb, 218, 171, 45);
+  --theme-secondary: var(--mat-sys-secondary);
+  --theme-secondary-light: var(--mat-sys-secondary-fixed-dim);
   --theme-neutral-text: #2B2B2B;
   --theme-neutral-text-secondary: #5E5E5E;
   --theme-neutral-bg: #FFFFFF;
-  --theme-neutral-bg-light: rgba(255, 184, 0, 0.05);
-  --theme-neutral-bg-subtle: rgba(255, 184, 0, 0.08);
+
+  --theme-neutral-bg-light: var(--mat-sys-primary-bg-light, rgba(218, 171, 45, 0.05));
+  --theme-neutral-bg-subtle: var(--mat-sys-primary-bg-subtle, rgba(218, 171, 45, 0.08));
   --theme-neutral-border: rgba(94, 94, 94, 0.3);
   --theme-neutral-shadow: rgba(43, 43, 43, 0.1);
   --theme-white: #FFFFFF;
@@ -548,13 +551,13 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background: color-with-opacity($color-warning-light, 0.3);
+  background: rgba(var(--theme-primary-rgb), 0.1);
   backdrop-filter: blur(30px) saturate(180%);
   -webkit-backdrop-filter: blur(30px) saturate(180%);
   border-radius: 16px;
-  border: 0.5px solid color-with-opacity($color-warning, 0.2);
+  border: 0.5px solid rgba(var(--theme-primary-rgb), 0.2);
   box-shadow: 
-    0 8px 32px color-with-opacity($color-warning, 0.08),
+    0 8px 32px rgba(var(--theme-primary-rgb), 0.08),
     inset 0 1px 0 color-with-opacity($color-white, 0.25);
 
   .offer-content {
@@ -586,7 +589,7 @@
     min-width: auto;
     height: 32px;
     box-shadow: 
-      0 4px 12px color-with-opacity($color-warning, 0.08),
+      0 4px 12px rgba(var(--theme-primary-rgb), 0.08),
       inset 0 1px 0 color-with-opacity($color-white, 0.3);
     transition: all 0.2s ease;
 
@@ -631,7 +634,7 @@
       gap: 12px;
 
       .orders-icon {
-        color: $color-primary;
+        color: var(--theme-primary);
         font-size: 24px;
         width: 24px;
         height: 24px;
@@ -683,11 +686,11 @@
     }
 
     &::-webkit-scrollbar-thumb {
-      background: color-with-opacity($color-primary, 0.3);
+      background: var(--theme-primary-light);
       border-radius: 3px;
 
       &:hover {
-        background: color-with-opacity($color-primary, 0.5);
+        background: rgba(var(--theme-primary-rgb), 0.5);
       }
     }
 
@@ -741,8 +744,8 @@
           }
 
           &.status-confirmed {
-            background: color-with-opacity($color-primary, 0.15);
-            color: $color-primary;
+            background: var(--theme-neutral-bg-subtle);
+            color: var(--theme-primary);
           }
 
           &.status-preparing {
@@ -756,8 +759,8 @@
           }
 
           &.status-served {
-            background: color-with-opacity($color-primary, 0.15);
-            color: $color-primary;
+            background: var(--theme-neutral-bg-subtle);
+            color: var(--theme-primary);
           }
 
           &.status-cancelled {
@@ -780,7 +783,7 @@
         .order-total {
           font-size: 15px;
           font-weight: 700;
-          color: $color-primary;
+          color: var(--theme-primary);
         }
       }
     }
@@ -2030,8 +2033,8 @@
   }
 
   &.selected {
-    border-color: $color-primary;
-    background: color-with-opacity($color-primary, 0.08);
+    border-color: var(--theme-primary);
+    background: var(--theme-neutral-bg-subtle);
   }
 }
 
@@ -2116,8 +2119,8 @@
   display: flex;
   gap: 12px;
   button {
-    color: $color-white;
-    background: $color-primary;
+    color: var(--theme-white);
+    background: var(--theme-primary);
     font-size: 16px;
     font-weight: 700;
     border-radius: 16px;
@@ -2125,15 +2128,15 @@
     align-items: center;
     justify-content: center;
     gap: 8px;
-    box-shadow: 0 4px 16px color-with-opacity($color-primary, 0.4), 0 2px 8px color-with-opacity($color-primary, 0.3);
+    box-shadow: 0 4px 16px rgba(var(--theme-primary-rgb), 0.4), 0 2px 8px rgba(var(--theme-primary-rgb), 0.3);
   }
 }
 
 .add-to-cart-btn {
   flex: 1;
   height: 56px;
-  background: $color-warning;
-  color: $color-white;
+  background: var(--theme-primary);
+  color: var(--theme-white);
   font-size: 16px;
   font-weight: 700;
   border-radius: 16px;
@@ -2142,8 +2145,8 @@
   justify-content: center;
   gap: 8px;
   box-shadow: 
-    0 4px 16px color-with-opacity($color-warning, 0.4),
-    0 2px 8px color-with-opacity($color-warning, 0.3);
+    0 4px 16px rgba(var(--theme-primary-rgb), 0.4),
+    0 2px 8px rgba(var(--theme-primary-rgb), 0.3);
   transition: all 0.2s ease;
 
   mat-icon {
@@ -2829,11 +2832,11 @@
   position: relative;
   width: 64px;
   height: 64px;
-  background: $color-primary;
-  color: $color-white;
+  background: var(--theme-primary);
+  color: var(--theme-white);
   box-shadow: 
-    0 8px 24px color-with-opacity($color-primary, 0.4),
-    0 4px 12px color-with-opacity($color-black, 0.2);
+    0 8px 24px rgba(var(--theme-primary-rgb), 0.4),
+    0 4px 12px rgba(43, 43, 43, 0.2);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: auto;
 
@@ -2871,8 +2874,8 @@
   &:hover {
     transform: scale(1.05);
     box-shadow: 
-      0 12px 32px color-with-opacity($color-primary, 0.5),
-      0 6px 16px color-with-opacity($color-black, 0.3);
+      0 12px 32px rgba(var(--theme-primary-rgb), 0.5),
+      0 6px 16px rgba(43, 43, 43, 0.3);
   }
 
   &:active {
@@ -2913,14 +2916,14 @@
 @keyframes pulse {
   0%, 100% {
     box-shadow: 
-      0 8px 24px color-with-opacity($color-primary, 0.4),
-      0 4px 12px color-with-opacity($color-black, 0.2);
+      0 8px 24px rgba(var(--theme-primary-rgb), 0.4),
+      0 4px 12px rgba(43, 43, 43, 0.2);
   }
   50% {
     box-shadow: 
-      0 8px 24px color-with-opacity($color-primary, 0.6),
-      0 4px 12px color-with-opacity($color-black, 0.3),
-      0 0 0 8px color-with-opacity($color-primary, 0.1);
+      0 8px 24px rgba(var(--theme-primary-rgb), 0.6),
+      0 4px 12px rgba(43, 43, 43, 0.3),
+      0 0 0 8px rgba(var(--theme-primary-rgb), 0.1);
   }
 }
 
@@ -2995,8 +2998,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 24px 28px;
-  background: linear-gradient(135deg, $color-primary 0%, darken($color-primary, 8%) 100%);
-  color: $color-white;
+  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-primary-dark) 100%);
+  color: var(--theme-white);
   position: relative;
 
   &::after {
@@ -3082,7 +3085,7 @@
     width: 120px;
     height: 120px;
     border-radius: 50%;
-    background: linear-gradient(135deg, color-with-opacity($color-primary, 0.1) 0%, color-with-opacity($color-primary, 0.05) 100%);
+    background: linear-gradient(135deg, var(--theme-neutral-bg-subtle) 0%, var(--theme-neutral-bg-light) 100%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3092,7 +3095,7 @@
       font-size: 64px;
       width: 64px;
       height: 64px;
-      color: $color-primary;
+      color: var(--theme-primary);
     }
   }
 
@@ -3112,18 +3115,18 @@
   }
 
   .browse-btn {
-    background: $color-primary;
-    color: $color-white;
+    background: var(--theme-primary);
+    color: var(--theme-white);
     font-size: 15px;
     font-weight: 600;
     padding: 12px 32px;
     border-radius: 12px;
-    box-shadow: 0 4px 12px color-with-opacity($color-primary, 0.3);
+    box-shadow: 0 4px 12px rgba(var(--theme-primary-rgb), 0.3);
     transition: all 0.2s ease;
 
     &:hover {
       transform: translateY(-2px);
-      box-shadow: 0 6px 16px color-with-opacity($color-primary, 0.4);
+      box-shadow: 0 6px 16px rgba(var(--theme-primary-rgb), 0.4);
     }
   }
 }
@@ -3176,10 +3179,10 @@
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
-  background: color-with-opacity($color-primary, 0.1);
+  background: var(--theme-neutral-bg-subtle);
   border-radius: 6px;
   font-size: 12px;
-  color: $color-primary;
+  color: var(--theme-primary);
 
   .note-icon {
     font-size: 16px;
@@ -3225,7 +3228,7 @@
 }
 
 .note-btn {
-  color: $color-primary;
+  color: var(--theme-primary);
 }
 
 .delete-btn {
@@ -3388,7 +3391,7 @@
   .addon-price,
   .receipt-addon-price {
     font-weight: 600;
-    color: $color-primary;
+    color: var(--theme-primary);
   }
 }
 
@@ -3401,7 +3404,7 @@
 .order-item-price {
   font-size: 14px;
   font-weight: 700;
-  color: $color-primary;
+  color: var(--theme-primary);
 }
 
 .remove-item-btn {
@@ -3558,7 +3561,7 @@
     .total-value {
       font-size: 24px;
       font-weight: 700;
-      color: $color-primary;
+      color: var(--theme-primary);
       letter-spacing: -0.5px;
     }
   }
@@ -3635,11 +3638,11 @@
   }
 
   &.visa {
-    background: $color-primary;
-    color: $color-white;
+    background: var(--theme-primary);
+    color: var(--theme-white);
 
     &:hover {
-      background: darken($color-primary, 5%);
+      background: var(--theme-primary-dark);
     }
   }
 }
@@ -3777,8 +3780,8 @@
   align-items: center;
   justify-content: space-between;
   padding: 24px 28px;
-  background: linear-gradient(135deg, $color-primary 0%, darken($color-primary, 8%) 100%);
-  color: $color-white;
+  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-primary-dark) 100%);
+  color: var(--theme-white);
   position: relative;
 
   &::after {
@@ -3933,10 +3936,10 @@
   gap: 6px;
   margin: 6px 0;
   padding: 6px 10px;
-  background: color-with-opacity($color-primary, 0.1);
+  background: var(--theme-neutral-bg-subtle);
   border-radius: 6px;
   font-size: 12px;
-  color: $color-primary;
+  color: var(--theme-primary);
 
   .note-icon {
     font-size: 14px;
@@ -3971,7 +3974,7 @@
   .receipt-total-value {
     font-size: 24px;
     font-weight: 700;
-    color: $color-primary;
+    color: var(--theme-primary);
     letter-spacing: -0.5px;
   }
 }
@@ -4034,13 +4037,13 @@
   }
 
   .save-btn {
-    background: $color-primary;
-    color: $color-white;
-    box-shadow: 0 4px 12px color-with-opacity($color-primary, 0.3);
+    background: var(--theme-primary);
+    color: var(--theme-white);
+    box-shadow: 0 4px 12px rgba(var(--theme-primary-rgb), 0.3);
 
     &:hover {
-      background: darken($color-primary, 5%);
-      box-shadow: 0 6px 16px color-with-opacity($color-primary, 0.4);
+      background: var(--theme-primary-dark);
+      box-shadow: 0 6px 16px rgba(var(--theme-primary-rgb), 0.4);
     }
   }
 }

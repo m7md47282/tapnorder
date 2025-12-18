@@ -49,6 +49,28 @@
     @extend .status-cell;
   }
 
+  .branch-specific {
+    background-color: rgba(25, 118, 210, 0.1) !important;
+    color: #1976d2 !important;
+    
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  .shared-item {
+    background-color: rgba(76, 175, 80, 0.1) !important;
+    color: #4caf50 !important;
+    
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+  }
+
   .delete-action {
     @extend .delete-action;
   }

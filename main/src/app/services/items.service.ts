@@ -26,6 +26,14 @@ export class ItemsService {
     if (query.menuId) {
       params.menuId = query.menuId;
     }
+
+    if (query.placeId) {
+      params.placeId = query.placeId;
+    }
+
+    if (query.branchId) {
+      params.branchId = query.branchId;
+    }
     
     if (query.category) {
       params.category = query.category;
@@ -124,8 +132,16 @@ export class ItemsService {
    * @param menuId - Menu ID
    * @returns Observable<Item[]>
    */
-  getItemsByMenuId(menuId: string): Observable<Item[]> {
-    return this.getItems({ menuId });
+  getItemsByMenuId(
+    menuId: string,
+    extras?: Pick<ItemQuery, 'placeId' | 'branchId' | 'isAvailable'>
+  ): Observable<Item[]> {
+    return this.getItems({
+      menuId,
+      placeId: extras?.placeId,
+      branchId: extras?.branchId,
+      isAvailable: extras?.isAvailable
+    });
   }
 
   /**

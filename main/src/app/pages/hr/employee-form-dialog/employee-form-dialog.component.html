@@ -1,6 +1,6 @@
 <div class="employee-form-dialog">
   <div class="dialog-header">
-    <h2 mat-dialog-title>{{ isEditMode ? 'Edit Employee' : 'Add New Employee' }}</h2>
+    <h2 mat-dialog-title>{{ isEditMode ? 'Edit Staff Account' : 'Create Staff Account' }}</h2>
     <button mat-icon-button (click)="onCancel()">
       <mat-icon>close</mat-icon>
     </button>
@@ -25,68 +25,44 @@
       <div class="form-row">
         <mat-form-field appearance="outline" class="half-width">
           <mat-label>Email *</mat-label>
-          <input matInput type="email" formControlName="email" placeholder="email@example.com">
+          <input matInput type="email" formControlName="email" placeholder="email@example.com" [readonly]="isEditMode">
           <mat-error *ngIf="f['email'].hasError('required')">Email is required</mat-error>
           <mat-error *ngIf="f['email'].hasError('email')">Invalid email format</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="half-width">
-          <mat-label>Phone *</mat-label>
-          <input matInput formControlName="phone" placeholder="+1234567890">
-          <mat-error *ngIf="f['phone'].hasError('required')">Phone is required</mat-error>
+          <mat-label>Phone Number</mat-label>
+          <input matInput formControlName="phoneNumber" placeholder="+1234567890">
         </mat-form-field>
       </div>
 
       <div class="form-row">
         <mat-form-field appearance="outline" class="half-width">
-          <mat-label>Position *</mat-label>
-          <mat-select formControlName="position">
-            <mat-option value="">Select Position</mat-option>
-            <mat-option *ngFor="let position of positions" [value]="position">
-              {{ position }}
+          <mat-label>Role *</mat-label>
+          <mat-select formControlName="roleId">
+            <mat-option value="">Select Role</mat-option>
+            <mat-option *ngFor="let role of availableRoles" [value]="role.id">
+              {{ getRoleDisplayName(role.role) }}
             </mat-option>
           </mat-select>
-          <mat-error *ngIf="f['position'].hasError('required')">Position is required</mat-error>
+          <mat-error *ngIf="f['roleId'].hasError('required')">Role is required</mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="half-width">
-          <mat-label>Department *</mat-label>
-          <mat-select formControlName="department">
-            <mat-option value="">Select Department</mat-option>
-            <mat-option *ngFor="let dept of departments" [value]="dept">
-              {{ dept }}
-            </mat-option>
-          </mat-select>
-          <mat-error *ngIf="f['department'].hasError('required')">Department is required</mat-error>
+          <mat-label>{{ isEditMode ? 'New Password (leave blank to keep current)' : 'Password *' }}</mat-label>
+          <input matInput type="password" formControlName="password" [placeholder]="isEditMode ? 'Leave blank to keep current' : 'Password'">
+          <mat-error *ngIf="f['password'].hasError('required')">Password is required</mat-error>
+          <mat-error *ngIf="f['password'].hasError('minlength')">Password must be at least 6 characters</mat-error>
         </mat-form-field>
       </div>
 
       <div class="form-row">
         <mat-form-field appearance="outline" class="half-width">
-          <mat-label>Hire Date *</mat-label>
-          <input matInput [matDatepicker]="picker" formControlName="hireDate">
-          <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
-          <mat-datepicker #picker></mat-datepicker>
-          <mat-error *ngIf="f['hireDate'].hasError('required')">Hire date is required</mat-error>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline" class="half-width">
-          <mat-label>Salary</mat-label>
-          <input matInput type="number" formControlName="salary" placeholder="0.00" step="0.01" min="0">
-          <mat-icon matPrefix>attach_money</mat-icon>
-          <mat-error *ngIf="f['salary'].hasError('min')">Salary must be positive</mat-error>
-        </mat-form-field>
-      </div>
-
-      <div class="form-row">
-        <mat-form-field appearance="outline" class="half-width">
-          <mat-label>Status *</mat-label>
-          <mat-select formControlName="status">
-            <mat-option value="ACTIVE">Active</mat-option>
-            <mat-option value="INACTIVE">Inactive</mat-option>
-            <mat-option value="ON_LEAVE">On Leave</mat-option>
+          <mat-label>Status</mat-label>
+          <mat-select formControlName="isActive">
+            <mat-option [value]="true">Active</mat-option>
+            <mat-option [value]="false">Inactive</mat-option>
           </mat-select>
-          <mat-error *ngIf="f['status'].hasError('required')">Status is required</mat-error>
         </mat-form-field>
       </div>
     </form>

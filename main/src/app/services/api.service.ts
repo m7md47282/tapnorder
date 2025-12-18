@@ -322,7 +322,7 @@ export class ApiService {
 
   private getPlaceParamName(endpoint: string): string {
     if (/\/orders/i.test(endpoint) || /orderDetail/i.test(endpoint)) {
-      return 'place_id';
+      return 'placeId';
     }
     return 'placeId';
   }

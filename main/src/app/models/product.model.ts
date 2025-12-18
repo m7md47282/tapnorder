@@ -9,6 +9,9 @@ export interface Product {
   stock: number;
   category?: string;
   categoryId?: string;
+  placeId?: string;
+  branchId?: string | null;
+  menuId?: string;
   image?: string;
   isActive: boolean;
   taxRate?: number;

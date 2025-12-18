@@ -1,0 +1,13 @@
+@use "../colors" as *;
+
+html.golden_theme,
+html .golden_theme {
+  --mat-sys-primary: #DAAB2D;
+  --mat-sys-primary-fixed-dim: rgba(218, 171, 45, 0.3);
+  --mat-sys-primary-rgb: 218, 171, 45; // RGB values for rgba() usage
+  --mat-sys-primary-bg-light: rgba(218, 171, 45, 0.05); // Background tint 5%
+  --mat-sys-primary-bg-subtle: rgba(218, 171, 45, 0.08); // Background tint 8%
+  --mat-sys-secondary: #{$color-secondary};
+  --mat-sys-secondary-fixed-dim: #{$color-secondary-light};
+}
+

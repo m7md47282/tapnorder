@@ -49,7 +49,7 @@ export const navItems: NavItem[] = [
   },
   {
     displayName: 'Addon Groups',
-    iconName: 'widgets',
+    iconName: 'apps',
     route: '/addons',
   },
   {

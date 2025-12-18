@@ -62,6 +62,7 @@ export interface Place {
   id: string;
   name: string;
   description?: string;
+  logoUrl?: string;
   address: PlaceAddress;
   contact: PlaceContact;
   businessHours?: BusinessHoursMap;

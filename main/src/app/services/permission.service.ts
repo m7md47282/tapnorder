@@ -30,7 +30,6 @@ export class PermissionService {
 
     // POS - Front of house staff
     ['/pos', [
-      UserRole.SUPER_ADMIN,
       UserRole.RESTAURANT_MANAGER,
       UserRole.SHIFT_MANAGER,
       UserRole.WAITER,
@@ -40,7 +39,6 @@ export class PermissionService {
 
     // Products/Menu - Management and viewing
     ['/products', [
-      UserRole.SUPER_ADMIN,
       UserRole.RESTAURANT_MANAGER,
       UserRole.SHIFT_MANAGER,
       UserRole.WAITER,
@@ -51,7 +49,6 @@ export class PermissionService {
 
     // Sales - Management and viewing
     ['/sales', [
-      UserRole.SUPER_ADMIN,
       UserRole.RESTAURANT_MANAGER,
       UserRole.SHIFT_MANAGER,
       UserRole.WAITER,
@@ -62,7 +59,6 @@ export class PermissionService {
 
     // Customers - All staff who interact with customers
     ['/customers', [
-      UserRole.SUPER_ADMIN,
       UserRole.RESTAURANT_MANAGER,
       UserRole.SHIFT_MANAGER,
       UserRole.WAITER,
@@ -73,7 +69,6 @@ export class PermissionService {
 
     // Inventory - Management only
     ['/inventory', [
-      UserRole.SUPER_ADMIN,
       UserRole.RESTAURANT_MANAGER,
       UserRole.INVENTORY_MANAGER,
       UserRole.STORE_MANAGER
@@ -81,7 +76,6 @@ export class PermissionService {
 
     // Addon Groups - menu administrators
     ['/addons', [
-      UserRole.SUPER_ADMIN,
       UserRole.RESTAURANT_MANAGER,
       UserRole.SHIFT_MANAGER,
       UserRole.INVENTORY_MANAGER,
@@ -90,6 +84,13 @@ export class PermissionService {
 
     // Places - Super admin only
     ['/places', [
+      UserRole.SUPER_ADMIN
+    ]],
+
+    // Place Settings - Restaurant managers and super admin
+    ['/places/settings', [
+      UserRole.RESTAURANT_MANAGER,
+      UserRole.STORE_MANAGER,
       UserRole.SUPER_ADMIN
     ]],
 
@@ -104,14 +105,12 @@ export class PermissionService {
 
     // Settings - Admin and management only
     ['/settings', [
-      UserRole.SUPER_ADMIN,
       UserRole.RESTAURANT_MANAGER,
       UserRole.STORE_MANAGER
     ]],
 
     // Accounting - Financial staff
     ['/accounting', [
-      UserRole.SUPER_ADMIN,
       UserRole.RESTAURANT_MANAGER,
       UserRole.ACCOUNTANT,
       UserRole.STORE_MANAGER
@@ -119,14 +118,12 @@ export class PermissionService {
 
     // HR - Management only
     ['/hr', [
-      UserRole.SUPER_ADMIN,
       UserRole.RESTAURANT_MANAGER,
       UserRole.STORE_MANAGER
     ]],
 
     // Kitchen Display System (KDS) - Kitchen staff
     ['/kitchen', [
-      UserRole.SUPER_ADMIN,
       UserRole.RESTAURANT_MANAGER,
       UserRole.SHIFT_MANAGER,
       UserRole.CHEF,
@@ -135,7 +132,6 @@ export class PermissionService {
 
     // Tables - Host, cashier, waiter and management
     ['/tables', [
-      UserRole.SUPER_ADMIN,
       UserRole.RESTAURANT_MANAGER,
       UserRole.SHIFT_MANAGER,
       UserRole.WAITER,
@@ -146,7 +142,6 @@ export class PermissionService {
 
     // Reservations - Host and management
     ['/reservations', [
-      UserRole.SUPER_ADMIN,
       UserRole.RESTAURANT_MANAGER,
       UserRole.HOST,
       UserRole.STORE_MANAGER
@@ -154,7 +149,6 @@ export class PermissionService {
 
     // Delivery - Drivers and management
     ['/delivery', [
-      UserRole.SUPER_ADMIN,
       UserRole.RESTAURANT_MANAGER,
       UserRole.SHIFT_MANAGER,
       UserRole.DELIVERY_DRIVER,
@@ -163,7 +157,6 @@ export class PermissionService {
 
     // Guest Menu - All staff can view (to see what customers see)
     ['/menu', [
-      UserRole.SUPER_ADMIN,
       UserRole.RESTAURANT_MANAGER,
       UserRole.SHIFT_MANAGER,
       UserRole.WAITER,
@@ -172,16 +165,6 @@ export class PermissionService {
       UserRole.BARTENDER,
       UserRole.SALES_STAFF,
       UserRole.STORE_MANAGER
-    ]],
-
-    // UI Components - Admin only (for development)
-    ['/ui-components', [
-      UserRole.SUPER_ADMIN
-    ]],
-
-    // Extra - Admin only
-    ['/extra', [
-      UserRole.SUPER_ADMIN
     ]]
   ]);
 
@@ -189,11 +172,6 @@ export class PermissionService {
    * Check if a role can access a route
    */
   canAccessRoute(route: string, role: UserRole): boolean {
-    // Super admin can access everything
-    if (role === UserRole.SUPER_ADMIN) {
-      return true;
-    }
-
     // Legacy support: STORE_MANAGER maps to RESTAURANT_MANAGER
     if (role === UserRole.STORE_MANAGER) {
       role = UserRole.RESTAURANT_MANAGER;
@@ -213,14 +191,6 @@ export class PermissionService {
    */
   getAllowedRoutes(role: UserRole): string[] {
     const routes: string[] = [];
-
-    // Super admin gets all routes
-    if (role === UserRole.SUPER_ADMIN) {
-      this.routePermissions.forEach((_, route) => {
-        routes.push(route);
-      });
-      return routes;
-    }
 
     // Legacy support
     const checkRole = role === UserRole.STORE_MANAGER 
@@ -250,10 +220,11 @@ export class PermissionService {
       { route: '/sales', displayName: 'Sales', iconName: 'receipt' },
       { route: '/customers', displayName: 'Customers', iconName: 'users' },
       { route: '/inventory', displayName: 'Inventory', iconName: 'database' },
-      { route: '/addons', displayName: 'Addon Groups', iconName: 'widgets' },
+      { route: '/addons', displayName: 'Addon Groups', iconName: 'apps' },
       { route: '/places', displayName: 'Place Management', iconName: 'building-store' },
       { route: '/reports', displayName: 'Reports', iconName: 'chart-bar' },
       { route: '/settings', displayName: 'Settings', iconName: 'settings' },
+      { route: '/places/settings', displayName: 'Place Settings', iconName: 'settings-2' },
       { route: '/accounting', displayName: 'Accounting', iconName: 'calculator' },
       { route: '/hr', displayName: 'HR Management', iconName: 'users' },
       { route: '/kitchen', displayName: 'Kitchen Display', iconName: 'chef-hat' }, // Note: May need to use 'utensils' or 'cooker' if chef-hat doesn't exist

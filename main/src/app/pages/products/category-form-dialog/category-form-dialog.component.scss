@@ -2,9 +2,28 @@
   min-width: 500px;
   max-width: 600px;
 
+  .dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px 0;
+    margin-bottom: 8px;
+
+    h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+  }
+
   h2 {
     margin: 0;
   }
+}
+
+mat-dialog-content {
+  padding: 20px 24px;
+  max-height: 70vh;
+  overflow-y: auto;
 }
 
 .category-form {
@@ -15,6 +34,59 @@
 
   .full-width {
     width: 100%;
+  }
+
+  .location-section {
+    margin-bottom: 16px;
+    padding: 16px;
+    background-color: rgba(0, 0, 0, 0.02);
+    border-radius: 8px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 16px 0;
+      font-size: 16px;
+      font-weight: 500;
+      color: rgba(0, 0, 0, 0.87);
+
+      mat-icon {
+        font-size: 20px;
+        width: 20px;
+        height: 20px;
+        color: rgba(0, 0, 0, 0.6);
+      }
+    }
+
+    .shared-indicator {
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background-color: rgba(25, 118, 210, 0.1);
+      color: rgba(25, 118, 210, 0.9);
+
+      mat-icon {
+        font-size: 16px;
+        width: 16px;
+        height: 16px;
+      }
+    }
+  }
+
+  .section-divider {
+    margin: 16px 0;
+  }
+
+  .form-row {
+    display: flex;
+    gap: 16px;
+
+    .full-width {
+      width: 100%;
+    }
   }
 }
 

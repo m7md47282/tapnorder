@@ -5,13 +5,16 @@ import { CoreService } from 'src/app/services/core.service';
   selector: 'app-branding',
   imports: [],
   template: `
-    <a href="/" class="logodark">
+    <div class="d-flex align-items-center gap-2">
       <img
-        src="./assets/images/logos/dark-logo.svg"
+        src="./assets/images/logo.png"
         class="align-middle m-2"
         alt="logo"
+        width="40"
       />
-    </a>
+      <span class="text-primary">Tap n Order</span>
+</div>
+   
   `,
 })
 export class BrandingComponent {

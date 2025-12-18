@@ -19,6 +19,7 @@ import { navItems } from './sidebar/sidebar-data';
 import { AppTopstripComponent } from './top-strip/topstrip.component';
 import { AuthService } from 'src/app/services/auth.service';
 import { PermissionService } from 'src/app/services/permission.service';
+import { TenantContextService } from 'src/app/services/tenant-context.service';
 import { NavItem } from './sidebar/nav-item/nav-item';
 import { UserRole } from 'src/app/models/user.model';
 
@@ -69,7 +70,8 @@ export class FullComponent implements OnInit, OnDestroy {
     private router: Router,
     private breakpointObserver: BreakpointObserver,
     private authService: AuthService,
-    private permissionService: PermissionService
+    private permissionService: PermissionService,
+    private tenantContext: TenantContextService
   ) {
     this.htmlElement = document.querySelector('html')!;
     this.layoutChangesSubscription = this.breakpointObserver
@@ -124,6 +126,9 @@ export class FullComponent implements OnInit, OnDestroy {
     // Get role-based navigation
     const roleNav = this.permissionService.getRoleNavigation(role);
     
+    // Convert to Set for O(1) lookup instead of O(n) array searches
+    const allowedRoutes = new Set(roleNav.map(n => n.route));
+    
     // Build navigation items with sections
     const items: NavItem[] = [];
     
@@ -138,10 +143,10 @@ export class FullComponent implements OnInit, OnDestroy {
     }
 
     // POS System section (if user has POS access)
-    if (roleNav.some(n => n.route === '/pos')) {
+    if (allowedRoutes.has('/pos')) {
       items.push({ navCap: 'POS System' });
       
-      if (roleNav.some(n => n.route === '/pos')) {
+      if (allowedRoutes.has('/pos')) {
         items.push({
           displayName: 'Point of Sale',
           iconName: 'shopping-cart',
@@ -149,7 +154,7 @@ export class FullComponent implements OnInit, OnDestroy {
         });
       }
       
-      if (roleNav.some(n => n.route === '/products')) {
+      if (allowedRoutes.has('/products')) {
         items.push({
           displayName: 'Products',
           iconName: 'package',
@@ -162,7 +167,7 @@ export class FullComponent implements OnInit, OnDestroy {
         });
       }
       
-      if (roleNav.some(n => n.route === '/sales')) {
+      if (allowedRoutes.has('/sales')) {
         items.push({
           displayName: 'Sales',
           iconName: 'receipt',
@@ -170,7 +175,7 @@ export class FullComponent implements OnInit, OnDestroy {
         });
       }
       
-      if (roleNav.some(n => n.route === '/customers')) {
+      if (allowedRoutes.has('/customers')) {
         items.push({
           displayName: 'Customers',
           iconName: 'users',
@@ -178,7 +183,7 @@ export class FullComponent implements OnInit, OnDestroy {
         });
       }
       
-      if (roleNav.some(n => n.route === '/inventory')) {
+      if (allowedRoutes.has('/inventory')) {
         items.push({
           displayName: 'Inventory',
           iconName: 'database',
@@ -186,15 +191,15 @@ export class FullComponent implements OnInit, OnDestroy {
         });
       }
 
-      if (roleNav.some(n => n.route === '/addons')) {
+      if (allowedRoutes.has('/addons')) {
         items.push({
           displayName: 'Addon Groups',
-          iconName: 'widgets',
+          iconName: 'apps',
           route: '/addons'
         });
       }
       
-      if (roleNav.some(n => n.route === '/tables')) {
+      if (allowedRoutes.has('/tables')) {
         items.push({
           displayName: 'Tables',
           iconName: 'table',
@@ -202,7 +207,7 @@ export class FullComponent implements OnInit, OnDestroy {
         });
       }
       
-      if (roleNav.some(n => n.route === '/reservations')) {
+      if (allowedRoutes.has('/reservations')) {
         items.push({
           displayName: 'Reservations',
           iconName: 'calendar',
@@ -210,7 +215,7 @@ export class FullComponent implements OnInit, OnDestroy {
         });
       }
       
-      if (roleNav.some(n => n.route === '/kitchen')) {
+      if (allowedRoutes.has('/kitchen')) {
         items.push({
           displayName: 'Kitchen Display',
           iconName: 'cooker',
@@ -218,7 +223,7 @@ export class FullComponent implements OnInit, OnDestroy {
         });
       }
       
-      if (roleNav.some(n => n.route === '/delivery')) {
+      if (allowedRoutes.has('/delivery')) {
         items.push({
           displayName: 'Delivery',
           iconName: 'truck',
@@ -226,7 +231,7 @@ export class FullComponent implements OnInit, OnDestroy {
         });
       }
       
-      if (roleNav.some(n => n.route === '/menu')) {
+      if (allowedRoutes.has('/menu')) {
         items.push({
           displayName: 'Guest Menu',
           iconName: 'menu-2',
@@ -236,7 +241,7 @@ export class FullComponent implements OnInit, OnDestroy {
     }
 
     // Kitchen section
-    if (roleNav.some(n => n.route === '/kitchen')) {
+    if (allowedRoutes.has('/kitchen')) {
       items.push({ navCap: 'Kitchen' });
       items.push({
         displayName: 'Kitchen Display',
@@ -251,7 +256,7 @@ export class FullComponent implements OnInit, OnDestroy {
     }
 
     // Reports section
-    if (roleNav.some(n => n.route === '/reports')) {
+    if (allowedRoutes.has('/reports')) {
       items.push({ navCap: 'Reports' });
       items.push({
         displayName: 'Reports',
@@ -261,7 +266,7 @@ export class FullComponent implements OnInit, OnDestroy {
     }
 
     // Finance section
-    if (roleNav.some(n => n.route === '/accounting')) {
+    if (allowedRoutes.has('/accounting')) {
       items.push({ navCap: 'Finance' });
       items.push({
         displayName: 'Accounting',
@@ -271,7 +276,7 @@ export class FullComponent implements OnInit, OnDestroy {
     }
 
     // HR section
-    if (roleNav.some(n => n.route === '/hr')) {
+    if (allowedRoutes.has('/hr')) {
       items.push({ navCap: 'Human Resources' });
       items.push({
         displayName: 'HR Management',
@@ -281,22 +286,56 @@ export class FullComponent implements OnInit, OnDestroy {
     }
 
     // Settings section
-    if (roleNav.some(n => n.route === '/settings')) {
+    if (allowedRoutes.has('/settings') || allowedRoutes.has('/places/settings')) {
       items.push({ navCap: 'Settings' });
-      items.push({
-        displayName: 'Settings',
-        iconName: 'settings',
-        route: '/settings'
-      });
+      
+      if (allowedRoutes.has('/settings')) {
+        items.push({
+          displayName: 'Settings',
+          iconName: 'settings',
+          route: '/settings'
+        });
+      }
+
+      // Place Settings for Restaurant Managers
+      if (allowedRoutes.has('/places/settings')) {
+        const currentUser = this.authService.getCurrentUser();
+        const placeId = this.tenantContext.getCurrentPlaceId() || currentUser?.placeId;
+        
+        // For restaurant managers, route to their place settings
+        // For super admins, route to places list where they can select
+        const settingsRoute = placeId && 
+          (currentUser?.role === UserRole.RESTAURANT_MANAGER || currentUser?.role === UserRole.STORE_MANAGER)
+          ? `/places/settings/${placeId}`
+          : '/places';
+        
+        items.push({
+          displayName: 'Place Settings',
+          iconName: 'settings-2',
+          route: settingsRoute
+        });
+      }
     }
 
     // Super admin section
-    if (roleNav.some(n => n.route === '/places')) {
+    if (allowedRoutes.has('/places')) {
       items.push({ navCap: 'Super Admin' });
       items.push({
         displayName: 'Place Management',
         iconName: 'building-store',
-        route: '/places'
+        route: '/places',
+        children: [
+          {
+            displayName: 'Places & Branches',
+            iconName: 'list',
+            route: '/places'
+          },
+          {
+            displayName: 'Create Place',
+            iconName: 'plus',
+            route: '/places/create'
+          }
+        ]
       });
     }
 

@@ -1,8 +1,51 @@
 <div class="category-form-dialog">
-  <h2 mat-dialog-title>{{ isEditMode ? 'Edit Category' : 'Add Category' }}</h2>
+  <div class="dialog-header">
+    <h2 mat-dialog-title>{{ isEditMode ? 'Edit Category' : 'Add Category' }}</h2>
+    <button mat-icon-button (click)="onCancel()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
 
   <mat-dialog-content>
     <form [formGroup]="categoryForm" class="category-form">
+      <!-- Branch Selection Section (Place ID is hidden, auto-filled) -->
+      @if (currentPlaceId && !isLoadingBranches && availableBranches.length > 0) {
+        <div class="location-section">
+          <h3 class="section-title">
+            <mat-icon>location_on</mat-icon>
+            Availability Scope
+          </h3>
+          
+          <div class="form-row">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Branch (Optional)</mat-label>
+              <mat-select formControlName="branchId">
+                <mat-option [value]="null">
+                  <em>🌐 Shared - Available at all branches</em>
+                </mat-option>
+                <mat-divider></mat-divider>
+                @for (branch of availableBranches; track branch.id) {
+                  <mat-option [value]="branch.id">{{ branch.name }}</mat-option>
+                }
+              </mat-select>
+              <mat-icon matPrefix>business</mat-icon>
+            </mat-form-field>
+          </div>
+
+          <!-- Visual indicator when shared -->
+          @if (!f['branchId'].value) {
+            <mat-chip class="shared-indicator">
+              <mat-icon>public</mat-icon>
+              This category will be shared across all branches
+            </mat-chip>
+          }
+          <mat-hint class="mat-hint">
+            Leave as "Shared" to make this category available at all branches of this place
+          </mat-hint>
+        </div>
+
+        <mat-divider class="section-divider"></mat-divider>
+      }
       
       <!-- Name -->
       <mat-form-field appearance="outline" class="full-width">
