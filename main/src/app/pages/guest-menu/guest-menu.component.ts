@@ -87,6 +87,9 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
   guestUuid: string | null = null;
   menuId: string | null = null;
   
+  // Takeaway toggle
+  forceTakeaway: boolean = false;
+  
   // Loading state
   isLoadingItems: boolean = false;
   
@@ -112,7 +115,16 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
   private hasCartInitialized: boolean = false;
   
   get isTakeaway(): boolean {
+    // If user toggled to takeaway, always return true
+    if (this.forceTakeaway) {
+      return true;
+    }
+    // Otherwise, check if tableId is missing from URL
     return !this.tableId;
+  }
+  
+  get effectiveTableId(): string | null {
+    return this.forceTakeaway ? null : this.tableId;
   }
   
   get hasActiveOrder(): boolean {
@@ -569,6 +581,10 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
     this.isCartOpen = false;
   }
 
+  toggleTakeaway(): void {
+    this.forceTakeaway = !this.forceTakeaway;
+  }
+
   async processPayment(paymentMethod: string): Promise<void> {
     if (!this.placeId || !this.branchId || !this.guestUuid) {
       this.notification.error('Session error. Please refresh the page.');
@@ -585,7 +601,7 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
         this.cartItems,
         this.placeId,
         this.branchId,
-        this.tableId,
+        this.effectiveTableId,
         this.guestUuid,
         paymentMethod,
         undefined,

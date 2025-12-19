@@ -353,16 +353,17 @@ export class PosScreenComponent implements OnInit, OnDestroy {
 
   loadTables(): void {
     // Mock API call - replace with real API
+    const currentPlaceId = this.placeId || 'default-place';
     setTimeout(() => {
       this.availableTables = [
-        { id: '1', tableNumber: '1', capacity: 2, status: 'AVAILABLE' as any, isActive: true },
-        { id: '2', tableNumber: '2', capacity: 4, status: 'AVAILABLE' as any, isActive: true },
-        { id: '3', tableNumber: '3', capacity: 4, status: 'AVAILABLE' as any, isActive: true },
-        { id: '4', tableNumber: '4', capacity: 6, status: 'AVAILABLE' as any, isActive: true },
-        { id: '5', tableNumber: '5', capacity: 2, status: 'AVAILABLE' as any, isActive: true },
-        { id: '6', tableNumber: '6', capacity: 8, status: 'AVAILABLE' as any, isActive: true },
-        { id: '7', tableNumber: '7', capacity: 4, status: 'AVAILABLE' as any, isActive: true },
-        { id: '8', tableNumber: '8', capacity: 2, status: 'AVAILABLE' as any, isActive: true },
+        { id: '1', tableNumber: '1', capacity: 2, status: 'AVAILABLE' as any, isActive: true, placeId: currentPlaceId },
+        { id: '2', tableNumber: '2', capacity: 4, status: 'AVAILABLE' as any, isActive: true, placeId: currentPlaceId },
+        { id: '3', tableNumber: '3', capacity: 4, status: 'AVAILABLE' as any, isActive: true, placeId: currentPlaceId },
+        { id: '4', tableNumber: '4', capacity: 6, status: 'AVAILABLE' as any, isActive: true, placeId: currentPlaceId },
+        { id: '5', tableNumber: '5', capacity: 2, status: 'AVAILABLE' as any, isActive: true, placeId: currentPlaceId },
+        { id: '6', tableNumber: '6', capacity: 8, status: 'AVAILABLE' as any, isActive: true, placeId: currentPlaceId },
+        { id: '7', tableNumber: '7', capacity: 4, status: 'AVAILABLE' as any, isActive: true, placeId: currentPlaceId },
+        { id: '8', tableNumber: '8', capacity: 2, status: 'AVAILABLE' as any, isActive: true, placeId: currentPlaceId },
       ];
     }, 100);
 

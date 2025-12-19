@@ -185,6 +185,8 @@ export interface Table {
   tableNumber: string;
   capacity: number;
   status: TableStatus;
+  placeId: string;
+  branchId?: string | null;
   currentOrderId?: string;
   currentOrder?: Sale;
   serverId?: string;

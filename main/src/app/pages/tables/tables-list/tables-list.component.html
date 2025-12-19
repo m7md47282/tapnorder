@@ -16,6 +16,13 @@
       <button 
         mat-flat-button 
         color="primary" 
+        (click)="openCreateTableDialog()"
+        [disabled]="isLoading">
+        <mat-icon>add</mat-icon>
+        Add Table
+      </button>
+      <button 
+        mat-stroked-button 
         (click)="loadTables()" 
         [disabled]="isLoading">
         <mat-icon>refresh</mat-icon>
@@ -271,6 +278,22 @@
 
     <div class="dialog-actions">
       <button mat-stroked-button (click)="closeTableDetails()">Close</button>
+      <button 
+        mat-stroked-button 
+        color="accent"
+        (click)="openEditTableDialog(selectedTable)">
+        <mat-icon>edit</mat-icon>
+        Edit
+      </button>
+      @if (selectedTable.status !== TableStatus.OCCUPIED) {
+      <button 
+        mat-stroked-button 
+        color="warn"
+        (click)="deleteTable(selectedTable); closeTableDetails()">
+        <mat-icon>delete</mat-icon>
+        Delete
+      </button>
+      }
       @if (selectedTable.status === TableStatus.AVAILABLE || selectedTable.status === TableStatus.RESERVED) {
       <button 
         mat-flat-button 

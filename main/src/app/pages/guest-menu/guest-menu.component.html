@@ -553,13 +553,38 @@
               </div>
             </div>
 
-            <!-- Table Number Input -->
+            <!-- Table Information & Takeaway Toggle -->
             <div class="table-number-section">
-              <mat-form-field appearance="outline" class="table-input">
-                <mat-label>Table Number (Optional)</mat-label>
-                <input matInput [(ngModel)]="orderTableNumber" placeholder="e.g., 5, 12, A3">
-                <mat-icon matPrefix>table_restaurant</mat-icon>
-              </mat-form-field>
+              @if (tableId && !forceTakeaway) {
+                <!-- Display table number from URL (read-only) -->
+                <div class="table-info-display">
+                  <mat-icon>table_restaurant</mat-icon>
+                  <span class="table-label">Table:</span>
+                  <span class="table-value">{{ tableId }}</span>
+                </div>
+              }
+              
+              <!-- Takeaway Toggle -->
+              <div class="takeaway-toggle-section">
+                <mat-slide-toggle 
+                  [(ngModel)]="forceTakeaway"
+                  (change)="toggleTakeaway()"
+                  color="primary">
+                  <span class="toggle-label">
+                    @if (forceTakeaway) {
+                      <mat-icon>shopping_bag</mat-icon>
+                      Takeaway Order
+                    } @else {
+                      <mat-icon>table_restaurant</mat-icon>
+                      @if (tableId) {
+                        Dine In (Table {{ tableId }})
+                      } @else {
+                        Takeaway Order
+                      }
+                    }
+                  </span>
+                </mat-slide-toggle>
+              </div>
             </div>
 
             <!-- Payment Methods -->
@@ -645,6 +670,11 @@
               <div class="receipt-row">
                 <span class="receipt-label">Table Number:</span>
                 <span class="receipt-value">{{ orderTableNumber }}</span>
+              </div>
+            } @else {
+              <div class="receipt-row">
+                <span class="receipt-label">Order Type:</span>
+                <span class="receipt-value">Takeaway</span>
               </div>
             }
           </div>

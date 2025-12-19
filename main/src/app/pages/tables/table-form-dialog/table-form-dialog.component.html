@@ -1,0 +1,102 @@
+<div class="table-form-dialog">
+  <div class="dialog-header">
+    <h2 mat-dialog-title>{{ isEditMode ? 'Edit Table' : 'Add New Table' }}</h2>
+    <button mat-icon-button (click)="onCancel()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <mat-dialog-content>
+    <form [formGroup]="tableForm" class="table-form">
+      <!-- Branch Selection (Optional) -->
+      @if (currentPlaceId) {
+        <div class="form-row">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Branch (Optional)</mat-label>
+            <mat-select formControlName="branchId" [disabled]="isLoadingBranches">
+              <mat-option [value]="null">
+                <em>🌐 Shared - Available at all branches</em>
+              </mat-option>
+              @if (isLoadingBranches) {
+                <mat-option disabled>Loading branches...</mat-option>
+              } @else if (availableBranches.length === 0) {
+                <mat-option disabled>No branches available for this place</mat-option>
+              } @else {
+                <mat-divider></mat-divider>
+                @for (branch of availableBranches; track branch.id) {
+                  <mat-option [value]="branch.id">{{ branch.name }}</mat-option>
+                }
+              }
+            </mat-select>
+            <mat-icon matPrefix>business</mat-icon>
+            <mat-hint>
+              Leave as "Shared" to make this table available at all branches
+            </mat-hint>
+          </mat-form-field>
+        </div>
+      }
+
+      <!-- Main Form Fields -->
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Table Number *</mat-label>
+          <input matInput formControlName="tableNumber" placeholder="e.g., 1, 2, A1">
+          <mat-icon matPrefix>table_restaurant</mat-icon>
+          @if (f['tableNumber'].hasError('required') && f['tableNumber'].touched) {
+            <mat-error>Table number is required</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Capacity *</mat-label>
+          <input matInput type="number" formControlName="capacity" placeholder="2" min="1" step="1">
+          <mat-icon matPrefix>people</mat-icon>
+          @if (f['capacity'].hasError('required') && f['capacity'].touched) {
+            <mat-error>Capacity is required</mat-error>
+          }
+          @if (f['capacity'].hasError('min') && f['capacity'].touched) {
+            <mat-error>Capacity must be at least 1</mat-error>
+          }
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Status *</mat-label>
+          <mat-select formControlName="status">
+            @for (status of tableStatuses; track status) {
+              <mat-option [value]="status">{{ status }}</mat-option>
+            }
+          </mat-select>
+          <mat-icon matPrefix>info</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="half-width">
+          <mat-label>Location</mat-label>
+          <input matInput formControlName="location" placeholder="e.g., Indoor, Outdoor, Bar Area">
+          <mat-icon matPrefix>place</mat-icon>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Notes</mat-label>
+          <textarea matInput formControlName="notes" rows="3" placeholder="Additional notes (optional)"></textarea>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-checkbox formControlName="isActive">Active</mat-checkbox>
+        <mat-hint>Inactive tables won't appear in the table list</mat-hint>
+      </div>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-stroked-button (click)="onCancel()">Cancel</button>
+    <button mat-flat-button color="primary" (click)="onSubmit()" [disabled]="tableForm.invalid">
+      {{ isEditMode ? 'Update' : 'Create' }}
+    </button>
+  </mat-dialog-actions>
+</div>
+

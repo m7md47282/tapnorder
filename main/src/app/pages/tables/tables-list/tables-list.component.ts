@@ -10,6 +10,10 @@ import { RealtimeOrdersService } from '../../../services/realtime-orders.service
 import { TenantContextService } from '../../../services/tenant-context.service';
 import { OrderService } from '../../../services/order.service';
 import { Order } from '../../../models/order.model';
+import { TableService } from '../../../services/table.service';
+import { MatDialog } from '@angular/material/dialog';
+import { TableFormDialogComponent, TableFormData } from '../table-form-dialog/table-form-dialog.component';
+import { LocalStorageService } from '../../../services/local-storage.service';
 
 @Component({
   selector: 'app-tables-list',
@@ -35,121 +39,9 @@ export class TablesListComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private refreshInterval$ = interval(5000);
   private currentPlaceId: string | null = null;
+  private currentBranchId: string | null = null;
   private realtimeSubscription: any = null;
   private ordersMap: Map<string, Order> = new Map();
-
-  private mockTables: Table[] = [
-    {
-      id: '1',
-      tableNumber: '1',
-      capacity: 2,
-      status: TableStatus.OCCUPIED,
-      currentOrderId: 'sale-1',
-      serverName: 'John Doe',
-      seatedAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-      location: 'Indoor',
-      isActive: true,
-      currentOrder: {
-        saleNumber: 'SALE-001',
-        items: [],
-        subtotal: 45.50,
-        tax: 4.55,
-        discount: 0,
-        total: 50.05,
-        paymentMethod: 'CASH' as any,
-        status: 'COMPLETED' as any,
-        cashierId: '1',
-        cashierName: 'Cashier'
-      }
-    },
-    {
-      id: '2',
-      tableNumber: '2',
-      capacity: 4,
-      status: TableStatus.AVAILABLE,
-      location: 'Indoor',
-      isActive: true
-    },
-    {
-      id: '3',
-      tableNumber: '3',
-      capacity: 4,
-      status: TableStatus.RESERVED,
-      reservationTime: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-      location: 'Outdoor',
-      isActive: true
-    },
-    {
-      id: '4',
-      tableNumber: '4',
-      capacity: 6,
-      status: TableStatus.OCCUPIED,
-      currentOrderId: 'sale-2',
-      serverName: 'Jane Smith',
-      seatedAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-      location: 'Indoor',
-      isActive: true,
-      currentOrder: {
-        saleNumber: 'SALE-002',
-        items: [],
-        subtotal: 78.00,
-        tax: 7.80,
-        discount: 5.00,
-        total: 80.80,
-        paymentMethod: 'CARD' as any,
-        status: 'PENDING' as any,
-        cashierId: '1',
-        cashierName: 'Cashier'
-      }
-    },
-    {
-      id: '5',
-      tableNumber: '5',
-      capacity: 2,
-      status: TableStatus.CLEANING,
-      location: 'Bar Area',
-      isActive: true
-    },
-    {
-      id: '6',
-      tableNumber: '6',
-      capacity: 8,
-      status: TableStatus.AVAILABLE,
-      location: 'Indoor',
-      isActive: true
-    },
-    {
-      id: '7',
-      tableNumber: '7',
-      capacity: 4,
-      status: TableStatus.OCCUPIED,
-      currentOrderId: 'sale-3',
-      serverName: 'Mike Johnson',
-      seatedAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-      location: 'Outdoor',
-      isActive: true,
-      currentOrder: {
-        saleNumber: 'SALE-003',
-        items: [],
-        subtotal: 120.50,
-        tax: 12.05,
-        discount: 0,
-        total: 132.55,
-        paymentMethod: 'CARD' as any,
-        status: 'PENDING' as any,
-        cashierId: '1',
-        cashierName: 'Cashier'
-      }
-    },
-    {
-      id: '8',
-      tableNumber: '8',
-      capacity: 2,
-      status: TableStatus.AVAILABLE,
-      location: 'Indoor',
-      isActive: true
-    }
-  ];
 
   constructor(
     private api: ApiService,
@@ -157,7 +49,10 @@ export class TablesListComponent implements OnInit, OnDestroy {
     private router: Router,
     private realtimeOrders: RealtimeOrdersService,
     private tenantContext: TenantContextService,
-    private orderService: OrderService
+    private orderService: OrderService,
+    private tableService: TableService,
+    private dialog: MatDialog,
+    private localStorage: LocalStorageService
   ) {}
 
   ngOnInit(): void {
@@ -179,9 +74,15 @@ export class TablesListComponent implements OnInit, OnDestroy {
       .subscribe(placeId => {
         if (placeId && placeId !== this.currentPlaceId) {
           this.currentPlaceId = placeId;
+          const currentPlace = this.localStorage.getCurrentPlace<{ branchId?: string }>();
+          this.currentBranchId = this.localStorage.getItem('pos_branchId') || 
+                                  currentPlace?.branchId || 
+                                  null;
           this.loadTables();
           this.connectRealtimeOrders();
         } else if (!placeId) {
+          this.currentPlaceId = this.localStorage.getCurrentPlaceId();
+          this.currentBranchId = this.localStorage.getItem('pos_branchId') || null;
           this.loadTables();
         }
       });
@@ -224,24 +125,33 @@ export class TablesListComponent implements OnInit, OnDestroy {
   private updateTablesWithOrders(orders: Order[]): void {
     orders.forEach(order => {
       if (order.tableId) {
-        const table = this.tables.find(t => t.tableNumber === order.tableId);
+        // Find table by tableId (which should match table.id or table.tableNumber)
+        const table = this.tables.find(t => t.id === order.tableId || t.tableNumber === order.tableId);
         if (table) {
           if (order.status === 'PENDING' || order.status === 'CONFIRMED' || 
               order.status === 'PREPARING' || order.status === 'READY') {
             table.status = TableStatus.OCCUPIED;
             table.currentOrderId = order.id;
+            table.seatedAt = order.createdAt instanceof Date 
+              ? order.createdAt.toISOString() 
+              : (typeof order.createdAt === 'string' ? order.createdAt : new Date().toISOString());
             
             table.currentOrder = {
               saleNumber: order.orderNumber,
-              items: order.items.map(item => ({
-                product: item.item as any,
-                quantity: item.quantity,
-                price: item.price,
-                subtotal: item.subtotal,
-                total: item.subtotal,
-                tax: 0,
-                discount: 0
-              })),
+              items: order.items.map(item => {
+                // Handle both CartItem and OrderItemResponse structures
+                const itemPrice = (item as any).itemPrice || (item as any).price || 0;
+                const totalPrice = (item as any).totalPrice || (itemPrice * item.quantity);
+                return {
+                  product: (item as any).item || (item as any).product || {} as any,
+                  quantity: item.quantity,
+                  price: itemPrice,
+                  subtotal: totalPrice,
+                  total: totalPrice,
+                  tax: 0,
+                  discount: 0
+                };
+              }),
               subtotal: order.subtotal || 0,
               tax: order.tax || 0,
               discount: order.discount || 0,
@@ -251,11 +161,24 @@ export class TablesListComponent implements OnInit, OnDestroy {
               cashierId: order.userId || '',
               cashierName: order.customer?.name || 'Guest'
             };
+            
+            // Update table status via API
+            if (table.status !== TableStatus.OCCUPIED) {
+              this.tableService.updateTableStatus(table.id, TableStatus.OCCUPIED).subscribe({
+                error: (err) => console.error('Error updating table status:', err)
+              });
+            }
           } else if (order.status === 'SERVED' || order.status === 'CANCELLED') {
             if (table.status === TableStatus.OCCUPIED) {
               table.status = TableStatus.CLEANING;
               table.currentOrderId = undefined;
               table.currentOrder = undefined;
+              table.seatedAt = undefined;
+              
+              // Update table status via API
+              this.tableService.updateTableStatus(table.id, TableStatus.CLEANING).subscribe({
+                error: (err) => console.error('Error updating table status:', err)
+              });
             }
           }
         }
@@ -287,18 +210,43 @@ export class TablesListComponent implements OnInit, OnDestroy {
   }
 
   loadTables(): void {
+    if (!this.currentPlaceId) {
+      this.isLoading = false;
+      this.tables = [];
+      this.filterTables();
+      return;
+    }
+
     this.isLoading = true;
     
-    setTimeout(() => {
-      this.tables = this.mockTables;
-      
-      if (this.currentPlaceId) {
-        this.loadOrdersForTables();
+    const query: any = {
+      placeId: this.currentPlaceId,
+      isActive: true
+    };
+
+    if (this.currentBranchId) {
+      query.branchId = this.currentBranchId;
+    }
+
+    this.tableService.getTables(query).subscribe({
+      next: (tables) => {
+        this.tables = tables;
+        
+        if (this.currentPlaceId) {
+          this.loadOrdersForTables();
+        }
+        
+        this.filterTables();
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading tables:', error);
+        this.notification.error('Failed to load tables');
+        this.tables = [];
+        this.filterTables();
+        this.isLoading = false;
       }
-      
-      this.filterTables();
-      this.isLoading = false;
-    }, 500);
+    });
   }
 
   private loadOrdersForTables(): void {
@@ -452,6 +400,76 @@ export class TablesListComponent implements OnInit, OnDestroy {
       tooltip += `\nSeated: ${this.getSeatedTime(table)} ago`;
     }
     return tooltip;
+  }
+
+  openCreateTableDialog(): void {
+    const dialogRef = this.dialog.open(TableFormDialogComponent, {
+      width: '600px',
+      data: { table: null }
+    });
+
+    dialogRef.afterClosed().subscribe((result: TableFormData | undefined) => {
+      if (result) {
+        this.tableService.createTable(result).subscribe({
+          next: (newTable) => {
+            this.notification.success('Table created successfully');
+            this.loadTables();
+          },
+          error: (error) => {
+            console.error('Error creating table:', error);
+            this.notification.error('Failed to create table');
+          }
+        });
+      }
+    });
+  }
+
+  openEditTableDialog(table: Table): void {
+    const dialogRef = this.dialog.open(TableFormDialogComponent, {
+      width: '600px',
+      data: { table }
+    });
+
+    dialogRef.afterClosed().subscribe((result: TableFormData | undefined) => {
+      if (result) {
+        this.tableService.updateTable({ id: table.id, ...result }).subscribe({
+          next: (updatedTable) => {
+            this.notification.success('Table updated successfully');
+            this.loadTables();
+            if (this.selectedTable?.id === table.id) {
+              this.selectedTable = updatedTable;
+            }
+          },
+          error: (error) => {
+            console.error('Error updating table:', error);
+            this.notification.error('Failed to update table');
+          }
+        });
+      }
+    });
+  }
+
+  deleteTable(table: Table): void {
+    if (table.status === TableStatus.OCCUPIED) {
+      this.notification.error('Cannot delete table with active order');
+      return;
+    }
+
+    if (confirm(`Are you sure you want to delete table ${table.tableNumber}?`)) {
+      this.tableService.deleteTable(table.id).subscribe({
+        next: () => {
+          this.notification.success('Table deleted successfully');
+          this.loadTables();
+          if (this.selectedTable?.id === table.id) {
+            this.closeTableDetails();
+          }
+        },
+        error: (error) => {
+          console.error('Error deleting table:', error);
+          this.notification.error('Failed to delete table');
+        }
+      });
+    }
   }
 }
 
