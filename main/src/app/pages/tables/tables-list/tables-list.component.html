@@ -83,12 +83,7 @@
   <!-- Cinema Style Seating Layout -->
   @if (!isLoading) {
   <div class="cinema-layout">
-    <!-- Screen/Entrance Indicator -->
-    <div class="screen-indicator">
-      <div class="screen-line"></div>
-      <span class="screen-label">Entrance</span>
-      <div class="screen-line"></div>
-    </div>
+
 
     <!-- Tables arranged in rows like cinema seats -->
     <div class="seating-area">
@@ -209,9 +204,27 @@
         </div>
         <div class="detail-row">
           <span class="label">Status:</span>
-          <mat-chip [color]="getStatusColor(selectedTable.status)">
-            {{ selectedTable.status }}
-          </mat-chip>
+          @if (isAdmin()) {
+            <mat-form-field appearance="outline" class="status-selector">
+              <mat-label>Select Status</mat-label>
+              <mat-select 
+                [value]="selectedTable.status" 
+                (selectionChange)="updateTableStatusInModal($event.value)">
+                @for (status of getAvailableStatuses(); track status) {
+                  <mat-option [value]="status">
+                    <span class="status-option">
+                      <mat-icon class="status-icon">{{ getStatusIcon(status) }}</mat-icon>
+                      <span>{{ status }}</span>
+                    </span>
+                  </mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          } @else {
+            <mat-chip [color]="getStatusColor(selectedTable.status)">
+              {{ selectedTable.status }}
+            </mat-chip>
+          }
         </div>
         @if (selectedTable.location) {
         <div class="detail-row">

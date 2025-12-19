@@ -19,6 +19,7 @@ import { ConfirmDialogComponent, ConfirmDialogData } from '../../../components/c
 import { RealtimeOrdersService } from '../../../services/realtime-orders.service';
 import { OrderService } from '../../../services/order.service';
 import { Order, ACTIVE_ORDER_STATUSES } from '../../../models/order.model';
+import { TableService } from '../../../services/table.service';
 import { CartItem as OrderCartItem, CartAddonSelection } from '../../../services/cart.service';
 import { MenuItem } from '../../guest-menu/guest-menu.component';
 
@@ -120,7 +121,8 @@ export class PosScreenComponent implements OnInit, OnDestroy {
     private router: Router,
     private dialog: MatDialog,
     private realtimeOrders: RealtimeOrdersService,
-    private orderService: OrderService
+    private orderService: OrderService,
+    private tableService: TableService
   ) {}
 
   ngOnInit(): void {
@@ -189,6 +191,7 @@ export class PosScreenComponent implements OnInit, OnDestroy {
             this.localStorage.setCurrentPlaceId(this.placeId);
           }
           this.loadProducts();
+          this.loadTables();
           // Update currency when place changes
           this.currency = this.tenantContext.getCurrentCurrency();
         }
@@ -250,6 +253,7 @@ export class PosScreenComponent implements OnInit, OnDestroy {
 
       if (shouldReload) {
         this.loadProducts();
+        this.loadTables();
       }
     });
     
@@ -352,30 +356,34 @@ export class PosScreenComponent implements OnInit, OnDestroy {
   }
 
   loadTables(): void {
-    // Mock API call - replace with real API
-    const currentPlaceId = this.placeId || 'default-place';
-    setTimeout(() => {
-      this.availableTables = [
-        { id: '1', tableNumber: '1', capacity: 2, status: 'AVAILABLE' as any, isActive: true, placeId: currentPlaceId },
-        { id: '2', tableNumber: '2', capacity: 4, status: 'AVAILABLE' as any, isActive: true, placeId: currentPlaceId },
-        { id: '3', tableNumber: '3', capacity: 4, status: 'AVAILABLE' as any, isActive: true, placeId: currentPlaceId },
-        { id: '4', tableNumber: '4', capacity: 6, status: 'AVAILABLE' as any, isActive: true, placeId: currentPlaceId },
-        { id: '5', tableNumber: '5', capacity: 2, status: 'AVAILABLE' as any, isActive: true, placeId: currentPlaceId },
-        { id: '6', tableNumber: '6', capacity: 8, status: 'AVAILABLE' as any, isActive: true, placeId: currentPlaceId },
-        { id: '7', tableNumber: '7', capacity: 4, status: 'AVAILABLE' as any, isActive: true, placeId: currentPlaceId },
-        { id: '8', tableNumber: '8', capacity: 2, status: 'AVAILABLE' as any, isActive: true, placeId: currentPlaceId },
-      ];
-    }, 100);
+    if (!this.placeId) {
+      console.warn('Cannot load tables: placeId is not set');
+      this.availableTables = [];
+      return;
+    }
 
-    // Real API call (uncomment when backend is ready):
-    // this.api.get<Table[]>('/tables', { isActive: true }).subscribe({
-    //   next: (tables) => {
-    //     this.availableTables = tables;
-    //   },
-    //   error: () => {
-    //     this.notification.error('Failed to load tables');
-    //   }
-    // });
+    const query: any = {
+      placeId: this.placeId,
+      isActive: true
+    };
+
+    if (this.branchId) {
+      query.branchId = this.branchId;
+    }
+
+    this.tableService.getTables(query)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (tables) => {
+          this.availableTables = tables;
+          console.log(`Loaded ${tables.length} tables for POS`);
+        },
+        error: (error) => {
+          console.error('Error loading tables:', error);
+          this.notification.error('Failed to load tables');
+          this.availableTables = [];
+        }
+      });
   }
 
   setupFullscreenListener(): void {
@@ -935,12 +943,21 @@ export class PosScreenComponent implements OnInit, OnDestroy {
       // Map payment method
       const paymentMethod = this.mapPaymentMethodToOrderFormat(this.paymentMethod);
       
-      // Create order using OrderService (same as guest-menu)
+      let tableIdForOrder: string | null = null;
+      if (this.selectedTableNumber) {
+        const selectedTable = this.availableTables.find(
+          t => t.tableNumber === this.selectedTableNumber || t.id === this.selectedTableNumber
+        );
+        if (selectedTable) {
+          tableIdForOrder = selectedTable.id;
+        }
+      }
+
       const order = await this.orderService.createOrder(
         orderCartItems,
         this.placeId,
         this.branchId,
-        this.selectedTableNumber || null,
+        tableIdForOrder,
         this.posGuestUuid!,
         paymentMethod,
         notes || undefined,
@@ -959,26 +976,18 @@ export class PosScreenComponent implements OnInit, OnDestroy {
       this.clearCart();
       this.showPaymentDialog = false;
       
-      // Refresh products to update availability if needed
       this.loadProducts();
     } catch (error) {
-      console.error('Error creating order:', error);
       this.isProcessing = false;
       this.notification.error('Failed to create order. Please try again.');
     }
   }
 
   printReceipt(sale: Sale): void {
-    // Implement receipt printing logic
-    console.log('Printing receipt:', sale);
-    // You can use window.print() or a receipt printer library
     this.notification.info('Receipt printed');
   }
 
   printOrderReceipt(order: Order): void {
-    // Implement receipt printing logic for orders
-    console.log('Printing order receipt:', order);
-    // You can use window.print() or a receipt printer library
     this.notification.info('Receipt printed');
   }
 

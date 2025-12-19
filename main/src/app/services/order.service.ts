@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Observable, BehaviorSubject, from, of, firstValueFrom } from 'rxjs';
 import { map, catchError, tap, switchMap } from 'rxjs/operators';
 import {
@@ -32,6 +32,7 @@ import { IndexedDBService } from './indexeddb.service';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
+import { TenantContextService } from './tenant-context.service';
 
 /**
  * Order Service
@@ -46,6 +47,7 @@ export class OrderService {
   
   private activeOrderSubject = new BehaviorSubject<Order | null>(null);
   public activeOrder$ = this.activeOrderSubject.asObservable();
+  private tenantContext: TenantContextService = inject(TenantContextService);
 
   private readonly backendToClientStatusMap: Record<BackendOrderStatus, OrderStatus> = {
     pending: OrderStatus.PENDING,
@@ -113,7 +115,7 @@ export class OrderService {
     guestUuid: string,
     paymentMethod?: string,
     notes?: string,
-    currency: string = 'JOD'
+    currency: string = this.tenantContext.getCurrentCurrency()
   ): Promise<Order> {
     if (!cartItems || cartItems.length === 0) {
       throw new Error('Cannot create order with empty cart');
@@ -533,7 +535,22 @@ export class OrderService {
     const id = dto.id || (metadata['orderId'] as string) || orderNumber;
     const backendStatus = dto.status || (metadata['status'] as BackendOrderStatus);
     const status = backendStatus ? this.mapBackendStatusToClient(backendStatus) : OrderStatus.PENDING;
-    const tableId = dto.tableId ?? (metadata['tableId'] as string | null) ?? null;
+    // Extract tableId from multiple possible locations
+    const tableId = dto.tableId ?? 
+                    (metadata['tableId'] as string | null) ?? 
+                    (metadata['table_id'] as string | null) ?? 
+                    (dto as any).table_id ?? 
+                    null;
+    
+    // Debug logging for tableId extraction
+    if (dto.id && !tableId && (dto.tableId || metadata['tableId'] || metadata['table_id'])) {
+      console.warn(`Order ${dto.id}: tableId found in unexpected location`, {
+        'dto.tableId': dto.tableId,
+        'metadata.tableId': metadata['tableId'],
+        'metadata.table_id': metadata['table_id'],
+        'dto.table_id': (dto as any).table_id
+      });
+    }
     const createdAt = this.convertFirestoreTimestamp(dto.createdAt || metadata['createdAt']);
     const updatedAt = this.convertFirestoreTimestamp(dto.updatedAt || metadata['updatedAt']);
 
