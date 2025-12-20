@@ -129,7 +129,7 @@
   }
 
   <!-- Category Navigation -->
-  <div class="category-nav">
+  <div class="category-nav" #categoryNav>
     <div class="category-scroll">
       @for (category of categories; track category.id) {
         <button 
@@ -150,18 +150,14 @@
     </div>
   </div>
 
-  <!-- Menu Items Section -->
-  <div class="menu-section">
+  <!-- Menu Items Section - Only show for "Picks for you" -->
+  @if (selectedCategory === 'picks-for-you') {
+    <div class="menu-section" id="menu-section-picks-for-you">
     <div class="section-header">
       <div class="section-title">
-        @if (selectedCategory === 'picks-for-you') {
           <mat-icon class="section-icon">local_fire_department</mat-icon>
-        } @else {
-          <mat-icon class="section-icon">{{ getCategoryIcon(selectedCategory) }}</mat-icon>
-        }
         <h2>{{ currentCategoryName }}</h2>
       </div>
-      @if (selectedCategory === 'picks-for-you') {
         <p class="section-subtitle">
           @if (guestUuid) {
             AI-powered recommendations just for you
@@ -169,7 +165,6 @@
             Trending items we think you'll love
           }
         </p>
-      }
     </div>
 
     <div class="menu-items-scroll items-center">
@@ -205,7 +200,19 @@
             <div class="item-info">
               <h3 class="item-name">{{ item.name }}</h3>
               @if (item.description) {
-                <p class="item-description">{{ item.description }}</p>
+                  <p class="item-description">
+                    @if (isDescriptionExpanded(item.id)) {
+                      {{ item.description }}
+                      @if (item.description.length > 50) {
+                        <span class="see-more-link" (click)="toggleDescription(item.id, $event)">see less</span>
+                      }
+                    } @else {
+                      {{ getTruncatedDescription(item.description) }}
+                      @if (item.description.length > 50) {
+                        <span class="see-more-link" (click)="toggleDescription(item.id, $event)">see more</span>
+                      }
+                    }
+                  </p>
               }
               <div class="item-price">
                 <span class="current-price">{{ currency }} {{ item.price | number:'1.2-2' }}</span>
@@ -219,13 +226,13 @@
       }
     </div>
   </div>
+  }
 
-  <!-- Dynamic Category Sections - Only show when "Picks for you" is selected -->
-  @if (selectedCategory === 'picks-for-you') {
+  <!-- Dynamic Category Sections - Always visible -->
     @for (category of categories; track category.id) {
       @if (category.id !== 'picks-for-you') {
         @if (getCategoryItems(category.id).length > 0) {
-          <div class="items-section">
+        <div class="items-section" [id]="'menu-section-' + category.id">
             <h2 class="section-title">
               <mat-icon class="section-icon">{{ category.icon }}</mat-icon>
               {{ category.name }}
@@ -260,7 +267,6 @@
               }
             </div>
           </div>
-        }
       }
     }
   }

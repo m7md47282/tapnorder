@@ -810,10 +810,29 @@
   -webkit-backdrop-filter: blur(40px) saturate(180%);
   border-bottom: 0.5px solid rgba(0, 0, 0, 0.08);
   border-top: 0.5px solid rgba(255, 255, 255, 0.5);
-  position: sticky;
+  position: relative; // Changed from sticky - JavaScript will handle fixed positioning
   top: 0;
   z-index: 50;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  width: 100%;
+  transition: box-shadow 0.3s ease;
+  
+  // When fixed (handled by JavaScript)
+  &.is-sticky {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+}
+
+// Placeholder to prevent layout shift when nav becomes fixed
+.category-nav-placeholder {
+  display: block;
+  width: 100%;
+  pointer-events: none;
+  visibility: hidden;
 }
 
 .category-scroll {
@@ -1007,6 +1026,7 @@
 
 .menu-item-card {
   width: 100%;
+  height: 300px;
   background: rgba(255, 255, 255, 0.7);
   backdrop-filter: blur(30px) saturate(180%);
   -webkit-backdrop-filter: blur(30px) saturate(180%);
@@ -1021,6 +1041,8 @@
   box-shadow: 
     0 8px 32px rgba(0, 0, 0, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  display: flex;
+  flex-direction: column;
   
   // Mobile: fixed width for horizontal scroll
   @media (max-width: 767px) {
@@ -1182,6 +1204,10 @@
   background: rgba(255, 255, 255, 0.4);
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .item-name {
@@ -1200,12 +1226,27 @@
   margin: 0 0 12px;
   line-height: 1.4;
   font-weight: 400;
+  flex: 1;
+  overflow: hidden;
+  
+  .see-more-link {
+    color: var(--theme-primary);
+    cursor: pointer;
+    font-weight: 600;
+    text-decoration: none;
+    margin-left: 4px;
+    
+    &:hover {
+      text-decoration: underline;
+    }
+  }
 }
 
 .item-price {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-top: auto;
 
   .current-price {
     font-size: 18px;

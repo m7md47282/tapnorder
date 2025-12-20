@@ -115,7 +115,7 @@ $color-gray-dark: #1d1d1f;
   padding-bottom: 32px;
 
   .fullscreen & {
-    grid-template-columns: 2fr 2fr 1fr; // 2 medium columns, 1 small column
+    grid-template-columns: 1fr 1fr 1fr; // 2 medium columns, 1 small column
     gap: 24px;
     padding: 24px;
     max-width: 100%;
@@ -140,39 +140,39 @@ $color-gray-dark: #1d1d1f;
 
   // Status-based left border (color coding)
   &.status-new {
-    border-left-color: $color-blue;
+    border-color: $color-blue;
   }
 
   &.status-progress {
-    border-left-color: $color-orange;
+    border-color: $color-orange;
   }
 
   &.status-ready {
-    border-left-color: $color-red;
+    border-color: $color-red;
   }
 
   &.status-completed {
-    border-left-color: $color-gray-medium;
+    border-color: $color-gray-medium;
     opacity: 0.6;
   }
 
   &.urgent {
-    border-left-color: $color-red;
-    border-left-width: 5px;
+    border-color: $color-red;
+    border-width: 5px;
     animation: pulse-border 2s infinite;
   }
 
   &.overdue {
-    border-left-color: $color-red;
-    border-left-width: 5px;
+    border-color: $color-red;
+    border-width: 5px;
     background: #fff5f5;
     animation: pulse-border 2s infinite;
   }
 }
 
 @keyframes pulse-border {
-  0%, 100% { border-left-width: 5px; }
-  50% { border-left-width: 8px; }
+  0%, 100% { border-width: 5px; }
+  50% { border-width: 8px; }
 }
 
 // Order Header

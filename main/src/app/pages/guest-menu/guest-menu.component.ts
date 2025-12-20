@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, AfterViewInit, ViewChild, ElementRef, Renderer2 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -56,7 +56,7 @@ import { AiAssistantService, CustomOrderSuggestion } from '../../services/ai-ass
   templateUrl: './guest-menu.component.html',
   styleUrls: ['./guest-menu.component.scss']
 })
-export class GuestMenuComponent implements OnInit, OnDestroy {
+export class GuestMenuComponent implements OnInit, OnDestroy, AfterViewInit {
   restaurantName: string = 'Restaurant';
   cuisine: string = '';
   rating: number = 4.6;
@@ -114,6 +114,9 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
   private previousCartItemCount: number = 0;
   private hasCartInitialized: boolean = false;
   
+  // Track expanded descriptions
+  private expandedDescriptions: Set<string> = new Set();
+  
   get isTakeaway(): boolean {
     // If user toggled to takeaway, always return true
     if (this.forceTakeaway) {
@@ -136,6 +139,12 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private realtimeSubscription?: Subscription;
   private singleOrderSubscription?: Subscription;
+
+  // Sticky navigation
+  @ViewChild('categoryNav', { read: ElementRef }) categoryNavElement?: ElementRef;
+  private categoryNavOffsetTop: number = 0;
+  private isCategoryNavSticky: boolean = false;
+  private scrollListener?: () => void;
 
   categories: MenuCategory[] = [
     { id: 'picks-for-you', name: 'Picks for you', icon: 'local_fire_department' }
@@ -217,7 +226,8 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
     private addonsService: AddonsService,
     private placeService: PlaceService,
     private cdr: ChangeDetectorRef,
-    private realtimeOrders: RealtimeOrdersService
+    private realtimeOrders: RealtimeOrdersService,
+    private renderer: Renderer2
   ) {}
 
   async ngOnInit(): Promise<void> {
@@ -261,6 +271,103 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
     });
   }
 
+  ngAfterViewInit(): void {
+    // Set up sticky navigation after view is initialized
+    setTimeout(() => {
+      this.setupStickyNavigation();
+    }, 100); // Small delay to ensure DOM is fully rendered
+  }
+
+  private setupStickyNavigation(): void {
+    if (!this.categoryNavElement?.nativeElement) {
+      return;
+    }
+
+    const categoryNav = this.categoryNavElement.nativeElement;
+    
+    // Calculate initial offset - get the position relative to the document
+    const updateOffset = () => {
+      const rect = categoryNav.getBoundingClientRect();
+      this.categoryNavOffsetTop = rect.top + window.scrollY;
+    };
+    
+    updateOffset();
+
+    // Create scroll listener with throttling for better performance
+    let ticking = false;
+    this.scrollListener = this.renderer.listen('window', 'scroll', () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          this.handleScroll();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    });
+
+    // Also listen to resize events to recalculate offset
+    this.renderer.listen('window', 'resize', () => {
+      if (categoryNav && !this.isCategoryNavSticky) {
+        updateOffset();
+      }
+    });
+  }
+
+  private handleScroll(): void {
+    if (!this.categoryNavElement?.nativeElement) {
+      return;
+    }
+
+    const categoryNav = this.categoryNavElement.nativeElement;
+    const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
+    
+    // Recalculate offset if not sticky (in case layout changed)
+    if (!this.isCategoryNavSticky) {
+      const rect = categoryNav.getBoundingClientRect();
+      this.categoryNavOffsetTop = rect.top + scrollY;
+    }
+    
+    const shouldBeSticky = scrollY >= this.categoryNavOffsetTop;
+
+    if (shouldBeSticky !== this.isCategoryNavSticky) {
+      this.isCategoryNavSticky = shouldBeSticky;
+
+      if (shouldBeSticky) {
+        // Make it fixed
+        this.renderer.addClass(categoryNav, 'is-sticky');
+        this.renderer.setStyle(categoryNav, 'position', 'fixed');
+        this.renderer.setStyle(categoryNav, 'top', '0');
+        this.renderer.setStyle(categoryNav, 'left', '0');
+        this.renderer.setStyle(categoryNav, 'right', '0');
+        this.renderer.setStyle(categoryNav, 'width', '100%');
+        this.renderer.setStyle(categoryNav, 'z-index', '50');
+        
+        // Store original height to prevent layout shift - insert before nav
+        const navHeight = categoryNav.offsetHeight;
+        const placeholder = this.renderer.createElement('div');
+        this.renderer.setStyle(placeholder, 'height', `${navHeight}px`);
+        this.renderer.setStyle(placeholder, 'width', '100%');
+        this.renderer.setProperty(placeholder, 'id', 'category-nav-placeholder');
+        this.renderer.setProperty(placeholder, 'class', 'category-nav-placeholder');
+        this.renderer.insertBefore(categoryNav.parentNode, placeholder, categoryNav);
+      } else {
+        // Remove fixed positioning
+        this.renderer.removeClass(categoryNav, 'is-sticky');
+        this.renderer.removeStyle(categoryNav, 'position');
+        this.renderer.removeStyle(categoryNav, 'top');
+        this.renderer.removeStyle(categoryNav, 'left');
+        this.renderer.removeStyle(categoryNav, 'right');
+        this.renderer.removeStyle(categoryNav, 'width');
+        
+        // Remove placeholder
+        const placeholder = document.getElementById('category-nav-placeholder');
+        if (placeholder && placeholder.parentNode) {
+          this.renderer.removeChild(placeholder.parentNode, placeholder);
+        }
+      }
+    }
+  }
+
   ngOnDestroy(): void {
     this.orderTracking.stopAllTracking();
     if (this.realtimeSubscription) {
@@ -275,6 +382,11 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
     this.clearAnimationTimers();
+    
+    // Clean up scroll listener
+    if (this.scrollListener) {
+      this.scrollListener();
+    }
   }
 
   /**
@@ -334,7 +446,7 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
         this.tableId
       );
 
-      this.updateFilteredItems();
+      // this.updateFilteredItems();
       this.cdr.detectChanges();
 
       await this.orderService.initializeOrders(this.guestUuid);
@@ -448,30 +560,37 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
 
   selectCategory(categoryId: string): void {
     this.selectedCategory = categoryId;
-    this.updateFilteredItems();
+    // this.updateFilteredItems();
+    
+    // Scroll to the category section
+    setTimeout(() => {
+      this.scrollToCategory(categoryId);
+    }, 100);
   }
 
   /**
-   * Update filtered items based on current category and guest UUID
-   * This method ensures filteredItems is updated outside of change detection
-   * FILTER DISABLED FOR TESTING - showing all items
+   * Scroll to the specified category section
    */
-  private updateFilteredItems(): void {
-    // DISABLED FOR TESTING - Show all items regardless of filter
-    this.filteredItems = [...this.menuItems];
-    
-    // Original filtering logic (commented out for testing):
-    // if (this.selectedCategory === 'picks-for-you') {
-    //   // Use AI-driven recommendations if guest UUID exists
-    //   if (this.guestUuid) {
-    //     this.filteredItems = this.aiService.getPersonalizedRecommendations(this.guestUuid, this.menuItems);
-    //   } else {
-    //     // Fallback to top-rated items
-    //     this.filteredItems = this.menuItems.filter(item => item.isTopRated || (item.rating && item.rating >= 4.6));
-    //   }
-    // } else {
-    //   this.filteredItems = this.menuItems.filter(item => item.category === this.selectedCategory);
-    // }
+  private scrollToCategory(categoryId: string): void {
+    // Wait for DOM update to ensure the section ID is updated and rendered
+    setTimeout(() => {
+      const sectionId = `menu-section-${categoryId}`;
+      const element = document.getElementById(sectionId);
+      console.log('element', element);
+      
+      
+      if (element) {
+        const categoryNav = document.querySelector('.category-nav');
+        const navHeight = categoryNav ? categoryNav.getBoundingClientRect().height : 0;
+        const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
+        const offsetPosition = elementPosition - navHeight - 20; // 20px extra spacing
+        
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      }
+    }, 150);
   }
 
   private buildMenuItems(): void {
@@ -482,7 +601,6 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
     }
 
     this.menuItems = this.rawItems.map(item => this.itemToMenuItem(item));
-    this.updateFilteredItems();
   }
 
   openItemModal(item: MenuItem): void {
@@ -1402,6 +1520,35 @@ export class GuestMenuComponent implements OnInit, OnDestroy {
   private clearAnimationTimers(): void {
     this.animationTimers.forEach(timer => clearTimeout(timer));
     this.animationTimers = [];
+  }
+
+  /**
+   * Get truncated description if longer than 50 characters
+   */
+  getTruncatedDescription(description: string): string {
+    if (!description || description.length <= 50) {
+      return description;
+    }
+    return description.substring(0, 50).trim() + '...';
+  }
+
+  /**
+   * Check if description is expanded for an item
+   */
+  isDescriptionExpanded(itemId: string): boolean {
+    return this.expandedDescriptions.has(itemId);
+  }
+
+  /**
+   * Toggle description expansion
+   */
+  toggleDescription(itemId: string, event: Event): void {
+    event.stopPropagation(); // Prevent card click
+    if (this.expandedDescriptions.has(itemId)) {
+      this.expandedDescriptions.delete(itemId);
+    } else {
+      this.expandedDescriptions.add(itemId);
+    }
   }
 
 }
